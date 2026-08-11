@@ -10,8 +10,15 @@ the same git history as the code the decisions are about.
   <effort-slug>/
     MAP.md              Destination · Notes · Decisions so far · Not yet specified · Out of scope
     tickets/
-      NN-<slug>.md      one ticket per file
+      NN-<slug>.md      decision tickets (charted by /wayfinder)
+    arcs/
+      <arc-id>/
+        NN-<slug>.md    build tickets (written by /to-tickets, one arc at a time)
 ```
+
+Decision tickets decide; arc tickets build. Same field lines (`Status:` / `Blocked by:` /
+`Claimed by:`), so the frontier query (`scripts/loop/frontier.mjs`) works on either directory,
+and the loop (`docs/specs/loop.md`) executes arc tickets headless.
 
 ## Operations
 

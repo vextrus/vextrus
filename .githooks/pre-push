@@ -1,0 +1,10 @@
+#!/bin/sh
+# Mechanical guard (ADR-0008): while a loop campaign is active, nothing pushes —
+# not the workers, not a concurrent interactive session. Safety by mechanism,
+# not by instruction.
+if [ -f ".loop/ACTIVE" ]; then
+  echo "pre-push: refused — a loop campaign is active (.loop/ACTIVE)." >&2
+  echo "Pushing mid-campaign publishes unreviewed worker commits. Push after the run ends." >&2
+  exit 1
+fi
+exit 0

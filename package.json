@@ -18,7 +18,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/db-migrate.mjs",
     "db:drift": "node scripts/db-drift.mjs",
-    "test:db": "vitest run -c vitest.db.config.ts"
+    "test:db": "vitest run -c vitest.db.config.ts",
+    "loop": "node scripts/loop/conduct.mjs"
   },
   "dependencies": {
     "@trpc/server": "^11.18.0",

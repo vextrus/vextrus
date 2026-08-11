@@ -21,3 +21,6 @@ cad/.venv/
 __pycache__/
 .pytest_cache/
 .ruff_cache/
+
+# loop state — evidence per run, never committed
+.loop/

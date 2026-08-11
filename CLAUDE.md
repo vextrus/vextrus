@@ -66,8 +66,9 @@ Web: localhost:3100
 
 1. **One ticket per session.** `/clear` at the boundary. Never `/compact`.
 2. **`pnpm verify` is the contract.** Run it; read the exit code; fix; repeat.
-3. Work larger than one session is charted with `/wayfinder` into `.wayfinder/<effort>/` and
-   worked one ticket at a time.
+3. Work larger than one session is charted with `/wayfinder` into `.wayfinder/<effort>/`,
+   specced with `/to-spec`, broken into arc tickets with `/to-tickets`, and either worked one
+   ticket at a time or executed by the loop (`docs/specs/loop.md`).
 4. **Delegate only for large, genuinely independent investigation.** Never to verify your own
    work. One agent beats three.
 
