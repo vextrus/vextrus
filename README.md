@@ -8,7 +8,7 @@ Start here: [`CLAUDE.md`](CLAUDE.md) · [`docs/specs/genesis.md`](docs/specs/gen
 
 ```
 pnpm install
-docker compose up -d      # postgres on :5433
+docker compose up -d      # postgres on :5544
 pnpm db:migrate
 pnpm verify               # tsc → eslint → vitest → cad; exit code is the contract
 pnpm dev                  # web on :3100

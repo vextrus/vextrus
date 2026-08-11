@@ -266,7 +266,7 @@ keeping this true, never building for them.
 - **Layout:** single package.json; `src/app` (routes) · `src/core` · `src/modules/{takeoff,book,estimate,bid}` ·
   `src/server` (trpc root, worker) · `db/{schema,migrations}` · `cad/` (uv package) · `e2e/` ·
   `docs/` · `.wayfinder/` · `scripts/`.
-- **Ports:** web 3100, Postgres 5433 (compose-managed, volume-backed) — deliberately off the
+- **Ports:** web 3100, Postgres 5544 (compose-managed, volume-backed) — deliberately off the
   legacy repo's 3000/4000/5432 so both stacks can run, and clear of Windows dynamic-reservation
   ranges.
 - **DB lanes:** `pnpm db:migrate` is the only writer; drift detector ships day one.
@@ -289,7 +289,7 @@ Logical commits, in order; each verifies green before the next:
 
 1. **Toolchain skeleton** — package.json (pinned pnpm/node), tsconfig (strict), Next.js app
    shell, eslint flat config + boundary rules + fail-closed fixture test, vitest config,
-   `.gitignore`, `.nvmrc`, compose.yaml (postgres 5433), README (thin).
+   `.gitignore`, `.nvmrc`, compose.yaml (postgres 5544), README (thin).
 2. **Verify loop** — `scripts/verify.mjs`, `pnpm verify` green, timing recorded in this spec.
 3. **cad/ skeleton** — uv package, ruff+pytest wired into verify, EntityGraph artifact schema
    (versioned) + Zod mirror + one round-trip fixture test.

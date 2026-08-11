@@ -15,7 +15,7 @@ inferred with no generate step, SQL visible to the typechecker.
 
 ## Decision
 
-- Postgres 16 (compose-managed, port 5433 — off the legacy repo's 5432). Drizzle ORM; schema
+- Postgres 16 (compose-managed, port 5544 — off the legacy repo's 5432). Drizzle ORM; schema
   lives in `db/schema/*.ts`, one file per module, composed once.
 - drizzle-kit generates SQL migrations; `pnpm db:migrate` is the **only** schema writer for
   every environment, dev included. No push lane. Landed migrations are never edited —

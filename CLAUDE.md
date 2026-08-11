@@ -49,7 +49,7 @@ pnpm verify        # tsc --noEmit -> eslint -> vitest -> cad (ruff+pytest); exit
 Run it, read the exit code, fix, repeat. Playwright e2e is outside this lane.
 
 ```
-DB:  localhost:5433/vextrus  (compose-managed; pnpm db:migrate is the only writer)
+DB:  localhost:5544/vextrus  (compose-managed; pnpm db:migrate is the only writer)
 Web: localhost:3100
 ```
 
