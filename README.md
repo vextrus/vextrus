@@ -11,5 +11,5 @@ pnpm install
 docker compose up -d      # postgres on :5544
 pnpm db:migrate
 pnpm verify               # tsc → eslint → vitest → cad; exit code is the contract
-pnpm dev                  # web on :3100
+pnpm dev                  # web on :3210
 ```

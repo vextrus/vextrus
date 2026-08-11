@@ -270,7 +270,7 @@ keeping this true, never building for them.
 - **Layout:** single package.json; `src/app` (routes) · `src/core` · `src/modules/{takeoff,book,estimate,bid}` ·
   `src/server` (trpc root, worker) · `db/{schema,migrations}` · `cad/` (uv package) · `e2e/` ·
   `docs/` · `.wayfinder/` · `scripts/`.
-- **Ports:** web 3100, Postgres 5544 (compose-managed, volume-backed) — deliberately off the
+- **Ports:** web 3210, Postgres 5544 (compose-managed, volume-backed) — deliberately off the
   legacy repo's 3000/4000/5432 so both stacks can run, and clear of Windows dynamic-reservation
   ranges.
 - **DB lanes:** `pnpm db:migrate` is the only writer; drift detector ships day one.

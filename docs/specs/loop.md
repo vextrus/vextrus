@@ -27,7 +27,7 @@ node scripts/loop/conduct.mjs .wayfinder/<effort>/arcs/<arc> [--arc <name>] [--m
 ```
 
 Preflight (all mechanical, all refuse loudly): no concurrent run (`.loop/ACTIVE`), clean tree,
-nothing answering on :3100 (a dev server is a second writer), baseline `pnpm verify` green,
+nothing answering on :3210 (a dev server is a second writer), baseline `pnpm verify` green,
 pre-push guard armed (`.githooks/pre-push` refuses every push while a campaign is active).
 
 Per iteration: `frontier.mjs` picks the next ticket (open + unclaimed + blockers closed,

@@ -26,7 +26,7 @@ with a dated, observed cost — never speculatively.
   pushing 25 files). Never `git add -A` when another session may be live.
 - **Read baselines with `git show <sha>:<path>`, never `git checkout <sha> -- <path>`.** Any
   tree-mutating recovery is its own deliberate step, never chained after `;`.
-- **A dev server is a second writer.** Stop `pnpm dev` before unattended runs; if :3100 still
+- **A dev server is a second writer.** Stop `pnpm dev` before unattended runs; if :3210 still
   answers, kill the port PID.
 
 ## Database

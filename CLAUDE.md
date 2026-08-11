@@ -50,7 +50,7 @@ Run it, read the exit code, fix, repeat. Playwright e2e is outside this lane.
 
 ```
 DB:  localhost:5544/vextrus  (compose-managed; pnpm db:migrate is the only writer)
-Web: localhost:3100
+Web: localhost:3210
 ```
 
 ## Pointers — read on demand, not up front

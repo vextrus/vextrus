@@ -84,8 +84,8 @@ if (sh("git status --porcelain") !== "") {
   console.error("conduct: working tree is dirty — the loop needs a sole, clean writer. Commit or stash first.");
   process.exit(1);
 }
-if (await portAnswers(3100)) {
-  console.error("conduct: something answers on :3100 — a dev server is a second writer (docs/TRAPS.md). Stop it first.");
+if (await portAnswers(3210)) {
+  console.error("conduct: something answers on :3210 — a dev server is a second writer (docs/TRAPS.md). Stop it first.");
   process.exit(1);
 }
 sh("git config core.hooksPath .githooks"); // pre-push guard refuses pushes while ACTIVE exists
