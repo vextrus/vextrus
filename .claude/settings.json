@@ -13,6 +13,7 @@
   },
   "autoMemoryEnabled": false,
   "showTurnDuration": true,
+  "enableAllProjectMcpServers": false,
   "skillOverrides": {
     "dataviz": "off",
     "claude-api": "off",
@@ -71,6 +72,9 @@
       "EnterWorktree",
       "ExitWorktree",
       "LSP",
+      "ListMcpResourcesTool",
+      "ReadMcpResourceTool",
+      "WaitForMcpServers",
       "NotebookEdit",
       "PowerShell",
       "RemoteTrigger",
