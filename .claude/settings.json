@@ -60,8 +60,6 @@
     ],
     "ask": ["Bash(git push *)", "Bash(git reset *)", "Bash(rm -r *)"],
     "deny": [
-      "Read(./.env)",
-      "Read(./.env.*)",
       "Artifact",
       "AskUserQuestion",
       "CronCreate",
