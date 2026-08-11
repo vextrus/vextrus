@@ -38,3 +38,26 @@ review pass and mechanical "never weaken a check" enforcement, not more prompt t
   replaces parallel breadth.
 - Every foundation phase ends with a measurement written back into the spec; an unmeasured
   phase is not done.
+
+## Amendment — 2026-08-12: startup-context trim
+
+First `/context` measurement in this repo: **31.6K** (system tools 21.4K, built-in skills
+2.6K, memory 1.8K). Applied in `.claude/settings.json`, following the legacy reset's measured
+deny-list and Anthropic's Claude-5-era context-engineering guidance (progressive disclosure;
+"the team removed over 80% of Claude Code's system prompt for Opus 5 and Fable 5 with no
+measurable performance loss"):
+
+- **20 tools denied** (the legacy 16 + `EnterWorktree`/`ExitWorktree` — one writable checkout
+  per branch — with `Workflow` and `Artifact` carrying the largest schemas; denying `Workflow`
+  is a structural commitment against context blow-ups, not just a token saving).
+- **13 bundled skills off** via `skillOverrides`; kept: `code-review` (the review pass the
+  loop and `/implement` cite), `simplify`, `security-review` — ~360 tokens retained of ~2.6K.
+- **Auto-memory off** — the blog recommends it; our own legacy measurement (21 memory files
+  loaded every session, net-negative) wins until a new measurement says otherwise. The map on
+  disk is the memory.
+- **Pragmatic allow-list** carried from the legacy's measured denial log (144 denials = 144
+  failed turns + workarounds), with `ask` retained on `git push`, `git reset`, `rm -r`.
+- Git system-prompt instructions trimmed (`CLAUDE_CODE_INCLUDE_GIT_INSTRUCTIONS=false`).
+
+Re-measure `/context` in a fresh session after any harness change and record it here; run
+`claude doctor` periodically to rightsize skills and CLAUDE.md. An unmeasured trim is a guess.
