@@ -1,0 +1,17 @@
+name: vextrus
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: vx-postgres
+    ports:
+      - "5433:5432" # 5433 deliberately: the legacy stack owns 5432
+    environment:
+      POSTGRES_USER: vextrus
+      POSTGRES_PASSWORD: vextrus_dev_password
+      POSTGRES_DB: vextrus
+    volumes:
+      - vx-pgdata:/var/lib/postgresql/data
+
+volumes:
+  vx-pgdata:

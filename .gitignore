@@ -1,0 +1,23 @@
+# dependencies / build output
+node_modules/
+.next/
+out/
+
+# env — .env.example is the only committed env file
+.env
+.env.*
+!.env.example
+
+# never any incremental state (ADR-0001: staleness is unrepresentable)
+*.tsbuildinfo
+
+# test artifacts
+coverage/
+e2e/test-results/
+e2e/playwright-report/
+
+# python (cad/)
+cad/.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
