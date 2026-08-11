@@ -29,6 +29,7 @@
     "init": "off"
   },
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(pnpm *)",
       "Bash(node *)",
