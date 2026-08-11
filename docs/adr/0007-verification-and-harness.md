@@ -50,8 +50,9 @@ measurable performance loss"):
 - **20 tools denied** (the legacy 16 + `EnterWorktree`/`ExitWorktree` — one writable checkout
   per branch — with `Workflow` and `Artifact` carrying the largest schemas; denying `Workflow`
   is a structural commitment against context blow-ups, not just a token saving).
-- **13 bundled skills off** via `skillOverrides`; kept: `code-review` (the review pass the
-  loop and `/implement` cite), `simplify`, `security-review` — ~360 tokens retained of ~2.6K.
+- **12 bundled skills off** via `skillOverrides`; kept: `code-review` (the review pass the
+  loop and `/implement` cite), `simplify`, `security-review`, and `claude-in-chrome`
+  (browser verification of UI work) — ~540 tokens retained of ~2.6K.
 - **Auto-memory off** — the blog recommends it; our own legacy measurement (21 memory files
   loaded every session, net-negative) wins until a new measurement says otherwise. The map on
   disk is the memory.
