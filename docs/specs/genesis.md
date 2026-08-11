@@ -1,6 +1,10 @@
 # Genesis — the Founding Spec
 
-**Status:** awaiting CEO sign-off
+**Status:** executed 2026-08-12 — CEO sign-off received; foundation landed per §7.
+Measured at founding: `pnpm verify` green in **4.0s** (tsc 1.1 · eslint 0.9 · vitest 1.3 ·
+ruff 0.1 · pytest 0.6) against the <60s exit bar; tenant seam proven live (`pnpm test:db`:
+scoped reads, RLS refusal of a cross-tenant write); Postgres on **5544** (5433 was inside a
+Windows reserved range — recorded in TRAPS.md).
 **Author:** founding session, 2026-08-12
 **Scope:** everything this repository is, until superseded by a dated ADR.
 
