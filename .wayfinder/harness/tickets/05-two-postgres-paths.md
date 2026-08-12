@@ -56,3 +56,22 @@ The thing not to do is leave two paths whose difference is discovered by a wrong
   in is a real failure mode, and two conventions would make it worse.
 - Do not decide by preference. Ticket 02 produced facts about what the sandbox actually has;
   the ruling answers to those.
+
+## Facts from [The cold machine](02-the-cold-machine.md) — 2026-08-12
+
+This ticket's premise that "this machine only ever takes one of them — the Docker path" is
+**overturned for the cloud**. A cloud sandbox on 2026-08-12 had the Docker *binary* at
+`/usr/bin/docker` and **no daemon** (`/var/run/docker.sock` absent), so it took the native
+branch. Presence of the binary says nothing about the daemon; `docker info` gets this right
+where `command -v docker` would have hung.
+
+The native branch therefore **has an exerciser now, and it passed**: Postgres 16 (already in the
+image — `apt-get` was skipped), cluster `16/main` sed'd to port 5544, listening on
+`127.0.0.1:5544` only, roles and 18 migrated tables correct, and `pnpm test:db` green at 46
+tests against it.
+
+What this sharpens rather than settles: the third option ("make the local machine take the
+native path sometimes") is now the *inverse* problem — it is the **compose** path that has no
+cloud exerciser. And the sandbox is not reliably one or the other: this image had the binary
+without the daemon, an earlier one was recorded simply as "Docker present". Cloud Docker
+availability is not a constant, so "pin the cloud to one path" must answer to that.

@@ -53,6 +53,22 @@ with a dated, observed cost — never speculatively.
 - **Prove which database you're in before theorizing** — a container proxy can own
   `0.0.0.0:5544` while another listener holds `[::1]:5544`.
 
+## Sandboxes and provisioning
+
+- **A Docker binary is not a Docker daemon.** 2026-08-12, a cloud sandbox had `/usr/bin/docker`
+  on PATH and no `/var/run/docker.sock` at all. `command -v docker` would have taken the compose
+  path and hung; `docker info` is the probe that tells the truth. Cloud Docker availability is not
+  a constant across images — detect it every run, never remember it.
+- **The image's Node can outrank the one you installed.** The container puts `/opt/node22/bin`
+  ahead of `/usr/local/bin` on PATH, and a session's shell is neither a login shell nor an
+  interactive one, so it reads neither `/etc/profile.d` nor `.bashrc`. A session therefore runs
+  Node 22 while `/usr/local/bin/node` is 24, and every pnpm call prints
+  `WARN Unsupported engine: wanted {"node":">=24"}` — a warning, never a block. Verify is green
+  on both, so nothing announces the drift. `node -v` before believing a Node-version symptom.
+- **A cold provision's output is gone by the time a session can look.** The cloud setup field's
+  transcript is written to no file on the machine. If a session inherits a half-provisioned
+  container, the reason is not recoverable — re-run `scripts/provision.sh` and read *that*.
+
 ## Verification
 
 - **Only `pnpm verify` output is evidence.** It runs uncached by design; if a check was run any

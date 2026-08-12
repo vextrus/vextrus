@@ -57,3 +57,31 @@ differ between the compose path and the native-cluster path.
 - The provisioner stays idempotent: re-running it is still the repair.
 - Failing loudly is the point. Do not add a flag that makes it quiet by default; a session that
   cannot see a broken machine is the failure this ticket exists to end.
+
+## Facts from [The cold machine](02-the-cold-machine.md) — 2026-08-12
+
+All three legs were run by hand on a cold cloud sandbox and **all three pass**: verify green in
+41.5s (build stage 24.4s — 60% slower than the 15.2s measured locally), `test:db` green in 9.0s,
+`next dev` ready in 430ms answering 200 on `/` and `/login`. So the bar in this ticket costs
+roughly **51s plus a boot** on cloud hardware, and the expected-cost line above can be written
+against a measurement rather than a guess.
+
+Two silent faults were found that this ticket's design must account for — neither stops a run,
+so neither would be caught by wiring the legs alone:
+
+- **A session does not run the Node the provisioner installed.** The container environment puts
+  `/opt/node22/bin` ahead of `/usr/local/bin` on PATH, and a session's shell is neither a login
+  nor an interactive shell, so all three of the provisioner's PATH treatments miss it. Result:
+  Node 22 in every session, `WARN Unsupported engine: wanted {"node":">=24"}` on every pnpm
+  call, warning only, never a block. Verify is green on both (41.5s on 22, 34.1s on 24).
+  **The provisioner cannot currently detect this**, because it `export`s Node 24 into its own
+  shell before its final check — so a parity check bolted onto this script would inherit the
+  same blind spot and pass while the session is on the wrong Node. Whatever this ticket wires
+  must run the legs in a shell resembling a *session's*, not the provisioner's.
+- **A cold run's output is unreadable afterwards.** The cloud setup field's transcript is
+  written to no file on the machine. When this ticket makes the provisioner exit non-zero on a
+  failed leg, the *reason* still has to reach a session that starts on the broken machine — a
+  log the provisioner writes itself, since the harness keeps none.
+
+Fault A's cure and the re-download defect below are both mechanisable and are carried by
+[The provisioner knows what it installed](08-the-provisioner-knows-what-it-installed.md).
