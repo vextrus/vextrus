@@ -70,7 +70,6 @@
       "ExitPlanMode",
       "EnterWorktree",
       "ExitWorktree",
-      "LSP",
       "ListMcpResourcesTool",
       "ReadMcpResourceTool",
       "WaitForMcpServers",
