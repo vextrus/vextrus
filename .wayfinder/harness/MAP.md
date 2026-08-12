@@ -25,16 +25,19 @@ Two axes, deliberately one map because they collide at every step:
   "does this repo work for someone who just cloned it" can be honestly verified. This machine
   is already provisioned, so locally the only exercisable path is the idempotent re-run — the
   path least likely to be broken. Disposability is ranked first because it validates the rest.
-  **Amended by ticket 09: a cloud container does not start empty.** It arrives snapshot-restored
-  — a photograph of a machine some earlier session already provisioned, taken at a commit that
-  may predate the current head. So it is unfit on arrival (database down, and on today's image
-  Node 22), the install path is skipped as "already up to date", and disposability buys a fresh
-  *process tree*, not a fresh *disk*.
+  **Amended by ticket 09: there are two kinds of cloud container, and nothing announces which
+  one you got.** A freshly created one *is* empty and provisions itself at boot — Node
+  downloaded, cluster created, `parity: ok in 57s`, the install path genuinely exercised. A
+  snapshot-restored one is a photograph of a machine an earlier session provisioned, at a commit
+  that may predate the current head: unfit on arrival (database down, Node 22 against the pin),
+  install path skipped as "already up to date". The only tell is file mtimes against `/`.
 - **A container's first read of a file is its most expensive one.** Image blocks are materialized
   on first access: 68MB of never-touched image files read in 1.53s, then 0.26s on re-read *with
   the page cache dropped before both*. It is not page cache, it cannot be replayed inside one
-  container, and it lands exactly where the parity gate runs. Any bound a spec crosses on first
-  touch will fail there and nowhere else (ticket 09).
+  container, and it lands exactly where the parity gate runs. The size of the penalty is
+  machine-dependent — worst on a container that inherits a 149MB venv it has never read, absent
+  on one that built its own — so a bound it can cross fails unpredictably, on some machines and
+  not others (ticket 09).
 - Every `docs/TRAPS.md` entry is a question the environment failed to answer cheaply. The
   standing preference is to retire traps from prose into mechanism, not to write more prose.
 
@@ -154,9 +157,14 @@ Two axes, deliberately one map because they collide at every step:
   and a container that had never seen it said so** — `boundaries.spec` red at 9.2s — which is this
   ticket's guardrail doing precisely its job. Green at `c78979b` on a fresh container, EXIT=0.
   Rejected: a warm-up before the gate (cures the gate, not the fault), a retry (a false red
-  becomes a slow green), and calling the machine slow. **No container was ever empty** — the
-  install path is still unrun, carried to
-  [the container that is never empty](tickets/12-the-container-that-is-never-empty.md).
+  becomes a slow green), and calling the machine slow. **The fifth container arrived genuinely
+  empty** — provisioned itself at boot in ~83s, downloading Node and creating the cluster from
+  nothing, `parity: ok in 57s`, so **the install path is proven at this head** (ticket 04's last
+  open criterion). It also **did not reproduce the fault** — worst file 2315ms — which makes the
+  cost machine-dependent rather than universal, and is the argument for a generous net rather
+  than against it. Two kinds of container, indistinguishable on arrival:
+  [ticket 12](tickets/12-two-kinds-of-container.md). Raw captures:
+  [09-cold-proof.md](tickets/09-cold-proof.md).
 
 ## Not yet specified
 

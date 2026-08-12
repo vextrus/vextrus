@@ -88,8 +88,9 @@ What the run must produce:
 ## Exit criteria
 
 - [x] `bash scripts/provision.sh` run on a container that started empty, exit status recorded.
-      *Partially: run on four containers, none of them empty. Every cloud container in this
-      environment arrives snapshot-restored, which is a finding in itself — see below.*
+      *Five containers. The first four were snapshot-restored — a finding in itself — and the
+      fifth arrived genuinely empty, provisioned itself at boot in ~83s with a real Node
+      download, and reached `parity: ok in 57s`.*
 - [x] If it fails: the failing leg named, the cause diagnosed, and the fix landed — then re-run
       cold on a *second* empty container, because a fix proven on the machine it was written on
       is the thing this ticket exists to stop. *It failed, twice, and the second failure was
@@ -98,9 +99,8 @@ What the run must produce:
 - [x] The environment facts the result depended on transcribed into `## Resolution` — Postgres
       path and version, Docker daemon present or not, the Node the session actually got. `.data/`
       is gitignored, so the log dies with the container; what is not transcribed is gone.
-      *Transcribed below. The fuller capture — ticket 08's `08-cold-proof.md` shape, written on
-      a fresh container — is measured but unlanded: that session is parked awaiting approval to
-      push. If it never lands, the section below is the whole record.*
+      *Transcribed below; raw captures, including both provisioning runs of an empty container,
+      archived in [09-cold-proof.md](09-cold-proof.md).*
 
 ## Guardrails
 
@@ -216,9 +216,9 @@ Against ticket 04's 61s parity on a warm machine, and ticket 02's ~25s provision
 - Four CPUs. `cad/.venv` is 149MB / 2709 files; uv's managed interpreter another 213MB.
 
 The numbers above are this session's own container, measured directly. Container #4's run at
-`c78979b` contributed its exit status and test count only: a sibling session cannot be messaged
-from here, so its per-file durations died with it. A fifth container was sent to produce the full
-`08-cold-proof.md`-shaped capture and is parked awaiting approval to push.
+`c78979b` contributed its exit status and test count only — a sibling session cannot be messaged
+from here, so its per-file durations died with it. Container #5's full capture, including both of
+its provisioning runs verbatim, is archived in [09-cold-proof.md](09-cold-proof.md).
 
 ### Alternatives put and rejected
 
@@ -234,15 +234,46 @@ from here, so its per-file durations died with it. A fifth container was sent to
   bounds have different jobs — one is a hang net, the other keeps the seam's own timer first so
   a genuine hang is refused by name. Keeping both is not duplication.
 
-### Not proven, and now its own ticket
+### The empty container, found on the fifth try
 
-**The install path never ran.** All four containers were snapshot-restored, so `pnpm install`
-reported *"Already up to date"*, `.env` was left alone, and the node phase found v24 present.
-Nothing at this head has exercised an empty pnpm store, a `uv sync` that downloads, or a Node
-download. Ticket 08 proved that path cold at `174ce4c`; nothing since has, and this session could
-not force it — wiping the workspace to make the machine empty was **blocked by the permission
-classifier**, twice. Carried to
-[The container that is never empty](12-the-container-that-is-never-empty.md).
+A fifth container was sent to archive the raw capture, and it **arrived empty** — overturning
+what the first four suggested. Its rootfs is stamped `12:47:05`; `.env` `12:47:19`, `cad/.venv`
+`12:47:35`, `node_modules` `12:47:57`. Every artefact of provisioning is *newer* than `/`, so all
+of it was made in that container. It provisioned itself at boot, unattended, in **~83s**, and the
+node phase **downloaded**: `provision: installing Node v24.19.0 (x64) from nodejs.org`, then
+shadowed `/opt/node22/bin` for real. `parity: ok in 57s`, and the re-entrant run 90 seconds later
+was quiet — no second download, no second shadow, `.env exists — leaving it alone`,
+`Cluster is already running.` **The install path is exercised and green at `c78979b`**, which is
+the criterion ticket 04 left open and ticket 08 last satisfied at `174ce4c`.
+
+So this effort has **two kinds of container**, and only one of them is disposable in the sense the
+map assumed:
+
+- **Freshly created with a git source** — empty, provisions itself at boot, exercises the install
+  path. Containers #4 and #5.
+- **Snapshot-restored** — this session's own machine: rootfs `12:15:52`, but `node_modules`,
+  `.env`, `cad/.venv`, a Node 24 install and a 5544 cluster all stamped `10:37–10:38`, from an
+  image layer built by an earlier session at a commit predating ticket 08. It arrives **unfit**
+  (`checkup` exit 1 — database down, Node 22) and skips the install path entirely.
+
+Which kind a session gets was not chosen and is not visible without checking mtimes against `/`.
+Carried to [The container that is never empty](12-the-container-that-is-never-empty.md).
+
+### What the capture does not support
+
+The empty container **did not reproduce the timeout fault**. Its worst spec file was 2315ms,
+under half the 5s bound; `cad.spec › ingests the fixture` was 1644ms cold against 450ms warm
+(3.7×, the right direction, a fraction of the magnitude), and `boundaries.spec` showed **no cold
+penalty at all** — 876ms cold against 1004ms warm.
+
+That is a finding, not a retraction, and it sharpens the fix rather than undermining it. The three
+reds are real and independently observed (ticket 11's session, this session's container, container
+#3). What the capture establishes is that the cost is **machine-dependent and unpredictable** — a
+container with a hot package cache that builds its own venv is a milder machine than one that
+inherits a 149MB venv it has never read. An unpredictable red against a bound nobody wrote is
+precisely the case for a generous net, since nothing in these lanes measures speed. Had the
+capture come first, the fix would be the same; its justification would rest on the reds rather
+than on any expectation that every machine reproduces them.
 
 Incidental: two sibling containers created without a `source_url` died at boot with
 *"Setup script failed"* in 5–6s. Not an environment fault — `cloud-bootstrap.sh` exiting 1 with
