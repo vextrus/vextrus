@@ -3,6 +3,7 @@
 
 import json
 import math
+from collections import Counter
 from pathlib import Path
 
 import ezdxf
@@ -17,6 +18,7 @@ FIXTURES = Path(__file__).parent / "fixtures"
 R1 = FIXTURES / "structural-r1.dxf"
 R2 = FIXTURES / "structural-r2.dxf"
 COMMITTED = FIXTURES / "structural-r1.entitygraph.json"
+COMMITTED_R2 = FIXTURES / "structural-r2.entitygraph.json"
 
 
 @pytest.fixture(scope="module")
@@ -24,21 +26,31 @@ def art():
     return ingest_file(R1)
 
 
+@pytest.fixture(scope="module")
+def art2():
+    return ingest_file(R2)
+
+
 def _hex(rgb):
     return "#{:02x}{:02x}{:02x}".format(*rgb)
 
 
-def test_ingest_matches_committed_artifact(art):
-    """The committed artifact is exactly what ingest emits from the committed
-    DXF — the TS side parses the same file, pinning both mirrors to one shape."""
+def test_ingest_matches_committed_artifact(art, art2):
+    """The committed artifacts are exactly what ingest emits from the committed
+    DXFs — the TS side parses the same files, pinning both mirrors to one shape.
+    Both revisions are committed: the view partition and the revision delta are
+    read on the TS side, which does not run this pipeline."""
     assert art == json.loads(COMMITTED.read_text(encoding="utf-8"))
+    assert art2 == json.loads(COMMITTED_R2.read_text(encoding="utf-8"))
 
 
 def test_sanity_number(art):
     """§12: the pinned reference counts. A lower count after a converter change
-    means stale pipeline code — re-earn these numbers deliberately."""
-    assert art["counters"]["original"] == 34
-    assert art["counters"]["derived"] == 48
+    means stale pipeline code — re-earn these numbers deliberately. Re-pinned
+    in ticket 05 when the fixture grew from one view to a four-view sheet
+    (34/48 → 59/49); the drawing changed, not the converter."""
+    assert art["counters"]["original"] == 59
+    assert art["counters"]["derived"] == 49
     assert art["counters"]["explode_truncated"] is False
     assert art["counters"]["lost_by_type"] == {}
     assert art["counters"]["unsupported_by_type"] == {"POINT": 4}
@@ -62,10 +74,14 @@ def test_extractor_invariant_src_partitions_the_graph(art):
 
 
 def test_block_internal_text_is_never_original(art):
-    """Richer paint can never invent elements out of block-internal labels (§3)."""
-    internal = [e for e in art["entities"] if e.get("text") in {"450X600", "8-20mmØ"}]
-    assert len(internal) == 18  # 9 columns × two nested labels — depth 2 reached
-    assert all(e["src"] is not None for e in internal)
+    """Richer paint can never invent elements out of block-internal labels (§3).
+    The schedule prints the very same strings as *original* cells, so the two
+    are told apart by `src` alone — never by what the text says."""
+    same_strings = [e for e in art["entities"] if e.get("text") in {"450X600", "8-20mmØ"}]
+    paint = [e for e in same_strings if e["src"] is not None]
+    cells = [e for e in same_strings if e["src"] is None]
+    assert len(paint) == 18  # 9 columns × two nested labels — depth 2 reached
+    assert sorted(e["text"] for e in cells) == ["450X600", "8-20mmØ"]  # the schedule row
 
 
 def test_block_attributes_collect_off_the_insert(art):
@@ -92,9 +108,12 @@ def test_dimension_text_emits_as_derived(art):
 
 
 def test_world_transform_applies_to_derived_geometry(art):
-    """The bubble inserted at 1.5× yields a world-space circle of r=375."""
-    radii = sorted({e["r"] for e in art["entities"] if e["t"] == "CIRCLE"})
+    """The bubble inserted at 1.5× yields a world-space circle of r=375. Only
+    bubble paint is derived; the detail's pile circles are drawn originals."""
+    radii = sorted({e["r"] for e in art["entities"] if e["t"] == "CIRCLE" and e["src"]})
     assert radii == [250.0, 375.0]
+    originals = sorted({e["r"] for e in art["entities"] if e["t"] == "CIRCLE" and not e["src"]})
+    assert originals == [600.0]
 
 
 def test_colour_resolves_by_layer_zero_rule(art):
@@ -102,16 +121,22 @@ def test_colour_resolves_by_layer_zero_rule(art):
     colour — the rects go COLUMN-yellow, the bubbles GRID-grey."""
     rects = [e for e in art["entities"] if e["t"] == "LWPOLYLINE" and e["src"] and e["closed"]]
     assert {e["color"] for e in rects if e["area"] == 270000.0} == {_hex(aci2rgb(2))}
-    circles = [e for e in art["entities"] if e["t"] == "CIRCLE"]
-    assert {e["color"] for e in circles} == {_hex(aci2rgb(8))}
-    grid_lines = [e for e in art["entities"] if e["t"] == "LINE" and e["src"] is None]
+    bubbles = [e for e in art["entities"] if e["t"] == "CIRCLE" and e["src"] is not None]
+    assert {e["color"] for e in bubbles} == {_hex(aci2rgb(8))}
+    grid_lines = [
+        e for e in art["entities"] if e["t"] == "LINE" and e["src"] is None and e["layer"] == "GRID"
+    ]
     assert {e["color"] for e in grid_lines} == {_hex(aci2rgb(8))}
 
 
 def test_closed_paths_carry_shoelace_area(art):
     """§4: the slab outline (one bulged corner) flattens under the point cap
     and carries its area; open paths carry null."""
-    (slab,) = [e for e in art["entities"] if e["t"] == "LWPOLYLINE" and e["src"] is None]
+    # Two originals now — the slab and the detail's pile-cap outline; the slab
+    # is the larger by an order of magnitude.
+    outlines = [e for e in art["entities"] if e["t"] == "LWPOLYLINE" and e["src"] is None]
+    assert len(outlines) == 2
+    slab = max(outlines, key=lambda e: e["area"])
     assert slab["closed"] is True
     assert 2 < len(slab["pts"]) <= 256
     # 11000×10000 rect plus the outward-bowed east edge (bulge 0.5 over a
@@ -119,18 +144,19 @@ def test_closed_paths_carry_shoelace_area(art):
     assert 1.1e8 < slab["area"] < 1.35e8
 
 
-def test_truncated_budget_reports_per_type_losses():
+def test_truncated_budget_reports_per_type_losses(art):
     """§3: a cap that trips must say so — flag plus per-type loss counters,
     never one global scalar."""
-    art = ingest_file(R1, derived_budget=3)
-    counters = art["counters"]
+    truncated = ingest_file(R1, derived_budget=3)
+    counters = truncated["counters"]
     assert counters["explode_truncated"] is True
     assert counters["derived"] == 3
-    assert len(art["entities"]) == counters["original"] + 3
+    assert len(truncated["entities"]) == counters["original"] + 3
     lost = counters["lost_by_type"]
     assert lost and all(isinstance(k, str) and v > 0 for k, v in lost.items())
-    assert sum(lost.values()) == 48 - 3  # every dropped entity is accounted for
-    validate(art)
+    # Every dropped entity is accounted for, against the untruncated run.
+    assert sum(lost.values()) == art["counters"]["derived"] - 3
+    validate(truncated)
 
 
 def test_truncated_depth_counts_unexpanded_inserts():
@@ -230,15 +256,19 @@ def test_area_survives_point_cap_decimation():
     assert abs(circle["area"] - true_area) / true_area < 1e-3
 
 
-def test_revision_pair_ingests_and_differs(art):
-    """§12: the revision pair is the identity-stability test bed (ticket 05);
-    here it must ingest cleanly and actually differ from rev 1."""
-    art2 = ingest_file(R2)
+def test_revision_pair_ingests_and_differs(art, art2):
+    """§12: the revision pair is the identity-stability test bed (tickets
+    07–08); here it must ingest cleanly and differ from rev 1 in the columns
+    and nothing else — the schedule, the detail and the untyped sketch are
+    untouched, so a delta that reports them is reporting noise."""
     validate(art2)
     assert art2["counters"]["original"] == art["counters"]["original"]  # -1 column +1 column
-    marks1 = sorted(e["text"] for e in art["entities"] if e["t"] == "TEXT" and e["src"] is None)
-    marks2 = sorted(e["text"] for e in art2["entities"] if e["t"] == "TEXT" and e["src"] is None)
-    assert marks1 == ["C1", "C1", "C1", "C1", "C2", "C2", "C2", "C2", "C3"]
-    assert marks2 == ["C1", "C1", "C1", "C2", "C2", "C2", "C2", "C3", "C4"]
+
+    def texts(a):
+        return Counter(e["text"] for e in a["entities"] if e["t"] == "TEXT" and e["src"] is None)
+
+    t1, t2 = texts(art), texts(art2)
+    assert t2 - t1 == Counter({"C4": 1})  # the added cantilever column
+    assert t1 - t2 == Counter({"C1": 1})  # the deleted corner column
     moved = [e for e in art2["entities"] if e["t"] == "INSERT" and e["p"] == [10300.0, 9000.0]]
     assert len(moved) == 1  # the nudged column

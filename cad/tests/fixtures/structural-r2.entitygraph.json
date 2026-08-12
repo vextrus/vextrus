@@ -2,8 +2,8 @@
   "artifact": "vextrus.entitygraph",
   "version": 1,
   "source": {
-    "filename": "structural-r1.dxf",
-    "sha256": "4a2d5f8868b49ceb314b700a33b95993a062ec0df3fa5f53da52d4d5fb059a82"
+    "filename": "structural-r2.dxf",
+    "sha256": "1c84beb81bf26e5901ea17364b31ab0f6bfebfd4dbe5eed3c44b752b8855481e"
   },
   "units": {
     "insunits": 4,
@@ -530,7 +530,7 @@
       "src": null,
       "name": "COL_450X600",
       "p": [
-        0.0,
+        10300.0,
         9000.0
       ],
       "attrs": []
@@ -543,23 +543,23 @@
       "src": "BF",
       "pts": [
         [
-          -225.0,
+          10075.0,
           8700.0
         ],
         [
-          225.0,
+          10525.0,
           8700.0
         ],
         [
-          225.0,
+          10525.0,
           9300.0
         ],
         [
-          -225.0,
+          10075.0,
           9300.0
         ],
         [
-          -225.0,
+          10075.0,
           8700.0
         ]
       ],
@@ -574,7 +574,7 @@
       "src": "BF",
       "text": "450X600",
       "p": [
-        -200.0,
+        10100.0,
         9320.0
       ],
       "height": 100.0,
@@ -587,11 +587,11 @@
       "color": "#ffff00",
       "src": "BF",
       "p1": [
-        0.0,
+        10300.0,
         9000.0
       ],
       "p2": [
-        150.0,
+        10450.0,
         9150.0
       ]
     },
@@ -603,7 +603,7 @@
       "src": "BF",
       "text": "8-20mm\u00d8",
       "p": [
-        180.0,
+        10480.0,
         9150.0
       ],
       "height": 80.0,
@@ -617,7 +617,7 @@
       "src": null,
       "text": "C1",
       "p": [
-        300.0,
+        10600.0,
         9350.0
       ],
       "height": 150.0,
@@ -625,107 +625,6 @@
     },
     {
       "h": "C2",
-      "t": "INSERT",
-      "layer": "COLUMN",
-      "color": "#ffff00",
-      "src": null,
-      "name": "COL_450X600",
-      "p": [
-        10000.0,
-        9000.0
-      ],
-      "attrs": []
-    },
-    {
-      "h": null,
-      "t": "LWPOLYLINE",
-      "layer": "0",
-      "color": "#ffff00",
-      "src": "C2",
-      "pts": [
-        [
-          9775.0,
-          8700.0
-        ],
-        [
-          10225.0,
-          8700.0
-        ],
-        [
-          10225.0,
-          9300.0
-        ],
-        [
-          9775.0,
-          9300.0
-        ],
-        [
-          9775.0,
-          8700.0
-        ]
-      ],
-      "closed": true,
-      "area": 270000.0
-    },
-    {
-      "h": null,
-      "t": "TEXT",
-      "layer": "0",
-      "color": "#ffff00",
-      "src": "C2",
-      "text": "450X600",
-      "p": [
-        9800.0,
-        9320.0
-      ],
-      "height": 100.0,
-      "rot": 0.0
-    },
-    {
-      "h": null,
-      "t": "LINE",
-      "layer": "0",
-      "color": "#ffff00",
-      "src": "C2",
-      "p1": [
-        10000.0,
-        9000.0
-      ],
-      "p2": [
-        10150.0,
-        9150.0
-      ]
-    },
-    {
-      "h": null,
-      "t": "TEXT",
-      "layer": "0",
-      "color": "#ffff00",
-      "src": "C2",
-      "text": "8-20mm\u00d8",
-      "p": [
-        10180.0,
-        9150.0
-      ],
-      "height": 80.0,
-      "rot": 0.0
-    },
-    {
-      "h": "C4",
-      "t": "TEXT",
-      "layer": "ANNO",
-      "color": "#ffffff",
-      "src": null,
-      "text": "C1",
-      "p": [
-        10300.0,
-        9350.0
-      ],
-      "height": 150.0,
-      "rot": 0.0
-    },
-    {
-      "h": "C5",
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
@@ -742,7 +641,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C5",
+      "src": "C2",
       "pts": [
         [
           4775.0,
@@ -773,7 +672,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C5",
+      "src": "C2",
       "text": "450X600",
       "p": [
         4800.0,
@@ -787,7 +686,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C5",
+      "src": "C2",
       "p1": [
         5000.0,
         0.0
@@ -802,7 +701,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C5",
+      "src": "C2",
       "text": "8-20mm\u00d8",
       "p": [
         5180.0,
@@ -812,7 +711,7 @@
       "rot": 0.0
     },
     {
-      "h": "C7",
+      "h": "C4",
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
@@ -826,7 +725,7 @@
       "rot": 0.0
     },
     {
-      "h": "C8",
+      "h": "C5",
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
@@ -843,7 +742,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C8",
+      "src": "C5",
       "pts": [
         [
           -225.0,
@@ -874,7 +773,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C8",
+      "src": "C5",
       "text": "450X600",
       "p": [
         -200.0,
@@ -888,7 +787,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C8",
+      "src": "C5",
       "p1": [
         0.0,
         4500.0
@@ -903,7 +802,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "C8",
+      "src": "C5",
       "text": "8-20mm\u00d8",
       "p": [
         180.0,
@@ -913,7 +812,7 @@
       "rot": 0.0
     },
     {
-      "h": "CA",
+      "h": "C7",
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
@@ -927,7 +826,7 @@
       "rot": 0.0
     },
     {
-      "h": "CB",
+      "h": "C8",
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
@@ -944,7 +843,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CB",
+      "src": "C8",
       "pts": [
         [
           9775.0,
@@ -975,7 +874,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CB",
+      "src": "C8",
       "text": "450X600",
       "p": [
         9800.0,
@@ -989,7 +888,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CB",
+      "src": "C8",
       "p1": [
         10000.0,
         4500.0
@@ -1004,7 +903,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CB",
+      "src": "C8",
       "text": "8-20mm\u00d8",
       "p": [
         10180.0,
@@ -1014,7 +913,7 @@
       "rot": 0.0
     },
     {
-      "h": "CD",
+      "h": "CA",
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
@@ -1028,7 +927,7 @@
       "rot": 0.0
     },
     {
-      "h": "CE",
+      "h": "CB",
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
@@ -1045,7 +944,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CE",
+      "src": "CB",
       "pts": [
         [
           4775.0,
@@ -1076,7 +975,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CE",
+      "src": "CB",
       "text": "450X600",
       "p": [
         4800.0,
@@ -1090,7 +989,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CE",
+      "src": "CB",
       "p1": [
         5000.0,
         9000.0
@@ -1105,7 +1004,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "CE",
+      "src": "CB",
       "text": "8-20mm\u00d8",
       "p": [
         5180.0,
@@ -1115,7 +1014,7 @@
       "rot": 0.0
     },
     {
-      "h": "D0",
+      "h": "CD",
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
@@ -1129,7 +1028,7 @@
       "rot": 0.0
     },
     {
-      "h": "D1",
+      "h": "CE",
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
@@ -1146,7 +1045,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "D1",
+      "src": "CE",
       "pts": [
         [
           4775.0,
@@ -1177,7 +1076,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "D1",
+      "src": "CE",
       "text": "450X600",
       "p": [
         4800.0,
@@ -1191,7 +1090,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
-      "src": "D1",
+      "src": "CE",
       "p1": [
         5000.0,
         4500.0
@@ -1206,11 +1105,112 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
-      "src": "D1",
+      "src": "CE",
       "text": "8-20mm\u00d8",
       "p": [
         5180.0,
         4650.0
+      ],
+      "height": 80.0,
+      "rot": 0.0
+    },
+    {
+      "h": "D0",
+      "t": "TEXT",
+      "layer": "ANNO",
+      "color": "#ffffff",
+      "src": null,
+      "text": "C3",
+      "p": [
+        5300.0,
+        4850.0
+      ],
+      "height": 150.0,
+      "rot": 0.0
+    },
+    {
+      "h": "D1",
+      "t": "INSERT",
+      "layer": "COLUMN",
+      "color": "#ffff00",
+      "src": null,
+      "name": "COL_450X600",
+      "p": [
+        12000.0,
+        9000.0
+      ],
+      "attrs": []
+    },
+    {
+      "h": null,
+      "t": "LWPOLYLINE",
+      "layer": "0",
+      "color": "#ffff00",
+      "src": "D1",
+      "pts": [
+        [
+          11775.0,
+          8700.0
+        ],
+        [
+          12225.0,
+          8700.0
+        ],
+        [
+          12225.0,
+          9300.0
+        ],
+        [
+          11775.0,
+          9300.0
+        ],
+        [
+          11775.0,
+          8700.0
+        ]
+      ],
+      "closed": true,
+      "area": 270000.0
+    },
+    {
+      "h": null,
+      "t": "TEXT",
+      "layer": "0",
+      "color": "#ffff00",
+      "src": "D1",
+      "text": "450X600",
+      "p": [
+        11800.0,
+        9320.0
+      ],
+      "height": 100.0,
+      "rot": 0.0
+    },
+    {
+      "h": null,
+      "t": "LINE",
+      "layer": "0",
+      "color": "#ffff00",
+      "src": "D1",
+      "p1": [
+        12000.0,
+        9000.0
+      ],
+      "p2": [
+        12150.0,
+        9150.0
+      ]
+    },
+    {
+      "h": null,
+      "t": "TEXT",
+      "layer": "0",
+      "color": "#ffff00",
+      "src": "D1",
+      "text": "8-20mm\u00d8",
+      "p": [
+        12180.0,
+        9150.0
       ],
       "height": 80.0,
       "rot": 0.0
@@ -1221,10 +1221,10 @@
       "layer": "ANNO",
       "color": "#ffffff",
       "src": null,
-      "text": "C3",
+      "text": "C4",
       "p": [
-        5300.0,
-        4850.0
+        12300.0,
+        9350.0
       ],
       "height": 150.0,
       "rot": 0.0
@@ -1888,7 +1888,7 @@
       "layer": "TITLE",
       "color": "#ffffff",
       "src": null,
-      "text": "TYPICAL FLOOR PLAN (R1)",
+      "text": "TYPICAL FLOOR PLAN (R2)",
       "p": [
         3000.0,
         -2500.0

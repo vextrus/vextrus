@@ -1,12 +1,30 @@
 """Synthetic structural fixtures — regenerable, byte-stable (cad-ingestion.md §12).
 
-Rev 1 is a small 3×3-grid floor plan: grid lines with bubble blocks (attribute
-labels), nine column block references (block-internal size text and a nested
-rebar-tag block — the extractor-invariant test bed), column marks, a slab
-outline with a bulged corner, an arc, a stray POINT (exercises the unsupported
-counter), one rendered linear dimension, and a title. Rev 2 is its revision
-pair: one column nudged, one deleted, one added, retitled — the
-identity-stability fixture for ticket 05.
+Rev 1 is a **sheet**, not a single drawing: four captioned views laid out with
+empty strips between them, the way a real structural sheet is drafted.
+
+- `TYPICAL FLOOR PLAN` — a 3×3-grid floor plan: grid lines with bubble blocks
+  (attribute labels), nine column block references (block-internal size text
+  and a nested rebar-tag block — the extractor-invariant test bed), column
+  marks, a slab outline with a bulged corner, an arc, a stray POINT (exercises
+  the unsupported counter), one rendered linear dimension.
+- `COLUMN SCHEDULE` — a header row and three mark rows. Its cells repeat the
+  plan's mark strings (`C1`) and the block-internal size strings (`450X600`):
+  a partition that leaks schedule text into the plan invents phantom columns,
+  which is over-measurement — the §7 view law's whole point.
+- `PLAN OF PILE CAP PC-1` — a member-scoped plan: §7 names it a *detail*,
+  never countable, though its two pile circles read exactly like countable
+  members. It also carries a grid bubble, so ticket 06 can prove a detail's
+  grid stamp never shifts an axis (§8) without re-pinning these fixtures.
+- `SK-04 REF. AS-BUILT` — a caption the grammar cannot classify: its view is
+  honestly untyped, never guessed.
+
+Plus one stray line parked far outside every view (the xref junk real drawings
+carry) — it lands in `unassigned`, named, never dropped.
+
+Rev 2 is rev 1's revision pair: one column nudged, one deleted, one added,
+retitled; every other view is untouched, so a revision delta reads as columns
+and nothing else. The identity-stability fixture for tickets 07–08.
 
 Regenerate (byte-identical while ezdxf stays pinned):
 
@@ -56,6 +74,18 @@ MARKS = {
     ("B", "3"): "C2",
     ("B", "2"): "C3",
 }
+
+# The schedule view: header row, then one row per mark family. The size and
+# rebar strings are deliberately the same strings the column block paints
+# internally — original schedule text and derived block paint must stay
+# distinguishable by `src` alone (§3), never by their content.
+SCHEDULE_COLS = (20000.0, 23500.0, 27000.0)
+SCHEDULE_ROWS = (
+    (6000.0, ("MARK", "SIZE", "MAIN BAR")),
+    (4500.0, ("C1", "450X600", "8-20mmØ")),
+    (3300.0, ("C2", "375X450", "6-20mmØ")),
+    (2100.0, ("C3", "300X375", "6-16mmØ")),
+)
 
 
 def build(rev: int) -> Drawing:
@@ -134,10 +164,45 @@ def build(rev: int) -> Drawing:
         override={"dimtxt": 200, "dimlfac": 1.0, "dimasz": 150, "dimexo": 50, "dimexe": 80},
     )
     dim.render()
-    title = msp.add_mtext(
-        f"TYPICAL FLOOR PLAN (R{rev})", dxfattribs={"layer": "TITLE", "char_height": 400}
+    def caption(text: str, at: tuple[float, float]) -> None:
+        """A view caption: the sheet's tallest text, set below its view — the
+        BD drafting convention the partition reads (never a layer name)."""
+        msp.add_mtext(text, dxfattribs={"layer": "TITLE", "char_height": 400}).set_location(at)
+
+    def anno(text: str, at: tuple[float, float]) -> None:
+        msp.add_text(text, dxfattribs={"layer": "ANNO", "height": 150}).set_placement(at)
+
+    caption(f"TYPICAL FLOOR PLAN (R{rev})", (3000, -2500))
+
+    # ── The schedule view — type evidence only; it may never yield instances.
+    for y, row in SCHEDULE_ROWS:
+        for x, cell in zip(SCHEDULE_COLS, row, strict=True):
+            anno(cell, (x, y))
+    caption("COLUMN SCHEDULE", (20000, 100))
+
+    # ── The member-scoped detail — "PLAN OF <subject>" is a detail (§7), even
+    #    though its pile circles look exactly like countable members.
+    msp.add_lwpolyline(
+        [(20500, 14000), (26500, 14000), (26500, 19000), (20500, 19000)],
+        close=True,
+        dxfattribs={"layer": "SLAB"},
     )
-    title.set_location((3000, -2500))
+    for x in (22000.0, 25000.0):
+        msp.add_circle((x, 16500), 600, dxfattribs={"layer": "COLUMN"})
+    anno("PC-1", (23200, 16800))
+    detail_bubble = msp.add_blockref("GRID_BUBBLE", (20500, 19800), dxfattribs={"layer": "GRID"})
+    detail_bubble.add_auto_attribs({"LABEL": "A"})  # a detail's grid stamp (§8, ticket 06)
+    caption("PLAN OF PILE CAP PC-1", (20000, 12500))
+
+    # ── A caption no grammar classifies: the view is honestly untyped.
+    msp.add_line((-14000, 0), (-9000, 0), dxfattribs={"layer": "ANNO"})
+    msp.add_line((-14000, 0), (-14000, 4000), dxfattribs={"layer": "ANNO"})
+    msp.add_line((-14000, 4000), (-9000, 0), dxfattribs={"layer": "ANNO"})
+    anno("XX", (-12000, 1500))
+    caption("SK-04 REF. AS-BUILT", (-14000, -2000))
+
+    # Xref junk parked far outside every view — unassigned, named, never dropped.
+    msp.add_line((60000, 60000), (60800, 60300), dxfattribs={"layer": "GRID"})
 
     return doc
 

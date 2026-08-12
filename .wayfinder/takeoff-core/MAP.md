@@ -53,9 +53,36 @@ a named reason, and `pnpm verify` stays under 60s.
   that could still hang (the grandchild python holds the pipe), a one-to-many status join, and a
   claim failure that killed the worker — all fixed in-ticket. verify 6.3s, test:db 33.
 
+- [05 — The view partition](tickets/05-view-partition.md) — the fixture was extended to a
+  four-view **sheet** (plan + schedule + member-scoped detail + an unclassifiable caption +
+  stray junk), re-pinning the sanity number to 59/49/`{POINT: 4}` with both revisions'
+  artifacts committed; six python assertions tightened, none weakened. `mayYieldInstances`
+  admits `layout_plan` alone (narrower than legacy's stair-plan analogue — a stair plan repeats
+  members the floor plan places), proven the single decision site by a scan that is itself
+  tested. The partition is coverage-band with the gap keyed to **caption** height, not body text
+  (keyed to body text a schedule shatters into columns); measured stability window 5–16.5, default
+  12; the caption-reach fold was deleted once it became unreachable. The asserted safety property:
+  across a 10× tuning sweep the layout plan never *gains* an entity — mistuning under-measures and
+  says so. verify 8.2s.
+
+- **05 split (graph defect, not a decision).** "Views, grid, and first identities" bundled four
+  session-sized units — view partition, grid backbone, placement + the register door, the
+  revision delta — each comparable to ticket 04, which alone took a migration and a subprocess
+  seam. Ticket 02's own header already deferred "the door, pairing, ordinals" into it. Split into
+  [05 view partition](tickets/05-view-partition.md) → [06 grid](tickets/06-grid-backbone.md) →
+  [07 placement and first identities](tickets/07-placement-and-first-identities.md) →
+  [08 the revision delta](tickets/08-the-revision-delta.md), chained. Two decisions surfaced by
+  reading the fixtures against the domain law and written into the tickets that must rule them:
+  the fixture set carries **one** view, so §7's may-yield-instances predicate would be asserted
+  against nothing (05); and a grid bubble's circle is **derived paint** in every fixture — only
+  the INSERT and its attributes are original — so §8's content signature collides with §3's
+  extractor invariant (06).
+
 ## Not yet specified
 
-- Scale-family affirmation UX (fail-closed per region) — chart after 05 lands.
+- Scale-family affirmation UX (fail-closed per region). 05 showed this stage needs no affirmed
+  scale at all — the partition reads only ratios of the drawing's own text heights — so the
+  question belongs to measurement, not to ingestion. Chart it when a quantity needs a length.
 - Quantity fan-out and the pricing seam — a separate effort once the register holds objects.
 - Object storage for artifacts (the filesystem root is ticket 04's stated interim) — a named
   need once a second process needs the tree.

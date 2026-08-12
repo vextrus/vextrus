@@ -16,3 +16,18 @@ export {
   type UploadInput,
 } from "./ingestion";
 export { CAD_TIMEOUT_MS, runCadIngest } from "./cad";
+export {
+  DEFAULT_TUNING,
+  classifyCaption,
+  mayYieldInstances,
+  partitionViews,
+  viewReasonCodes,
+  viewTypes,
+  type CaptionClass,
+  type View,
+  type ViewPartition,
+  type ViewReason,
+  type ViewReasonCode,
+  type ViewTuning,
+  type ViewType,
+} from "./views";
