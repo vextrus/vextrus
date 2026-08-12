@@ -16,18 +16,15 @@ const fixtures = path.resolve(import.meta.dirname, "../../../../cad/tests/fixtur
 let workDir: string;
 
 /**
- * The suite's bound must sit ABOVE the seam's own, never below it. Below it,
- * the seam is allowed 120s while the runner kills it at vitest's default 5s —
- * so a slow machine produces "Test timed out in 5000ms", an anonymous message
- * that names neither a cause nor a repair, and `pnpm verify` reports that the
- * tree's contract does not hold about a machine whose only fault was a cold
- * page cache. Above it, the seam's own timer always wins and a genuine hang
- * leaves by name ("cad ingest failed: timed out after 120000ms").
+ * Above the config's general net (vitest.config.ts), for a reason particular to
+ * this suite: it is the only one whose seam declares a tolerance of its own.
+ * The bound must sit ABOVE CAD_TIMEOUT_MS, never below it. Below it, the seam
+ * is allowed 120s while the runner kills it first, and a hung pipeline is
+ * reported as "Test timed out", an anonymous message naming neither cause nor
+ * repair. Above it, the seam's timer always fires first and the refusal arrives
+ * by name — "cad ingest failed: timed out after 120000ms".
  *
- * Measured on a container minutes from boot (harness ticket 09): 5006ms cold
- * against 1.06s warm, the first `uv run` paying for the whole venv — the third
- * time that cost has reddened the parity gate. Nothing in this suite asserts
- * latency; the test that does states its own 1ms and is unaffected.
+ * Derived from the seam rather than picked, so the two cannot drift apart.
  */
 const SUITE_TIMEOUT_MS = CAD_TIMEOUT_MS + 30_000;
 
