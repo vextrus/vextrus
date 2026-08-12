@@ -69,11 +69,18 @@ timing budget, and does exceeding it fail a run or merely report?
 > **Corrected 2026-08-12 by [ticket 15](15-secrets-and-git-identity.md).** This sentence read
 > *"CI exists"*, which is what a ticket that decides a thing says when it forgets it did not build
 > it. Ticket 15 went looking for the workflow to explain why its PR had no checks and found
-> `.github/` absent from the tree and from `main`. **Nothing below is built.** The build was handed
-> to `/to-spec` and has not been done, so no check runs on any PR, the required check is a plan,
-> and the compose-path exercise named as this ruling's limitation has never actually happened. The
-> supersession clause was already written conditionally — *"takes effect when the check exists"* —
-> so ADR-0010 and its amendment need no correction; only this claim did.
+> `.github/` absent from the tree and from `main` — the build had been handed to `/to-spec` and
+> never done. **Now built** (`.github/workflows/ci.yml`): everything below except the `db:replay`
+> step, which is held with its reason in the file, because the drill is red at head on ticket 10's
+> unrepaired `0010`. **It goes green on a hosted runner — 77s, `parity: ok in 46s`, all four legs
+> run.** The first run failed in 16s on a **provisioner** defect: `corepack enable` was `|| true`,
+> and a runner is the first *non-root* machine this provisioner has met, so the pnpm shim never
+> landed, the cause went to `/dev/null`, and the script died two lines later on
+> `pnpm: command not found`. That is this ruling's own prediction on run one — *if `provision.sh`
+> cannot stand up a runner, that is a provisioner defect and the right place to find it is here* —
+> and it is what a workflow with its own `setup-node` would have hidden. The supersession clause
+> was already written conditionally — *"takes effect when the check exists"* — so ADR-0010 and its
+> amendment need no correction; only this claim did.
 
 ### The ruling
 

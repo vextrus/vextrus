@@ -207,12 +207,15 @@ Two axes, deliberately one map because they collide at every step:
   `conduct.mjs` refusing in 1.1s naming the repair; repair `parity: ok in 101s`; fit line **1.4s**.
 
 - 2026-08-12 — [CI — the missing trigger](tickets/13-ci-the-missing-trigger.md) — **CI is ruled:
-  GitHub Actions, running the provisioner rather than a recipe of its own.** *Specified, not built
-  — corrected 2026-08-12 by ticket 15, which went looking for the workflow this entry implied and
-  found `.github/` absent from the tree and from `main`. The build was handed to `/to-spec` and has
-  not been done, so **no check runs on any PR today** and every consequence below — the required
-  check, ADR-0010's amendment, the compose-path exercise — is a decision waiting on a file.* One
-  job, two commands: checkout at `fetch-depth: 0` → `bash scripts/provision.sh` (whose last act *is*
+  GitHub Actions, running the provisioner rather than a recipe of its own.** *This entry read as
+  though the workflow existed; it did not. Corrected 2026-08-12 by ticket 15, which went looking
+  for it and found `.github/` absent from the tree and from `main`, then **built it** —
+  `.github/workflows/ci.yml`, one job, `provision.sh` only, the `db:replay` step held (debt below).
+  **It goes green on a hosted runner: 77s, `parity: ok in 46s`, all four legs run.** The first run
+  failed in 16s and paid for itself immediately: `corepack enable` was `|| true`, and a runner is
+  the first **non-root** machine this provisioner has met, so the shim never landed, the cause went
+  to `/dev/null`, and the script died two lines later on `pnpm: command not found` — a provisioner
+  defect, exactly what this ruling said CI was for.* One job, two commands: checkout at `fetch-depth: 0` → `bash scripts/provision.sh` (whose last act *is*
   `parity.sh`, so this is checkup | verify | test:db | dev in full) → `pnpm db:replay`
   unconditionally, its no-new-migration skip pushed into the script. The workflow holds **no
   project knowledge** — no setup recipe, no service block, no stage list, no path filter — so it
@@ -291,9 +294,12 @@ Two axes, deliberately one map because they collide at every step:
   which ships a Docker daemon, so every CI run takes the **compose** path — the one the Windows
   workstation already covers. The native-cluster branch runs on every cloud session and is checked
   by nobody but the session that happens to be in it. Forcing native by hiding the daemon was put
-  and rejected: it feeds ticket 05's detector a false premise. The question is sharp; every route
-  to answering it waits on a measurement not yet taken — whether `provision.sh` goes green on a
-  hosted runner at all — so it graduates once the workflow lands.
+  and rejected: it feeds ticket 05's detector a false premise. **The measurement this waited on is
+  now taken** (2026-08-12): `provision.sh` goes green on a GitHub-hosted runner — 77s, compose
+  path, `parity: ok in 46s`, all four legs — so the precondition is cleared and this is ticketable
+  whenever someone picks it up. What the run also showed is that a *runner is not the sandbox*: it
+  is the first non-root machine the provisioner has met, and it found a real defect there, which
+  is the argument that a second unattended machine shape is worth having rather than a formality.
 
 - **`db:replay` has no CI invoker while it is red at head.** The workflow ticket 13 specified now
   exists, but with one of its two steps held: the drill fails on 0010's
