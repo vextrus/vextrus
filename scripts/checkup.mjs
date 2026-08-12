@@ -181,6 +181,72 @@ if (missing.length > 0) {
             `${answering.length > 1 ? ` · answering on ${answering.join(" and ")}` : ""}` +
             `${owner ? ` · ${owner}` : ""}`,
         );
+
+        // The equivalence set. provision.sh puts Postgres on 5544 two ways —
+        // compose when a Docker daemon answers, a native cluster when it does
+        // not — and the cloud has taken the native branch on every image
+        // measured so far while a dev machine takes compose on every session.
+        // Both survive; this is what makes them the same database as far as
+        // anything above them can tell (.wayfinder/harness ticket 05).
+        //
+        // Declared here and nowhere else: a second statement of the profile is
+        // a second thing to disagree with.
+        //
+        // Gating, because a mismatch means the two machines genuinely differ,
+        // which is the one condition the two-path arrangement exists to avoid.
+        //
+        // Its own try: by here the connection is proven, so a failure in this
+        // query is a query fault and must not be reported as the outer catch's
+        // "connect failed", which would send a session hunting credentials.
+        try {
+          const [shape] = await sql`
+            SELECT split_part(current_setting('server_version'), '.', 1)::int AS major,
+                   current_setting('server_encoding') AS encoding,
+                   d.datcollate AS collate,
+                   d.datctype   AS ctype,
+                   (SELECT coalesce(string_agg(extname, ', ' ORDER BY extname), '')
+                      FROM pg_extension
+                     WHERE extname <> 'plpgsql') AS extra_extensions
+              FROM pg_database d
+             WHERE d.datname = current_database()`;
+
+          // Major only. The patch comes from whatever apt or the image ships
+          // and is not ours to pin; the major is what migrations are written
+          // for.
+          const WANT_MAJOR = 16;
+          // C.UTF-8 on both paths, not en_US.utf8: byte order is stable across
+          // libc upgrades, where glibc's en_US collation changed at 2.28 and
+          // silently corrupted text indexes in the wild. A register whose law
+          // is deterministic identity must not sort by whichever libc the image
+          // happened to carry. Pinned at creation — compose.yaml's
+          // POSTGRES_INITDB_ARGS, and the native path's CREATE DATABASE ...
+          // TEMPLATE template0.
+          const WANT_LOCALE = "C.UTF-8";
+          const WANT_ENCODING = "UTF8";
+
+          const wrong = [];
+          if (shape.major !== WANT_MAJOR) wrong.push(`major ${shape.major}, want ${WANT_MAJOR}`);
+          if (shape.encoding !== WANT_ENCODING)
+            wrong.push(`encoding ${shape.encoding}, want ${WANT_ENCODING}`);
+          if (shape.collate !== WANT_LOCALE || shape.ctype !== WANT_LOCALE)
+            wrong.push(`locale ${shape.collate}/${shape.ctype}, want ${WANT_LOCALE}`);
+          // Nothing in db/migrations issues CREATE EXTENSION. An extension that
+          // appeared on one path and not the other is a divergence whether or
+          // not anything uses it yet, so the assertion is that the set is empty.
+          if (shape.extra_extensions)
+            wrong.push(`unexpected extensions: ${shape.extra_extensions}`);
+
+          report(
+            wrong.length === 0 ? OK : BROKEN,
+            "pg profile",
+            wrong.length === 0
+              ? `PostgreSQL ${shape.major} · ${shape.encoding} · ${shape.collate} · no extensions` +
+                " — compose and native agree"
+              : `${wrong.join(" · ")} — this machine's Postgres differs from the other path's`,
+          );
+        } catch (err) {
+          report(BROKEN, "pg profile", `could not read the profile: ${err.message}`);
+        }
       } catch (err) {
         // The socket answered but the session did not open: credentials or
         // grants, not a stopped server. Distinct finding, same verdict.

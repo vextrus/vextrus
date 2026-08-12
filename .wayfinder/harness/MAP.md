@@ -64,6 +64,18 @@ Two axes, deliberately one map because they collide at every step:
   four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
   open.
 
+- 2026-08-12 — [Two Postgres paths](tickets/05-two-postgres-paths.md) — **both survive**; the pin
+  failed its precondition (three sandbox observations: present, binary-no-daemon,
+  binary-no-daemon). The exerciser worry *inverted* — native runs every cloud session, compose
+  every local one. Equivalence is **five properties** gated by a new `pg profile` line in
+  `pnpm checkup`: major 16, UTF8, `C.UTF-8` collate/ctype, no extensions beyond `plpgsql`, plus
+  the roles line already there. The one real divergence was **locale** — native `C.UTF-8` vs the
+  image's `en_US.utf8` — now **pinned to `C.UTF-8` on both** (`POSTGRES_INITDB_ARGS`; native
+  `CREATE DATABASE ... TEMPLATE template0`), costing one `docker compose down -v` locally.
+  Collation turned out **inert today** (ordinals sort in JS; no SQL orders by text), which is why
+  it is pinned rather than watched. A `.dbspec.ts` test was rejected: checkup is about the
+  machine, tests are about the tree. verify green **51.2s**.
+
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
@@ -90,6 +102,17 @@ Two axes, deliberately one map because they collide at every step:
   Ticket 04 wired and proved every leg, but only on this already-provisioned machine; the cold
   path with the gate in place has never run, and the map ranks disposability first precisely
   because that is the path that validates the rest.
+  **Sharpened by ticket 05, which ran it: it does not.** The database legs all passed cold, but
+  `pnpm verify` failed on `cad.spec.ts > ingests the fixture into the artifact the pipeline
+  committed` at **5008ms against a 5000ms timeout** — first-`uv run`-in-a-cold-container cost,
+  **1.24s warm**. So the cold gate fails on a coin flip, and the question is now whether the cure
+  is a warm-up in `provision.sh`, a timeout that reflects a cold machine, or a parity check that
+  distinguishes "slow" from "broken".
+- Whether **JavaScript** sorting is as machine-stable as the database now is. `pairing.ts`
+  derives ordinals with `signature.localeCompare(...)` and no explicit locale, so the order
+  depends on the Node runtime's default ICU locale — the same parity hazard ticket 05 just
+  closed at the database layer, one layer above it, and this one is *not* inert: it is the
+  frozen-ordinal path itself.
 
 ## Out of scope
 
