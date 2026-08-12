@@ -62,7 +62,7 @@ What remains to decide:
 
 ## Resolution
 
-2026-08-12. `scripts/doctor.mjs`, run as **`pnpm run doctor`** — nine lines, six probes, one
+2026-08-12. `scripts/checkup.mjs`, run as **`pnpm checkup`** — nine lines, six probes, one
 boolean exit code.
 
 ### The ruling
@@ -173,13 +173,24 @@ Three conditions, each reverted:
 - **:3210 held** by a listener → `[note] port 3210  held — a dev server is a second writer`,
   exit **0** — notable is not broken, which is the Q1/Q2 ruling holding under test.
 
-### The name — `pnpm run doctor`, not `pnpm doctor`
+### The name — `pnpm checkup`
 
 **`doctor` is a pnpm built-in** ("checks for known common issues"). It shadows the package script
 and wins: `pnpm doctor` printed nothing and exited 0, which looks exactly like a script that ran
-and found everything fine. The bare form cannot be reclaimed, so the documented entry point is
-`pnpm run doctor`, and the shadowing is now itself a TRAPS entry — including in verify's pointer
-line, which said the shadowed form on its first outing.
+and found everything fine. The shadowing is now itself a TRAPS entry — it had already bitten
+verify's own pointer line, which named the shadowed form on its first outing.
+
+The bare command has to work — a two-word form is a form people get wrong, and this one fails
+*silently*, which is the exact failure mode the ticket exists to remove. So the name moved rather
+than the invocation: **`pnpm checkup`**, checked free against `pnpm checkup --help` before
+adoption (as were `diagnose`, `sitrep`, `health`). `scripts/doctor.mjs` → `scripts/checkup.mjs`;
+every reference in TRAPS, the map and verify's pointer moved with it. An intermediate ruling of
+`pnpm run doctor` was put and rejected on exactly that ground.
+
+One correction landed with the rename: the first commit's comment on `process.exitCode` blamed
+pipe-buffered truncation for the empty output. That diagnosis was wrong — the cause was the
+shadowing, found minutes later — and the comment had enshrined it in the source. `process.exitCode`
+is still right, for the ordinary reason; the false explanation is gone.
 
 ### TRAPS retired
 

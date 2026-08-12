@@ -37,7 +37,7 @@ Two axes, deliberately one map because they collide at every step:
   ADR-0007's <60s target; CI rejected because there is no CI to put it in.
 - 2026-08-12 — Charting: destination widened to two axes (parity + legibility); cloud parity's
   bar is verify + `test:db` + a dev server that serves, self-proven by the provisioner;
-  legibility converges on one `pnpm doctor` rather than scattered error text.
+  legibility converges on one workspace-check command rather than scattered error text.
 - 2026-08-12 — [The cold machine](tickets/02-the-cold-machine.md) — the cold path **works**:
   empty container to migrated in ~25s, and all three claimed legs pass on cloud hardware
   (verify 41.5s, `test:db` 46 tests in 9.0s, `next dev` serving 200 on :3210). The
@@ -46,9 +46,9 @@ Two axes, deliberately one map because they collide at every step:
   image's Node 22, not the installed Node 24 (engine pin violated by warning only, green on
   both), and the re-run re-downloads Node every time. Both handed to
   [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md).
-- 2026-08-12 — [`pnpm doctor`](tickets/03-pnpm-doctor.md) — **`pnpm run doctor`** (the bare form
-  hits pnpm's own built-in, which prints nothing and exits 0). Nine lines, each tracing to a trap
-  that bit; **the exit code is the provisioner's, the output is the session's** — fit-for-work
+- 2026-08-12 — [`pnpm doctor` — what the workspace must report about itself](tickets/03-pnpm-doctor.md)
+  — shipped as **`pnpm checkup`**: `doctor` is a pnpm built-in that shadows a package script of
+  that name, printing nothing and exiting 0. Nine lines, each tracing to a trap that bit; **the exit code is the provisioner's, the output is the session's** — fit-for-work
   means verify, `test:db` and dev can all run, so a stopped database is unfit. 2s/probe,
   **1.3s** healthy. Not a verify stage; verify's *failure* path gains one inert pointer line.
   Storage root and system Python cut, git identity deferred to the secrets ticket. TRAPS: cut 1,
@@ -66,12 +66,12 @@ Two axes, deliberately one map because they collide at every step:
   what credential a session pushes with. Sharpened by ticket 02: commits are ssh-signed
   (`commit.gpgsign=true`, `gpg.ssh.program=/tmp/code-sign`) with `user.signingkey` pointing at
   `/home/claude/.ssh/…`, a path that does not exist under `HOME=/root`. **Ticket 03 defers a
-  doctor line to this patch**: git identity earns one, but not before something sets the standard
+  checkup line to this patch**: git identity earns one, but not before something sets the standard
   it would assert.
-- Legibility past `pnpm run doctor`: dev-server logs a session can read without owning a
+- Legibility past `pnpm checkup`: dev-server logs a session can read without owning a
   background shell, and error text at the failure sites themselves — starting with
   `storageRoot()`, which ticket 03 ruled should own its own exists-and-writable check rather
-  than hand it to doctor.
+  than hand it to checkup.
 - Provisioning wall-clock as a target rather than a consequence — including what sandbox egress
   restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
   egress open throughout, so the restricted case is still unmeasured — and the re-run's Node

@@ -46,7 +46,7 @@ with a dated, observed cost — never speculatively.
 
 - **Drift presents as an application fault** (500 with an ORM stack trace). Fix:
   `pnpm db:migrate` — never hand-applied SQL, which creates state the drift checker cannot
-  see. `pnpm run doctor` reports drift unprompted, so there is no first command to recall.
+  see. `pnpm checkup` reports drift unprompted, so there is no first command to recall.
 - **RLS symptoms are silent**: empty result sets, blank screens, no error. Usually a code path
   outside `forTenant`/`runAsSystem`. The seam test (`pnpm test:db`) is the diagnosis tool.
 
@@ -54,7 +54,7 @@ with a dated, observed cost — never speculatively.
 
 - **A Docker binary is not a Docker daemon.** 2026-08-12, a cloud sandbox had `/usr/bin/docker`
   on PATH and no `/var/run/docker.sock` at all. Cloud Docker availability is not a constant
-  across images — `provision.sh` and `pnpm run doctor` both probe it every run and neither
+  across images — `provision.sh` and `pnpm checkup` both probe it every run and neither
   remembers the answer.
 - **The image's Node can outrank the one you installed.** The container puts `/opt/node22/bin`
   ahead of `/usr/local/bin` on PATH, and a session's shell is neither a login shell nor an
@@ -68,10 +68,11 @@ with a dated, observed cost — never speculatively.
 
 ## Verification
 
-- **The workspace command is `pnpm run doctor` — `pnpm doctor` is a pnpm built-in.** 2026-08-12,
-  ticket 03: pnpm 9's own `doctor` ("checks for known common issues") shadows the package script
-  and wins. It printed nothing at all and exited 0, so the shadowing looks exactly like a script
-  that ran and found everything fine. `pnpm run` is unambiguous; the bare form cannot be reclaimed.
+- **A pnpm built-in silently beats a package script of the same name.** 2026-08-12, ticket 03:
+  the workspace check was first called `doctor`, and pnpm 9 has its own `doctor` ("checks for
+  known common issues"). It won, printed nothing at all, and exited 0 — indistinguishable from a
+  script that ran and found everything fine. The command is now **`pnpm checkup`**; check a new
+  script name against `pnpm <name> --help` before adopting it.
 - **Only `pnpm verify` output is evidence.** It runs uncached by design; if a check was run any
   other way (IDE, partial command, memory of a prior run), it is a claim, not a result.
 - **Stack-dependent tests stay out of the verify lane** (`pnpm test:db`, Playwright). A live-

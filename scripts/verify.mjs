@@ -63,9 +63,7 @@ for (const stage of stages) {
     // that reports it names nothing about the machine. Inert by construction:
     // no probe, no daemon, no stage, and nothing on the green path — verify's
     // contract is unchanged (ADR-0007).
-    // `pnpm run doctor`, never `pnpm doctor`: the bare form hits pnpm's own
-    // built-in doctor, which prints nothing and exits 0 (docs/TRAPS.md).
-    console.error(`verify: if this looks like an environment fault, run pnpm run doctor`);
+    console.error(`verify: if this looks like an environment fault, run pnpm checkup`);
     process.exit(result.status ?? 1);
   }
   console.log(`verify: ${stage.name} ok (${secs}s)`);

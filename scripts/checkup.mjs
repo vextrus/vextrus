@@ -1,6 +1,11 @@
 #!/usr/bin/env node
 /**
- * `pnpm doctor` — what the workspace reports about itself.
+ * `pnpm checkup` — what the workspace reports about itself.
+ *
+ * Named `checkup` and not `doctor` because `pnpm doctor` is a pnpm built-in
+ * that shadows a package script of that name and wins, printing nothing and
+ * exiting 0 — indistinguishable from a check that ran and found everything
+ * fine. The bare command has to work, so the name had to move (docs/TRAPS.md).
  *
  * Pointed two directions on purpose. A *suspicious* session reads the output:
  * every line prints whatever its state, because the reason this command exists
@@ -13,7 +18,7 @@
  * idempotent by design.
  *
  * It is NOT a verify stage. Verify is the tree's contract and must not become
- * sensitive to daemons (ADR-0007, fail-closed); doctor is about the machine.
+ * sensitive to daemons (ADR-0007, fail-closed); checkup is about the machine.
  *
  * Every line traces to an entry in docs/TRAPS.md that actually bit. A line no
  * one needed is a line that will go stale, so the trap is cited beside it.
@@ -309,7 +314,7 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
   }
 }
 
-// pnpm: reported, gating on nothing. If `pnpm doctor` ran, pnpm exists, so
+// pnpm: reported, gating on nothing. If `pnpm checkup` ran, pnpm exists, so
 // absence is unreportable by construction, and a mismatch against
 // packageManager has never bitten.
 {
@@ -362,18 +367,16 @@ for (const { mark, label, detail } of lines) {
 const broken = lines.filter((l) => l.mark === BROKEN);
 const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
 console.log("");
-// process.exitCode, never process.exit(): stdout is a pipe when pnpm runs the
-// script rather than a TTY, and a pipe's writes are asynchronous — exiting
-// immediately after the final console.log truncates the whole report. Observed
-// exactly that: `node scripts/doctor.mjs` printed, `pnpm doctor` printed
-// nothing. Setting the code and falling off the end lets stdout flush.
+// process.exitCode rather than process.exit(): every probe has closed its
+// connections by here, so falling off the end is enough, and it cannot truncate
+// a buffered stdout the way exiting mid-flush can.
 if (broken.length === 0) {
-  console.log(`doctor: fit for work — verify, test:db and dev can all run (${elapsed}s)`);
+  console.log(`checkup: fit for work — verify, test:db and dev can all run (${elapsed}s)`);
   process.exitCode = 0;
 } else {
   console.log(
-    `doctor: NOT fit for work — ${broken.map((l) => l.label).join(", ")} (${elapsed}s)\n` +
-      `        doctor reports; run scripts/provision.sh to repair.`,
+    `checkup: NOT fit for work — ${broken.map((l) => l.label).join(", ")} (${elapsed}s)\n` +
+      `         checkup reports; run scripts/provision.sh to repair.`,
   );
   process.exitCode = 1;
 }
