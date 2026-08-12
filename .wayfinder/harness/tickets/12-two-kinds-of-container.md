@@ -60,6 +60,16 @@ it.
 - **What the loop would do with this.** A campaign that seizes a machine assumes a known start
   state; two possible start states is a preflight question (`docs/specs/loop.md`).
 
+## Folded in from the map's fog
+
+**Provisioning wall-clock as a target rather than a consequence.** The numbers are now in hand and
+they differ *by container kind*, which is why this lives here: **~83s** for an empty container that
+downloads Node and builds everything (`parity: ok in 57s`), **38s** for a snapshot-restored one
+being repaired, **52s** for a re-run with egress blocked and no download (ticket 08). What is
+unstated is the *target*, and whether a full parity gate on every re-run is the right price for
+"re-running is the repair" — a question that reads differently for a machine being provisioned
+than for one being repaired mid-session.
+
 ## Guardrails
 
 - Do not weaken `provision.sh` to force the install path to run. If it is skipped, it is skipped

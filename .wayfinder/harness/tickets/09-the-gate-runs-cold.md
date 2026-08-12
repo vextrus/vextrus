@@ -257,7 +257,7 @@ map assumed:
   (`checkup` exit 1 — database down, Node 22) and skips the install path entirely.
 
 Which kind a session gets was not chosen and is not visible without checking mtimes against `/`.
-Carried to [The container that is never empty](12-the-container-that-is-never-empty.md).
+Carried to [Two kinds of container](12-two-kinds-of-container.md).
 
 ### What the capture does not support
 
