@@ -493,25 +493,60 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
 
 // ── output ──────────────────────────────────────────────────────────────────
 
-const width = Math.max(...lines.map((l) => l.label.length));
-console.log("");
-for (const { mark, label, detail } of lines) {
-  console.log(`  ${`[${mark}]`.padEnd(8)} ${label.padEnd(width)}  ${detail}`);
-}
+/**
+ * `--hook` — the SessionStart caller (ticket 12).
+ *
+ * A session lands on one of two machines and nothing announces which: a
+ * container created empty runs the cloud setup field and provisions itself,
+ * while one restored from a snapshot inherits an image an earlier session left
+ * behind — at a commit that may predate the current head, with a dead database
+ * and a Node below the pin — and runs nothing at all. The repair already
+ * existed and was already named here; what was missing was anything that
+ * *invokes* it before a session burns a turn discovering the fault itself.
+ *
+ * So this mode is a router, not a new probe. Two differences from the bare
+ * command, both because the audience is a session's context window rather than
+ * a terminal:
+ *
+ *   - Output is proportional to the trouble. Fit prints one line — the INFO
+ *     environment stamp, which is the one thing worth carrying from turn one,
+ *     since `.data/` dies with the container and a number without its machine
+ *     is not a measurement (ticket 07). Unfit prints everything, because then
+ *     every line is evidence.
+ *   - It always exits 0. SessionStart cannot block a session and must not try;
+ *     the exit code stays the provisioner's (ticket 03), and this mode is the
+ *     first consumer that wants the *output* instead.
+ *
+ * It reports and does not repair, deliberately. Repairing here would mutate the
+ * machine on an arrival nobody chose, and would pay `parity`'s ~61s (ticket 04)
+ * inside a hook — the least legible place a failure can happen.
+ */
+const hookMode = process.argv.includes("--hook");
 
 const broken = lines.filter((l) => l.mark === BROKEN);
 const elapsed = ((Date.now() - startedAt) / 1000).toFixed(1);
-console.log("");
+
+if (hookMode && broken.length === 0) {
+  const env = lines.find((l) => l.label === "environment");
+  console.log(`checkup: fit for work (${elapsed}s) — ${env ? env.detail : "no environment line"}`);
+} else {
+  const width = Math.max(...lines.map((l) => l.label.length));
+  console.log("");
+  for (const { mark, label, detail } of lines) {
+    console.log(`  ${`[${mark}]`.padEnd(8)} ${label.padEnd(width)}  ${detail}`);
+  }
+  console.log("");
+  if (broken.length === 0) {
+    console.log(`checkup: fit for work — verify, test:db and dev can all run (${elapsed}s)`);
+  } else {
+    console.log(
+      `checkup: NOT fit for work — ${broken.map((l) => l.label).join(", ")} (${elapsed}s)\n` +
+        `         checkup reports; run scripts/provision.sh to repair.`,
+    );
+  }
+}
+
 // process.exitCode rather than process.exit(): every probe has closed its
 // connections by here, so falling off the end is enough, and it cannot truncate
 // a buffered stdout the way exiting mid-flush can.
-if (broken.length === 0) {
-  console.log(`checkup: fit for work — verify, test:db and dev can all run (${elapsed}s)`);
-  process.exitCode = 0;
-} else {
-  console.log(
-    `checkup: NOT fit for work — ${broken.map((l) => l.label).join(", ")} (${elapsed}s)\n` +
-      `         checkup reports; run scripts/provision.sh to repair.`,
-  );
-  process.exitCode = 1;
-}
+process.exitCode = hookMode || broken.length === 0 ? 0 : 1;

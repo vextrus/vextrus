@@ -76,6 +76,23 @@ const TEST_FILE = /\.(spec|dbspec|test)\.(ts|tsx|mjs)$|^cad\/tests\//;
 // ---- preflight ----------------------------------------------------------------
 mkdirSync(runDir, { recursive: true });
 
+// The machine before the tree (ticket 12). A campaign assumes a known start state and a cloud
+// container has two: one created empty provisions itself at boot, one restored from a snapshot
+// inherits a dead database and a Node below the pin and runs nothing. Both fail baseline verify,
+// but verify answers "this tree's contract does not hold here" and names no repair, which is the
+// false accusation ticket 09 spent a container diagnosing. checkup costs ~1.3s and names
+// scripts/provision.sh. It also subsumes the :3210 probe below, which stays as the second reading
+// for the local case where a session left its own dev server running.
+{
+  // node directly, not `pnpm checkup`: the wrapper adds an ELIFECYCLE line that reads like a
+  // second fault, and on a machine below the pin an `Unsupported engine` warning on top of it.
+  const r = spawnSync(process.execPath, ["scripts/checkup.mjs"], { cwd: root, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
+  if (r.status !== 0) {
+    console.error(`${r.stdout ?? ""}${r.stderr ?? ""}`.trimEnd());
+    console.error("conduct: this machine is not fit for work — the loop only ever starts from a fit machine.");
+    process.exit(1);
+  }
+}
 if (existsSync(activeMarker)) {
   console.error(`conduct: another run is active (${activeMarker}). Remove it only if you are sure it is stale.`);
   process.exit(1);
