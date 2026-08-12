@@ -64,6 +64,20 @@ Two axes, deliberately one map because they collide at every step:
   four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
   open.
 
+- 2026-08-12 — [What a cloud session owns](tickets/06-what-a-cloud-session-owns.md) — **ADR-0010**:
+  the dispatcher owns branch, ticket, claim and merge; the session owns the work and the evidence.
+  The prior lost both halves. *Merge is a human act on your machine* was refuted by `main`'s own
+  history — PR #1 squash-landed through the button — and rescued by arithmetic instead: a squash of
+  a branch containing `main`'s tip yields a tree byte-identical to the one verify ran on, so
+  fetch → **merge** → `pnpm verify` → push → SHA-stamped evidence comment, then the human clicks.
+  *The claim is pushed as its own commit* failed on visibility — a claim on a session branch is
+  invisible on `main` (this session proved it, `ce001b9`), so the **dispatcher** picks the ticket
+  and claims. The loop differs by unit, not rule: the arc directory is the campaign's alone. Not
+  mechanically enforceable — "require up to date" is a sub-option of required status checks, and
+  there is no CI; CI is the named seam that would take the weight. **Not yet exercised with two
+  concurrent sessions**; deferral and its three watch-fors are named in the resolution. Its own
+  merge hit watch-for (1) immediately: ticket 07 landed on `main` mid-session and both entries
+  collided here. Resolved by keeping both.
 - 2026-08-12 — [What a disposable machine makes possible](tickets/07-what-a-disposable-machine-makes-possible.md)
   — ranked by **staleness × invoker, severity breaking ties**; with no CI anywhere, a per-commit
   capability has no invoker and cannot be charted. Three candidates **collapsed into one act**
@@ -87,7 +101,10 @@ Two axes, deliberately one map because they collide at every step:
   cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 07: the
   **Linux-native check is already written** — `pnpm parity`, which every cloud session runs — so
   what CI supplies is not a script but a *trigger*, and the absence of any invoker is what
-  disqualified every per-commit capability from being charted.
+  disqualified every per-commit capability from being charted. And by ticket 06: CI is the named
+  seam that would make the merge gate mechanical — until it exists, "verify ran on this head" is a
+  human-read claim and "branch up to date" is unenforceable, since GitHub offers that setting only
+  as a sub-option of required status checks. Two tickets now converge on one trigger.
 - When the build stage stops being cheap (it grows with every route), what the contract does
   about it — re-measure, not relax, but the trigger is unstated.
 - Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per

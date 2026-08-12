@@ -71,6 +71,14 @@ Web: localhost:3210
    ticket at a time or executed by the loop (`docs/specs/loop.md`).
 4. **Delegate only for large, genuinely independent investigation.** Never to verify your own
    work. One agent beats three.
+5. **You work on the branch you were given.** Never `main`; never create, rename, or switch a
+   branch. On `main` by accident, stop and say so. You do not choose your ticket and you do not
+   write `Claimed by:` — the dispatcher does both (`.wayfinder/TRACKER.md`).
+6. **A session's last act, before it reports done** (ADR-0010): `git fetch origin main` →
+   **merge** `origin/main` into your branch (never rebase — it invalidates the verify that
+   justified the commits) → `pnpm verify` on that exact tree → push → post the head SHA and the
+   verify tail as a PR comment. Nothing lands on the strength of a verify that ran on a
+   different tree. **You never merge the PR** — the click is the human's, and it is the gate.
 
 ## How to work here
 

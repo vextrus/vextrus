@@ -27,6 +27,18 @@ container — including the migration drill that needs one to run in.
 [What a disposable machine makes possible](07-what-a-disposable-machine-makes-possible.md) ranked
 this first for exactly that reason: it is stale today, and everything else runs inside it.
 
+## Prior evidence — not the measurement
+
+Ticket 06's cloud session started on a container where the database was not up and no Docker
+daemon was reachable. `pnpm checkup` named the cause in 3.1s; `scripts/provision.sh` then ran to a
+green gate on the native-Postgres path: `parity: ok in 73s` (verify 47.9s, `test:db` 46 passed,
+dev 200 on :3210), ending `provision: ok — … all proven, not claimed`.
+
+That is the **gate firing green after ticket 04's change**, which is the fault this ticket most
+fears — but it is not the cold run: `node_modules` was already present, so the install path never
+executed and the wall-clock split this ticket asks for was never produced. Treat it as one leg of
+the answer, not the answer.
+
 ## The question
 
 Not a decision — a measurement. Does a container that started empty reach
