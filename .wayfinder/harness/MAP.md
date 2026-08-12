@@ -75,16 +75,36 @@ Two axes, deliberately one map because they collide at every step:
   and claims. The loop differs by unit, not rule: the arc directory is the campaign's alone. Not
   mechanically enforceable — "require up to date" is a sub-option of required status checks, and
   there is no CI; CI is the named seam that would take the weight. **Not yet exercised with two
-  concurrent sessions**; deferral and its three watch-fors are named in the resolution.
+  concurrent sessions**; deferral and its three watch-fors are named in the resolution. Its own
+  merge hit watch-for (1) immediately: ticket 07 landed on `main` mid-session and both entries
+  collided here. Resolved by keeping both.
+- 2026-08-12 — [What a disposable machine makes possible](tickets/07-what-a-disposable-machine-makes-possible.md)
+  — ranked by **staleness × invoker, severity breaking ties**; with no CI anywhere, a per-commit
+  capability has no invoker and cannot be charted. Three candidates **collapsed into one act**
+  (cold provisioning = migrate-from-empty = clean clone). Two promoted:
+  [the gate runs cold](tickets/09-the-gate-runs-cold.md) first because it is stale *today* and
+  everything else runs inside it, then [a migration meets rows](tickets/10-a-migration-meets-rows.md)
+  — every migration this repo has run has met an **empty** database, and one that mangles register
+  rows breaks identity stability *quietly*. Declined: the new-contributor path (a docs check),
+  Linux-native behaviour (no invoker; already free on every cloud session — the gap is merge
+  discipline), the loop (capacity, and no arc exists), drop-and-recover (it *is* the cold path),
+  a seed corpus (rejected for `test:db`'s existing fixtures). Citability: the reproducer is a repo
+  script, the result carries what varied, the Resolution is the archive — `.data/` is gitignored,
+  so the log dies with the container. An environment fingerprint gives rule 2 a mechanism, folded
+  into [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md); checkup now describes as
+  well as judges, and descriptive lines never touch the exit code.
 
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
   "CI" that does not exist (`.github/workflows` is absent). Sharpened by the possibility that the
-  cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 06: CI is
-  now the named seam that would make the merge gate mechanical — until it exists, "verify ran on
-  this head" is a human-read claim and "branch up to date" is unenforceable, since GitHub offers
-  that setting only as a sub-option of required status checks.
+  cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 07: the
+  **Linux-native check is already written** — `pnpm parity`, which every cloud session runs — so
+  what CI supplies is not a script but a *trigger*, and the absence of any invoker is what
+  disqualified every per-commit capability from being charted. And by ticket 06: CI is the named
+  seam that would make the merge gate mechanical — until it exists, "verify ran on this head" is a
+  human-read claim and "branch up to date" is unenforceable, since GitHub offers that setting only
+  as a sub-option of required status checks. Two tickets now converge on one trigger.
 - When the build stage stops being cheap (it grows with every route), what the contract does
   about it — re-measure, not relax, but the trigger is unstated.
 - Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per
@@ -102,12 +122,12 @@ Two axes, deliberately one map because they collide at every step:
   restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
   egress open throughout, so the restricted case is still unmeasured — and the re-run's Node
   re-download means the two cases are not close.
-- Whether a **cold** container passes the parity check now that `provision.sh` gates on it.
-  Ticket 04 wired and proved every leg, but only on this already-provisioned machine; the cold
-  path with the gate in place has never run, and the map ranks disposability first precisely
-  because that is the path that validates the rest. (Ticket 06's session hit this by accident: its
-  container was unprovisioned, `pnpm checkup` named the stopped database, and `provision.sh` ran to
-  a green gate — `parity: ok in 73s`, verify 47.9s, 46 db tests. Evidence, not the ticket's test.)
+- The loop's caps as measured numbers rather than inherited ones. `docs/specs/loop.md` marks
+  `MAX_TURNS = 150` and the 30-minute wall fuse "re-derive, don't trust" — carried from a legacy
+  environment whose verify was ~100s against our ~43s. Re-deriving needs a real campaign, and a
+  campaign seizes a precious machine (the loop's preflight demands a clean tree, nothing on :3210,
+  and a pre-push guard). A disposable container removes that objection for free — but there are
+  **no arcs yet**, so this cannot be ticketed until one exists.
 
 ## Out of scope
 
