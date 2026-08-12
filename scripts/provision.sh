@@ -337,6 +337,36 @@ mv .env.provision.tmp .env
 echo "provision: wrote .env from .env.example"
 mkdir -p "$REPO/.data/artifacts"
 
+# --- Git hooks ----------------------------------------------------------------
+# `.githooks/pre-push` is committed, and until now that is all it was: git reads
+# `.git/hooks`, and `core.hooksPath` is repository-local config that no clone
+# carries. Measured on a cloud container at 9436eb7 — path unset, hook mode
+# 644 — so ADR-0008's "safety by mechanism" had never fired on this platform,
+# and every container since has been one mis-read instruction away from a push
+# to main.
+#
+# Asserted, not merely set, in ticket 08's sense: the state is read back from
+# git and the file is tested for the executable bit git actually requires, so a
+# machine where this silently did not take refuses instead of reporting success.
+# Non-fatal only where it is genuinely not applicable — a tarball with no .git.
+phase="githooks"
+if git rev-parse --git-dir >/dev/null 2>&1; then
+  chmod +x .githooks/* 2>/dev/null || true
+  git config core.hooksPath .githooks
+  if [ "$(git config --get core.hooksPath)" != ".githooks" ] || [ ! -x .githooks/pre-push ]; then
+    echo "provision: FAILED in phase 'githooks' — core.hooksPath is" >&2
+    echo "provision: '$(git config --get core.hooksPath || echo unset)' and .githooks/pre-push is" >&2
+    echo "provision: $([ -x .githooks/pre-push ] && echo executable || echo 'not executable')." >&2
+    echo "provision: the push guard would not run, and this script does not report" >&2
+    echo "provision: a machine it did not deliver." >&2
+    done_ok="reported"
+    exit 1
+  fi
+  echo "provision: git hooks -> .githooks (push guard active)"
+else
+  echo "provision: not a git checkout — no push guard to wire"
+fi
+
 # --- Toolchain ----------------------------------------------------------------
 phase="toolchain"
 # `corepack enable` writes the pnpm shim into the directory holding the `node`

@@ -55,6 +55,17 @@ with a dated, observed cost — never speculatively.
   on PATH and no `/var/run/docker.sock` at all. Cloud Docker availability is not a constant
   across images — `provision.sh` and `pnpm checkup` both probe it every run and neither
   remembers the answer.
+- **A clone does not use `.githooks/`.** git reads `.git/hooks`, and `core.hooksPath` is
+  repository-local config that no checkout carries — so a committed hook is inert until
+  something sets the path, and a hook file without the executable bit is skipped in silence even
+  then. 2026-08-12, ticket 16: the pre-push guard had never run on any Linux machine.
+  `provision.sh` now sets the path, reads it back, tests the bit, and refuses the provision if
+  either did not take; `pnpm checkup`'s git line says which state you are in.
+- **GitHub's REST API is not reachable with `curl` from a cloud session** — it answers 403
+  *"GitHub access is not enabled for this session"* however the request is spelled, because the
+  credential is held by the MCP server and never lands on the machine (ticket 15). Use the
+  `mcp__github__*` tools; a polling loop built on `curl` reports nothing forever and looks like
+  a hung API. `git` itself is unaffected — its auth is injected in flight by the proxy.
 - **PATH order is set by the image, and no file the repo writes is read by a bare `sh -c`.**
   A session's shell is neither a login shell nor an interactive one, so it reads neither
   `/etc/profile.d` nor `.bashrc` — which is how a container putting `/opt/node22/bin` ahead of

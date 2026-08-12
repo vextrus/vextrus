@@ -1,10 +1,42 @@
 #!/bin/sh
-# Mechanical guard (ADR-0008): while a loop campaign is active, nothing pushes —
-# not the workers, not a concurrent interactive session. Safety by mechanism,
-# not by instruction.
+# The two irreversible acts, guarded mechanically rather than by instruction.
+#
+# This file is committed, but a clone does not read it: git looks in
+# `.git/hooks`, and `core.hooksPath` is repository-local configuration that no
+# checkout carries. Measured 2026-08-12 on a cloud container at `9436eb7`:
+# `core.hooksPath` unset and this file mode 100644, so the guard ADR-0008 calls
+# "safety by mechanism" had never once run on Linux. `scripts/provision.sh` now
+# sets the path and asserts it, which is what makes the rest of this file true.
+
+# 1. A loop campaign owns the remote for its duration (ADR-0008). Pushing
+#    mid-campaign publishes unreviewed worker commits.
 if [ -f ".loop/ACTIVE" ]; then
   echo "pre-push: refused — a loop campaign is active (.loop/ACTIVE)." >&2
   echo "Pushing mid-campaign publishes unreviewed worker commits. Push after the run ends." >&2
   exit 1
 fi
+
+# 2. `main` is not a session's to write (ADR-0010): the dispatcher owns branches,
+#    and landing is the human's merge button on a PR whose check has run. Until
+#    now that was prose in CLAUDE.md, and prose does not survive a session that
+#    mis-reads its instructions at 3am.
+#
+#    The override is named, not absent — the dispatcher is a person on their own
+#    machine, and a guard with no door gets uninstalled instead of respected.
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+  case "$remote_ref" in
+    refs/heads/main)
+      if [ "${VEXTRUS_ALLOW_MAIN_PUSH:-}" = "1" ]; then
+        echo "pre-push: allowing a push to main — VEXTRUS_ALLOW_MAIN_PUSH=1." >&2
+        continue
+      fi
+      echo "pre-push: refused — this pushes $remote_ref." >&2
+      echo "Sessions work on the branch they were given and land through a PR (ADR-0010);" >&2
+      echo "the merge is the human's click. If you are that human and mean it:" >&2
+      echo "  VEXTRUS_ALLOW_MAIN_PUSH=1 git push ..." >&2
+      exit 1
+      ;;
+  esac
+done
+
 exit 0

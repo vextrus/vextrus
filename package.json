@@ -17,6 +17,7 @@
     "verify": "node scripts/verify.mjs",
     "checkup": "node scripts/checkup.mjs",
     "parity": "bash scripts/parity.sh",
+    "land": "node scripts/land.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

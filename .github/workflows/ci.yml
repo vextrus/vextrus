@@ -39,6 +39,15 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+# This job reads a checkout and reports a status; it writes nothing. The default
+# token permission set is the repository's, which can be read/write — a checked
+# workflow that runs `provision.sh` (which downloads Node, installs packages, and
+# runs the repo's own scripts) has no business holding a write credential it does
+# not use. Stated here rather than assumed from a repository setting, so the
+# grant travels with the workflow.
+permissions:
+  contents: read
+
 jobs:
   parity:
     runs-on: ubuntu-latest
