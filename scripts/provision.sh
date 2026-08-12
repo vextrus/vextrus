@@ -339,7 +339,33 @@ mkdir -p "$REPO/.data/artifacts"
 
 # --- Toolchain ----------------------------------------------------------------
 phase="toolchain"
-corepack enable >/dev/null 2>&1 || true
+# `corepack enable` writes the pnpm shim into the directory holding the `node`
+# binary, which a non-root user usually cannot write. This was `|| true`, and a
+# GitHub-hosted runner (user `runner`, node at /usr/local/bin) is the first
+# machine where that mattered: enable failed, its error went to /dev/null,
+# `corepack prepare` succeeded, and the next line died with
+# `pnpm: command not found` — a phase that swallowed the cause and then depended
+# on its effect.
+#
+# So the predicate is *is pnpm resolvable*, never *did enable exit 0* — the same
+# probe-don't-mark rule ticket 08 applied to the Node install. Try unprivileged,
+# escalate to $SUDO only if the shim did not appear, and refuse with corepack's
+# own words if it still is not there.
+corepack_err=$(corepack enable 2>&1) || true
+if ! command -v pnpm >/dev/null 2>&1; then
+  if [ -n "$SUDO" ]; then
+    corepack_err=$($SUDO corepack enable 2>&1) || true
+  fi
+fi
+if ! command -v pnpm >/dev/null 2>&1; then
+  echo "provision: FAILED in phase 'toolchain' — corepack could not put pnpm on PATH." >&2
+  echo "provision: node is $(command -v node || echo 'not on PATH'), running as $(id -un)." >&2
+  echo "provision: corepack said: ${corepack_err:-(nothing)}" >&2
+  echo "provision: the shim goes next to the node binary; that directory must be writable" >&2
+  echo "provision: by this user or by sudo." >&2
+  done_ok="reported"
+  exit 1
+fi
 corepack prepare pnpm@9.15.1 --activate
 pnpm install --frozen-lockfile
 
