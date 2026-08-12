@@ -206,9 +206,13 @@ Two axes, deliberately one map because they collide at every step:
   Proven by stopping Postgres for real: `--hook` EXIT=0 with the full report, bare checkup EXIT=1,
   `conduct.mjs` refusing in 1.1s naming the repair; repair `parity: ok in 101s`; fit line **1.4s**.
 
-- 2026-08-12 — [CI — the missing trigger](tickets/13-ci-the-missing-trigger.md) — **CI exists, as
-  GitHub Actions, and it runs the provisioner rather than a recipe of its own.** One job, two
-  commands: checkout at `fetch-depth: 0` → `bash scripts/provision.sh` (whose last act *is*
+- 2026-08-12 — [CI — the missing trigger](tickets/13-ci-the-missing-trigger.md) — **CI is ruled:
+  GitHub Actions, running the provisioner rather than a recipe of its own.** *Specified, not built
+  — corrected 2026-08-12 by ticket 15, which went looking for the workflow this entry implied and
+  found `.github/` absent from the tree and from `main`. The build was handed to `/to-spec` and has
+  not been done, so **no check runs on any PR today** and every consequence below — the required
+  check, ADR-0010's amendment, the compose-path exercise — is a decision waiting on a file.* One
+  job, two commands: checkout at `fetch-depth: 0` → `bash scripts/provision.sh` (whose last act *is*
   `parity.sh`, so this is checkup | verify | test:db | dev in full) → `pnpm db:replay`
   unconditionally, its no-new-migration skip pushed into the script. The workflow holds **no
   project knowledge** — no setup recipe, no service block, no stage list, no path filter — so it

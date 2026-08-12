@@ -64,7 +64,16 @@ timing budget, and does exceeding it fail a run or merely report?
 
 ## Resolution
 
-**CI exists, as GitHub Actions, and it runs the provisioner rather than a recipe of its own.**
+**CI is ruled: GitHub Actions, running the provisioner rather than a recipe of its own.**
+
+> **Corrected 2026-08-12 by [ticket 15](15-secrets-and-git-identity.md).** This sentence read
+> *"CI exists"*, which is what a ticket that decides a thing says when it forgets it did not build
+> it. Ticket 15 went looking for the workflow to explain why its PR had no checks and found
+> `.github/` absent from the tree and from `main`. **Nothing below is built.** The build was handed
+> to `/to-spec` and has not been done, so no check runs on any PR, the required check is a plan,
+> and the compose-path exercise named as this ruling's limitation has never actually happened. The
+> supersession clause was already written conditionally — *"takes effect when the check exists"* —
+> so ADR-0010 and its amendment need no correction; only this claim did.
 
 ### The ruling
 
