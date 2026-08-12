@@ -253,6 +253,31 @@ Two axes, deliberately one map because they collide at every step:
   the rest kept. Net prose down; `CLAUDE.md` gained one line only because a command nobody knows
   exists is not a mechanism. verify green **31.2s**, `test:db` 46 in 12.6s, checkup **1.0s**.
 
+- 2026-08-12 — [Secrets and git identity in a sandbox](tickets/15-secrets-and-git-identity.md) —
+  **the provisioner invents nothing, nothing outlives a container, and ticket 03's deferred git
+  line is discharged by refutation rather than shipped.** Two of the three faults the ticket was
+  built on did not survive measurement. `head -c 32 /dev/urandom` is **deleted**: rotation was
+  accepted first, then argued down to *don't generate at all*, because a random per-container
+  secret is a variable nobody chose — no code reads it (better-auth reads the env var itself), it
+  guards a localhost database with a dev password, and the divergence already ran the wrong way,
+  a workstation on `.env.example`'s fixed value against every container on a random one. **`.env`
+  is now the provisioner's, rewritten whole every run and copied from `.env.example`**, which is
+  promoted from illustration to *source* — the two files restated the same connection strings and
+  could disagree about a password. `leaving it alone` is retired: it protected a *generated*
+  secret, and its cost was live on the closing session's own container, an image-dated `.env`
+  holding an earlier session's secret that no fix to the generator could ever have reached. The
+  override channel is the **ambient environment**, which survives a rewrite by design; `diff` to
+  `.env.example` is exactly one line, the storage root. **Ticket 02's signing fault is refuted**:
+  the path it called missing is a 0-byte file the platform signer ignores, a probe commit carries
+  a real `gpgsig`, and the row was inferred from a directory listing with no commit ever made —
+  corrected in place. **The push credential never lands on the machine** (`GH_TOKEN=proxy-injected`;
+  auth injected in flight by the loopback proxy), which closes *what must never enter the repo*
+  with no new machinery: nothing here holds a credential to leak. So the line shipped is **`INFO
+  git`** — identity, signing on/off, signer program — no network, no gate; a remote-reachability
+  probe was rejected as the false accusation ticket 09 deleted, and a key-present assertion would
+  go BROKEN on a machine that signs perfectly. Signature *verification* ruled out of scope. verify
+  green; checkup fit in **1.5s**.
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its

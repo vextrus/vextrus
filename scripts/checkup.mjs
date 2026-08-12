@@ -529,6 +529,50 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
   );
 }
 
+// Which identity this machine commits as, and whether a signature is expected
+// (ticket 15). ADR-0010 makes the session push its own evidence, so a commit or
+// an evidence comment is only traceable if something recorded who the container
+// was — and that differs by machine: the workstation commits as its human, a
+// cloud container as the platform's `Claude <noreply@anthropic.com>`, neither
+// configured by this repo.
+//
+// INFO, and deliberately not a gate. Ticket 03 deferred a *gating* git line to
+// ticket 15 on the grounds that nothing yet set the standard it would assert;
+// ticket 15 measured the standard and found there is none to assert here:
+//
+//   - Signing is the platform's, not ours. `gpg.ssh.program` is an opaque
+//     binary that ignores `user.signingkey` — which on a cloud container is a
+//     0-byte file — and signs anyway. Ticket 02 read that path, called it
+//     missing, and never made a commit to check; a line asserting the key file
+//     is non-empty would go BROKEN on a machine that signs perfectly.
+//   - Identity self-reports. `git commit` with no `user.email` already fails
+//     loudly and names its own repair, and a check duplicating a good error
+//     message is prose.
+//   - Remote reachability is the only probe that could catch something real,
+//     and it was rejected: it costs a network round trip in a command that runs
+//     in ~1s, it fails for reasons that have nothing to do with whether this
+//     machine can run verify, and a red line for a blipped proxy is the false
+//     accusation ticket 09 spent itself deleting. Fitness is verify, test:db
+//     and dev — pushing is not in that set.
+//
+// So this line describes and never judges, which is what makes it free.
+{
+  const cfg = (key) => {
+    const r = run("git", ["config", "--get", key], 500);
+    return r.ok ? r.out.trim() : "";
+  };
+  const name = cfg("user.name");
+  const email = cfg("user.email");
+  const who = name || email ? `${name || "(no name)"} <${email || "no email"}>` : "not configured";
+  const signs = /^true$/i.test(cfg("commit.gpgsign"));
+  const program = cfg("gpg.ssh.program") || cfg("gpg.program");
+  report(
+    INFO,
+    "git",
+    `${who} · ${signs ? `signing on${program ? ` via ${program}` : ""}` : "signing off"}`,
+  );
+}
+
 // ── output ──────────────────────────────────────────────────────────────────
 
 /**

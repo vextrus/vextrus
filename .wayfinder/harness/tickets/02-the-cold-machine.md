@@ -200,7 +200,7 @@ root cause: the script asks *what node is on PATH* where it means *what node did
 | uv | 0.8.17 at `/root/.local/bin/uv` | |
 | Egress | open at provision time **and** still open in-session (nodejs.org, npmjs, pypi all 200) | |
 | localhost + proxy | `HTTPS_PROXY` set, but `no_proxy` covers `localhost`/`127.0.0.1` | probing your own dev server needs no special flag |
-| git identity | `Claude <noreply@anthropic.com>`, ssh-signed via `/tmp/code-sign`, `commit.gpgsign=true` | `signingkey` points at `/home/claude/.ssh/…` — a path that does not exist under `HOME=/root` |
+| git identity | `Claude <noreply@anthropic.com>`, ssh-signed via `/tmp/code-sign`, `commit.gpgsign=true` | ~~`signingkey` points at `/home/claude/.ssh/…` — a path that does not exist under `HOME=/root`~~ **Corrected by [ticket 15](15-secrets-and-git-identity.md): not a fault.** The path exists (a 0-byte file owned by `claude`), the platform signer ignores it, and a probe commit carries a real `gpgsig` SSH signature. This row was inferred from a directory listing; no commit was made to test it. |
 | Disk / CPU / RAM | 29 GiB free · 4 vCPU · 15 GiB | |
 
 **The Docker fact overturns a premise of this map.** [Two Postgres paths](05-two-postgres-paths.md)

@@ -292,24 +292,49 @@ fi
 
 # --- .env ---------------------------------------------------------------------
 # db:migrate calls process.loadEnvFile('.env'), which *overrides* the ambient
-# environment — so a partial .env would blank the connection strings. Write it
-# whole, sourcing each value from the environment with the dev default as
-# fallback. VEXTRUS_STORAGE_ROOT must be absolute and is only knowable here.
+# environment — so a partial .env would blank the connection strings. It is
+# written whole, every run, and the provisioner owns it (ticket 15).
+#
+# The values come from .env.example, which is the single source of the dev
+# defaults; restating them here made two files that could disagree about a
+# password on exactly the axis this provisioner exists to close. The
+# provisioner contributes only what a committed file cannot know: this
+# checkout's absolute path, and the machine's own environment.
+#
+# Rewritten rather than skipped when present. The skip protected a *generated*
+# BETTER_AUTH_SECRET from churning; there is no longer one to protect, and the
+# skip's cost was that a container restored from a snapshot kept some earlier
+# session's secret forever — two machines at "parity" holding different values.
+# A machine that needs different values exports them: every key is sourced from
+# the ambient environment first, which survives the rewrite by design.
+#
 # NODE_ENV is deliberately absent: setting it breaks `next build` (TRAPS).
 phase="env"
-if [ -f .env ]; then
-  echo "provision: .env exists — leaving it alone"
-else
-  cat > .env <<ENV
-DATABASE_URL=${DATABASE_URL:-postgres://vextrus_app:vextrus_app_dev_password@localhost:5544/vextrus}
-MIGRATE_DATABASE_URL=${MIGRATE_DATABASE_URL:-postgres://vextrus:vextrus_dev_password@localhost:5544/vextrus}
-AUTH_DATABASE_URL=${AUTH_DATABASE_URL:-postgres://vextrus_auth:vextrus_auth_dev_password@localhost:5544/vextrus}
-BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-$(head -c 32 /dev/urandom | base64 2>/dev/null || echo dev-only-secret-rotate-in-prod)}
-BETTER_AUTH_URL=${BETTER_AUTH_URL:-http://localhost:3210}
-VEXTRUS_STORAGE_ROOT=$REPO/.data/artifacts
-ENV
-  echo "provision: wrote .env"
+if [ ! -f .env.example ]; then
+  echo "provision: FAILED in phase 'env' — .env.example is missing, and it is" >&2
+  echo "provision: the source every value in .env is copied from." >&2
+  done_ok="reported"
+  exit 1
 fi
+# Comments and blank lines are copied through; process.loadEnvFile ignores them.
+# A KEY=... line takes the ambient value when one is exported, otherwise the
+# example's. VEXTRUS_STORAGE_ROOT is the one key the example cannot answer: its
+# placeholder is an absolute path to somebody else's checkout.
+{
+  while IFS= read -r line || [ -n "$line" ]; do
+    case $line in
+      \#*|"") echo "$line" ;;
+      VEXTRUS_STORAGE_ROOT=*) echo "VEXTRUS_STORAGE_ROOT=$REPO/.data/artifacts" ;;
+      *=*)
+        key=${line%%=*}
+        if [ -n "${!key+set}" ]; then echo "$key=${!key}"; else echo "$line"; fi
+        ;;
+      *) echo "$line" ;;
+    esac
+  done < .env.example
+} > .env.provision.tmp
+mv .env.provision.tmp .env
+echo "provision: wrote .env from .env.example"
 mkdir -p "$REPO/.data/artifacts"
 
 # --- Toolchain ----------------------------------------------------------------
