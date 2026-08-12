@@ -56,9 +56,11 @@ jobs:
     # gates on how long a stage takes.
     timeout-minutes: 30
     steps:
-      # fetch-depth: 0 is load-bearing. Actions shallow-clones by default, and
-      # db:replay derives its baseline from git history — on a shallow clone the
-      # drill fails on a missing parent rather than on a bad migration.
+      # fetch-depth: 0 is load-bearing. Actions shallow-clones by default and
+      # fetches only the ref under test; db:replay's baseline is
+      # `merge-base(HEAD, origin/main)`, so without full history there is either
+      # no `origin/main` to resolve or no common ancestor to find, and the drill
+      # refuses (exit 2) rather than guessing a baseline.
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -67,28 +69,27 @@ jobs:
       # session's PATH and fails fast; its exit code is the contract.
       - run: bash scripts/provision.sh
 
-      # HELD, deliberately — ticket 13 specifies a second step here:
+      # The drill (ticket 10), called blindly and unconditionally — the skip
+      # lives in the script, because a path filter here would be project
+      # knowledge in the one place this repo keeps free of it.
       #
-      #     - run: pnpm db:replay
+      # Held from birth until ticket 17, and the hold is *discharged rather than
+      # triggered*: the debt was never the two lines of YAML, it was that the
+      # drill's unit made this step meaningless on a PR. Its baseline was the
+      # parent of the commit that added the repo's newest migration, so every
+      # committed tree replayed the last landed group — red on every commit
+      # while 0010 stands unrepaired, and after the next migration lands, green
+      # on every commit forever, re-proving a migration nobody touched.
       #
-      # called blindly and unconditionally, the skip living in the script (which
-      # it now does: "nothing to replay" exits 0, so a commit adding no
-      # migration is green). It is not wired up because the drill is *red at
-      # head* and has been since ticket 10 measured it: 0010's
-      # `ADD COLUMN "semantic" text NOT NULL` has no default and no backfill, so
-      # it aborts against the rows the drill restores. Ticket 10 ruled that
-      # unrepairable on purpose — a landed migration is never edited, and no
-      # database at 0009 with rows exists — and left it standing as a finding.
+      # The unit is now the change: `merge-base(HEAD, origin/main)`, so this
+      # step asks exactly one question — do the migrations *this PR adds*
+      # survive main's rows — and answers "nothing to replay", exit 0, on the
+      # commits that add none. On the push-to-main canary HEAD *is* the base
+      # ref, so it always skips: that question was answered on the PR, and
+      # asking it again after the merge is the forever-green this replaced.
       #
-      # The baseline is the parent of the commit that added the newest
-      # migration, so this stays red on *every* commit until a new migration
-      # lands and moves it past 0010. Adding the step today would make `ci` red
-      # from birth, which cannot become a required status check — and would take
-      # the parity gate's own gating down with it. An always-red check is the
-      # unread signal ticket 13 refused `schedule` to avoid.
-      #
-      # Trigger to add it: the commit that lands migration 0012. On that commit
-      # the drill is both green and meaningful for the first time.
-      #
-      # Not done instead: pinning REPLAY_BASELINE past 0010, which is rigging a
-      # check to pass.
+      # Never done instead: pinning REPLAY_BASELINE past 0010, which is rigging
+      # a check to pass. 0010's finding is not amnestied by any of this — it
+      # stands recorded in ticket 10, and the drill now says whose a failing
+      # migration is instead of emitting a stack trace.
+      - run: pnpm db:replay
