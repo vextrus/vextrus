@@ -1,7 +1,7 @@
 # The locale in the sort — JS ordering that an env var can move
 
 wayfinder:grilling
-Status: open
+Status: closed
 Claimed by:
 Blocked by:
 
@@ -97,3 +97,94 @@ some may decide a `viewKey` or a first-member spelling that reaches identity.
 - This Node is full-ICU (`icu_small: false`). A small-ICU or `--without-intl` build collapses
   `localeCompare` toward code-unit order, which is a third divergence axis and an argument for
   not depending on ICU at all here.
+
+## Resolution — 2026-08-12
+
+**Code units, behind one named comparator, at all thirteen sites, with an absolute lint rule.**
+`compareCanonical(a, b)` in `src/core/order.ts` is the only comparator for machine-canonical
+strings in this tree; bare `localeCompare` is now an eslint error everywhere under `src/` and
+`db/`.
+
+### The measurement that forced it
+
+The hazard was made to fire. Same batch, same Node, comparator swapped underneath — one mark
+family whose members are spelled `C1` and `c1`, which `markFamily` folds into one family:
+
+```
+localeCompare : c1->c1#1  C1->c1#2
+code unit     : C1->C1#1  c1->C1#2
+```
+
+**Both the frozen ordinals and the spelling the family registers under flip.** Under
+`identity.md` §4 the ordinal is frozen at first registration and the key form is what a
+professional reads, so this is an identity defect, not a formatting one.
+
+The ticket led with the wrong axis, and the measurement corrected it. `LANG` *does* move the
+order — `B1 BA BÄ BZ` becomes `B1 BA BZ BÄ` under `sv_SE.UTF-8` — but `en-US`, `sv` and `bn`
+agree on pure-ASCII marks, so the `LANG` axis only bites strings carrying non-ASCII. What bites
+plain ASCII is **case**: ICU orders lowercase before uppercase at the tertiary level, code units
+order uppercase first. So the live environment axis is **how Node was built** — full-ICU,
+small-ICU, `--without-intl` — not what `LANG` says. This machine already carries two ICU
+versions (78.2 on the Node 22 a session runs, 78.3 on the Node 24 the provisioner installs).
+
+Two further facts settled the direction:
+
+- **Nothing is frozen.** `SELECT count(*) FROM register_objects` → **0**. No ordinal is
+  renumbered by this change and there is no migration; this was the cheapest moment the decision
+  would ever be available.
+- **The house order was already chosen, twice, differently.** Inside `sightingSemantic()`,
+  twelve lines apart: `handles: [...].sort()` (code unit) and `.sort(([a], [b]) =>
+  a.localeCompare(b))` (ICU). Picking code units makes the canonical form internally consistent
+  rather than introducing a new convention.
+
+### Why code units and not `Intl.Collator` with a stated locale
+
+The alternative was put: pin the locale explicitly. It closes the `LANG` axis and leaves the
+ICU-**version** and ICU-**build** axes open, for strings that are `620.0x450.0` and
+`plan:E6|C1|0.0|0.0` — cut by this system, for this system, and not language. Code units depend
+on no library at all. It is the same argument that pinned Postgres to `C.UTF-8` rather than
+`en_US.utf8` one ticket earlier: byte order is stable across library upgrades, linguistic order
+is not.
+
+### All thirteen, not the identity-bearing five
+
+Inspection found only five sites that can reach identity — `pairing.ts:119–120` (the ordinal),
+`:133` (the canonical keys the signature is built from), `:436–437` (which prior pairs with which
+sighting), and `:111`/`:381–382` (what gets emitted). Two that the ticket suspected turned out
+inert: `views.ts:488` sorts views by bounds then `id`, and no `viewKey` derives from view *order*;
+`placement.ts:592` sorts instances before `familyIdentities`, which re-sorts on a total order over
+unique keys, so input order cannot survive.
+
+Converted all thirteen anyway, because **the third exit criterion is a mechanism, and a rule with
+eight exemptions is not one**. "No bare `localeCompare` in this tree" needs no judgment to apply;
+"no bare `localeCompare` except in these eight places" is a list someone maintains, and the next
+author reading two adjacent sorts with two different comparators learns that the choice is
+arbitrary. The cost of the wide reading was zero: nothing frozen, and `src/app`, `src/components`
+and `src/server` contain **no collation at all**, so no human-facing sort was disturbed.
+
+The exception is designed rather than discovered: a sort a person reads takes `Intl.Collator`
+with a **stated** locale, deliberately, and never shares a comparator with identity. That is
+written into `order.ts`'s doc comment and the lint message. Nothing needs one today.
+
+### The mechanism
+
+- `src/core/order.ts` — `compareCanonical`, with the measurements above in its doc comment so the
+  reason survives the next reader.
+- `eslint.config.js` — `no-restricted-syntax` on
+  `MemberExpression[property.name='localeCompare']`, over `src/**` and `db/**`. Absolute.
+- `src/__tests__/boundaries.spec.ts` — three cases proving the rule **fails closed**, in the file
+  that already exists because a boundary plugin once silently reported zero violations twice.
+  Flags `localeCompare` in core and in a module; passes `compareCanonical` and a bare `.sort()`.
+- `src/core/__tests__/register.spec.ts` — the case-spelling family pinned as a contract:
+  `C1#1, c1#2`. This test fails under `localeCompare`, which is the point of it.
+
+### Proven, not claimed
+
+- The flip was reproduced before the change and is now pinned by a test that would catch its
+  return.
+- Lint rule proven to fire and proven not to over-fire (3 cases, green).
+- **No existing signature or ordinal changed**: the whole suite passed unmodified — the canonical
+  JSON keys are lowercase-initial ASCII identifiers (`anchor`, `elementType`, `family`, `handles`,
+  `levelBasis`, `levelId`, `mark`, `signature`, `viewKey`), on which the two orders agree — and
+  `register_objects` holds no rows.
+- `pnpm verify` green in **36.6s**.

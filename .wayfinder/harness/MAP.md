@@ -76,6 +76,17 @@ Two axes, deliberately one map because they collide at every step:
   it is pinned rather than watched. A `.dbspec.ts` test was rejected: checkup is about the
   machine, tests are about the tree. verify green **51.2s**.
 
+- 2026-08-12 — [The locale in the sort](tickets/09-the-locale-in-the-sort.md) — **code units
+  behind one comparator** (`compareCanonical`, `src/core/order.ts`) at **all thirteen** sites,
+  plus an absolute eslint ban on bare `localeCompare` proven to fail closed in
+  `boundaries.spec.ts`. Forced by a reproduced flip: a mark family spelled `C1`/`c1` freezes
+  `c1#1, C1#2` under ICU and `C1#1, c1#2` under code units — ordinals *and* the registered
+  spelling. The ticket's headline axis was wrong: `LANG` only moves non-ASCII, while **case**
+  moves plain ASCII, so the live axis is how Node was built (full/small/no ICU), not `LANG`.
+  `Intl.Collator` with a pinned locale rejected — it closes one axis and leaves ICU version and
+  build open. Nothing renumbered: `register_objects` was empty, and the suite passed unmodified.
+  verify green **36.6s**.
+
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a

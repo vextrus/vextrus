@@ -1,4 +1,5 @@
 import type { Entity, EntityGraph } from "@/core/entitygraph";
+import { compareCanonical } from "@/core/order";
 
 /**
  * The view partition (cad-ingestion.md §7). Every model-space ORIGINAL entity
@@ -368,7 +369,7 @@ export function partitionViews(
     if (box === null) unplaceable.push(handle);
     else placed.push({ entity, handle, box });
   }
-  placed.sort((a, b) => a.box.cx - b.box.cx || a.box.cy - b.box.cy || a.handle.localeCompare(b.handle));
+  placed.sort((a, b) => a.box.cx - b.box.cx || a.box.cy - b.box.cy || compareCanonical(a.handle, b.handle));
 
   // The drawing's own annotation scale: the median body-text height. With no
   // text there are no captions, so every entity is honestly unassigned.
@@ -453,7 +454,7 @@ export function partitionViews(
       orphans.push(...cell.members);
       continue;
     }
-    const ordered = [...cell.anchors].sort((a, b) => a.y - b.y || a.x - b.x || a.handle.localeCompare(b.handle));
+    const ordered = [...cell.anchors].sort((a, b) => a.y - b.y || a.x - b.x || compareCanonical(a.handle, b.handle));
     const owned = new Map<string, Placed[]>(ordered.map((a) => [a.handle, []]));
     for (const member of cell.members) {
       let owner = ordered[0]!;
@@ -485,7 +486,7 @@ export function partitionViews(
       });
     }
   }
-  views.sort((a, b) => (a.bounds?.[0] ?? 0) - (b.bounds?.[0] ?? 0) || a.id.localeCompare(b.id));
+  views.sort((a, b) => (a.bounds?.[0] ?? 0) - (b.bounds?.[0] ?? 0) || compareCanonical(a.id, b.id));
 
   const reasons: ViewReason[] = [];
   if (orphans.length > 0) {
