@@ -39,6 +39,36 @@ fears — but it is not the cold run: `node_modules` was already present, so the
 executed and the wall-clock split this ticket asks for was never produced. Treat it as one leg of
 the answer, not the answer.
 
+## Prior evidence — the gate firing RED, 2026-08-12 (ticket 11's session)
+
+A second data point, with the same caveat as ticket 06's: **not the cold run either.** The log
+says `Already up to date` for `pnpm install` and `.env exists — leaving it alone`, so
+`node_modules` was present and the install path never executed. What *was* cold was the process
+and page cache — nothing in the tree had run yet.
+
+`provision.sh` **exited 1**, and the failing leg is worth recording because ticket 06's run went
+green and so did not see it:
+
+```
+provision: no docker daemon — native postgres cluster on 5544   (native path again — /usr/bin/docker present, no socket)
+parity: --- verify ---
+  × cad.spec.ts > ingests the fixture into the artifact the pipeline committed   5008ms
+  Error: Test timed out in 5000ms.
+parity: NOT ok after 34s — verify: the tree's contract does not hold on this machine
+provision: NOT ok — the machine provisioned but does not pass the parity check.
+```
+
+The same test passes in **1.24s** warm, and a re-run of `provision.sh` minutes later reached
+`parity: ok in 62s`. So the fault is **first-`uv run`-in-a-cold-container cost brushing a 5s test
+timeout**, not the gate's logic and not the database: checkup, the native Postgres path, the
+migration and the roles were all green before verify ran.
+
+This is the shape this ticket most needs to distinguish. The gate did its job — it refused to say
+ok — but it refused for *slowness*, and a provisioner that fails on a coin flip on every fresh
+machine blocks the disposable-container work regardless of whether the cause is a real fault. The
+cure is a third thing the question below does not yet list: a warm-up before the gate, a timeout
+that reflects a cold machine, or a parity check that can tell "slow" from "broken".
+
 ## The question
 
 Not a decision — a measurement. Does a container that started empty reach

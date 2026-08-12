@@ -1,4 +1,5 @@
 import type { ElementType, LevelBasis } from "./enums";
+import { compareCanonical } from "./order";
 
 /**
  * The identity law, pure (identity.md §3–§5): what a sighting claims, how a
@@ -108,7 +109,7 @@ export function familyIdentities(sightings: Sighting[]): ClaimedIdentity[] {
     }
   }
   return claims.sort((a, b) =>
-    a.sighting.placementKey.localeCompare(b.sighting.placementKey),
+    compareCanonical(a.sighting.placementKey, b.sighting.placementKey),
   );
 }
 
@@ -116,8 +117,8 @@ export function familyIdentities(sightings: Sighting[]): ClaimedIdentity[] {
 function sortByContent(sightings: Sighting[]): Sighting[] {
   return [...sightings].sort(
     (a, b) =>
-      a.signature.localeCompare(b.signature) ||
-      a.placementKey.localeCompare(b.placementKey),
+      compareCanonical(a.signature, b.signature) ||
+      compareCanonical(a.placementKey, b.placementKey),
   );
 }
 
@@ -130,7 +131,7 @@ function canonical(value: unknown): string {
   if (value !== null && typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>)
       .filter(([, v]) => v !== undefined)
-      .sort(([a], [b]) => a.localeCompare(b));
+      .sort(([a], [b]) => compareCanonical(a, b));
     return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(",")}}`;
   }
   return JSON.stringify(value) ?? "null";
@@ -378,8 +379,8 @@ export function pairRevision(input: PairRevisionInput): Pairing {
     }
   }
 
-  claims.sort((a, b) => a.sighting.placementKey.localeCompare(b.sighting.placementKey));
-  vacated.sort((a, b) => a.prior.placementKey.localeCompare(b.prior.placementKey));
+  claims.sort((a, b) => compareCanonical(a.sighting.placementKey, b.sighting.placementKey));
+  vacated.sort((a, b) => compareCanonical(a.prior.placementKey, b.prior.placementKey));
   return { claims, vacated };
 }
 
@@ -433,8 +434,8 @@ function pairByProximity(
   candidates.sort(
     (a, b) =>
       a.d - b.d ||
-      a.sighting.placementKey.localeCompare(b.sighting.placementKey) ||
-      a.prior.placementKey.localeCompare(b.prior.placementKey),
+      compareCanonical(a.sighting.placementKey, b.sighting.placementKey) ||
+      compareCanonical(a.prior.placementKey, b.prior.placementKey),
   );
 
   const settled = new Set<string>();

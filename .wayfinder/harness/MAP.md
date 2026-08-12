@@ -64,6 +64,17 @@ Two axes, deliberately one map because they collide at every step:
   four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
   open.
 
+- 2026-08-12 — [Two Postgres paths](tickets/05-two-postgres-paths.md) — **both survive**; the pin
+  failed its precondition (three sandbox observations: present, binary-no-daemon,
+  binary-no-daemon). The exerciser worry *inverted* — native runs every cloud session, compose
+  every local one. Equivalence is **five properties** gated by a new `pg profile` line in
+  `pnpm checkup`: major 16, UTF8, `C.UTF-8` collate/ctype, no extensions beyond `plpgsql`, plus
+  the roles line already there. The one real divergence was **locale** — native `C.UTF-8` vs the
+  image's `en_US.utf8` — now **pinned to `C.UTF-8` on both** (`POSTGRES_INITDB_ARGS`; native
+  `CREATE DATABASE ... TEMPLATE template0`), costing one `docker compose down -v` locally.
+  Collation turned out **inert today** (ordinals sort in JS; no SQL orders by text), which is why
+  it is pinned rather than watched. A `.dbspec.ts` test was rejected: checkup is about the
+  machine, tests are about the tree. verify green **51.2s**.
 - 2026-08-12 — [What a cloud session owns](tickets/06-what-a-cloud-session-owns.md) — **ADR-0010**:
   the dispatcher owns branch, ticket, claim and merge; the session owns the work and the evidence.
   The prior lost both halves. *Merge is a human act on your machine* was refuted by `main`'s own
@@ -93,6 +104,16 @@ Two axes, deliberately one map because they collide at every step:
   so the log dies with the container. An environment fingerprint gives rule 2 a mechanism, folded
   into [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md); checkup now describes as
   well as judges, and descriptive lines never touch the exit code.
+- 2026-08-12 — [The locale in the sort](tickets/11-the-locale-in-the-sort.md) — **code units
+  behind one comparator** (`compareCanonical`, `src/core/order.ts`) at **all thirteen** sites,
+  plus an absolute eslint ban on bare `localeCompare` proven to fail closed in
+  `boundaries.spec.ts`. Forced by a reproduced flip: a mark family spelled `C1`/`c1` freezes
+  `c1#1, C1#2` under ICU and `C1#1, c1#2` under code units — ordinals *and* the registered
+  spelling. The ticket's headline axis was wrong: `LANG` only moves non-ASCII, while **case**
+  moves plain ASCII, so the live axis is how Node was built (full/small/no ICU), not `LANG`.
+  `Intl.Collator` with a pinned locale rejected — it closes one axis and leaves ICU version and
+  build open. Nothing renumbered: `register_objects` was empty, and the suite passed unmodified.
+  verify green **36.6s**.
 
 ## Not yet specified
 
