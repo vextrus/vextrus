@@ -22,18 +22,27 @@ if (!url) {
 
 const appRolePassword =
   process.env.APP_DB_PASSWORD ?? "vextrus_app_dev_password";
+const authRolePassword =
+  process.env.AUTH_DB_PASSWORD ?? "vextrus_auth_dev_password";
 
 const sql = postgres(url, { max: 1, onnotice: () => {} });
 const migrationsDir = path.resolve(import.meta.dirname, "../db/migrations");
 
 try {
-  // App role first: migrations GRANT to it. Dev password by default; prod sets
-  // APP_DB_PASSWORD (and may rotate out-of-band with ALTER ROLE).
+  // Roles first: migrations GRANT to them. Dev passwords by default; prod sets
+  // APP_DB_PASSWORD / AUTH_DB_PASSWORD (and may rotate with ALTER ROLE).
+  // vextrus_auth is the auth lane (src/core/auth.ts): constrained like the app
+  // role, but with explicit policies on the membership tables — better-auth
+  // resolves sessions/organizations across tenants by design, and must never
+  // run as owner on a request path.
   await sql.unsafe(`
     DO $$
     BEGIN
       IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vextrus_app') THEN
         CREATE ROLE vextrus_app LOGIN NOBYPASSRLS PASSWORD '${appRolePassword}';
+      END IF;
+      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vextrus_auth') THEN
+        CREATE ROLE vextrus_auth LOGIN NOBYPASSRLS PASSWORD '${authRolePassword}';
       END IF;
     END $$;
   `);
@@ -68,8 +77,10 @@ try {
   }
   console.log(ran === 0 ? "up to date" : `db:migrate: ${ran} applied`);
 
-  // vextrus_app must be able to see the schema at all
-  await sql.unsafe(`GRANT USAGE ON SCHEMA public TO vextrus_app;`);
+  // constrained roles must be able to see the schema at all
+  await sql.unsafe(
+    `GRANT USAGE ON SCHEMA public TO vextrus_app, vextrus_auth;`,
+  );
 } finally {
   await sql.end();
 }

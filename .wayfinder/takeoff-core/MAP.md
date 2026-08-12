@@ -26,6 +26,10 @@ a named reason, and `pnpm verify` stays under 60s.
 
 *(appended one line per closed ticket)*
 
+- 01 — better-auth's org plugin maps onto `tenants`/`memberships` (one model, B2C = single-member
+  tenant); auth runs as a third constrained role `vextrus_auth`, never owner; signup's deferred
+  after-hook is healed once in the tRPC auth middleware; verify 4.6s.
+
 ## Not yet specified
 
 - Scale-family affirmation UX (fail-closed per region) — chart after 05 lands.

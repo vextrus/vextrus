@@ -20,11 +20,11 @@ beforeAll(async () => {
   await runAsSystem("tenancy dbspec setup", async (tx) => {
     const [a] = await tx
       .insert(schema.tenants)
-      .values({ name: "dbspec Tenant A" })
+      .values({ name: "dbspec Tenant A", slug: `dbspec-a-${crypto.randomUUID()}` })
       .returning();
     const [b] = await tx
       .insert(schema.tenants)
-      .values({ name: "dbspec Tenant B" })
+      .values({ name: "dbspec Tenant B", slug: `dbspec-b-${crypto.randomUUID()}` })
       .returning();
     if (!a || !b) throw new Error("setup failed");
     tenantA = a.id;
