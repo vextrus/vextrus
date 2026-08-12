@@ -188,6 +188,6 @@ ticket-04 bar" is met **for the database**: the native path provisioned, migrate
 `checkup`, `test:db` and the dev-server probe cold. The full parity gate did not go green cold,
 for the cad-timeout reason above.
 
-**Handed on — [The locale in the sort](09-the-locale-in-the-sort.md):** `pairing.ts` sorts with `localeCompare` and no explicit locale, so
+**Handed on — [The locale in the sort](11-the-locale-in-the-sort.md):** `pairing.ts` sorts with `localeCompare` and no explicit locale, so
 its order depends on the Node runtime's default ICU locale — a cross-machine parity hazard of
 exactly the kind this effort exists for, one layer above the database and outside this ruling.

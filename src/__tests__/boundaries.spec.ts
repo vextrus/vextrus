@@ -54,7 +54,7 @@ describe("module boundaries", () => {
  * The comparator rule fails closed for the same reason: identity is derived
  * from sorted strings, so a lint that stops firing lets a locale-dependent
  * order back onto the frozen-ordinal path without anyone noticing
- * (.wayfinder/harness ticket 09).
+ * (.wayfinder/harness ticket 11).
  */
 async function comparatorErrors(filePath: string, code: string) {
   const [result] = await eslint.lintText(code, { filePath });

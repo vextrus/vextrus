@@ -24,7 +24,7 @@ const DEEP_MODULE_IMPORT = {
  * absent locale against the runtime's environment, and ICU orders case the
  * opposite way from code units — measured to flip a mark family's frozen
  * ordinals and its registered spelling, `c1#1, C1#2` against `C1#1, c1#2`
- * (.wayfinder/harness ticket 09). The rule is absolute so it needs no judgment
+ * (.wayfinder/harness ticket 11). The rule is absolute so it needs no judgment
  * to apply: `compareCanonical` from `@/core/order`, or a bare `.sort()`, which
  * is already code-unit order.
  *

@@ -45,6 +45,24 @@ Pass → advance to the next frontier ticket. Fail, `## Stuck`, or `## Handoff` 
 evidence** (`.loop/<run>/HALT.md`); the tree stays exactly as the worker left it. No silent
 retries, no conductor cleanup — evidence first.
 
+## The campaign's unit is the arc (ADR-0010)
+
+Everywhere else, the dispatcher picks the ticket and writes the claim (`.wayfinder/TRACKER.md`).
+The loop cannot work that way — `frontier.mjs` selects and the worker sets and clears its own
+claim, which gate C2 then checks. That is legal here because the loop's **dispatch unit is the
+arc directory, not the ticket**: you dispatch a campaign against `.wayfinder/<effort>/arcs/<arc>/`
+and that directory is exclusively the campaign's until it ends. Nobody else touches those tickets
+meanwhile. Self-selection inside a boundary no one else is inside collides with nothing.
+
+Everything else is identical: the branch is dispatcher-created, the pre-push guard mechanically
+withholds every push until the campaign ends, and the work lands through the same
+fetch-merge-`verify`-push-evidence-click.
+
+One consequence to plan around rather than be surprised by: a campaign is a long-lived branch
+that *cannot* push, so `main` may move far underneath it. The end-of-campaign merge is therefore
+the riskiest merge in the system — the one most likely to be genuinely red. Short campaigns, and
+no other work landed during one.
+
 ## The boundary review
 
 After an arc completes, run one judge session with `scripts/loop/REVIEW.md` (arc name, start

@@ -95,7 +95,7 @@ describe("mark families and ordinals", () => {
     // uppercase first — so `localeCompare` here would freeze c1#1, C1#2 and
     // register the family under `c1`. Both the ordinals and the family's
     // spelling are identity (identity.md §4), and neither may depend on the
-    // runtime's locale or ICU build (.wayfinder/harness ticket 09).
+    // runtime's locale or ICU build (.wayfinder/harness ticket 11).
     const claims = familyIdentities([
       sighting({ placementKey: "plan:E6|C1|9000.0|0.0", mark: "C1", family: "C1" }),
       sighting({ placementKey: "plan:E6|c1|0.0|0.0", mark: "c1", family: "C1" }),
