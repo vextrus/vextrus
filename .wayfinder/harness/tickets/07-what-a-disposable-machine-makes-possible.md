@@ -2,7 +2,7 @@
 
 wayfinder:grilling
 Status: open
-Claimed by:
+Claimed by: claude/disposable-machine-possibilities-14i8bq
 Blocked by:
 
 ## Objective
