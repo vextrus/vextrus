@@ -17,6 +17,14 @@ export {
 } from "./ingestion";
 export { CAD_TIMEOUT_MS, runCadIngest } from "./cad";
 export {
+  axisFamilies,
+  georeferenceGrid,
+  type AxisFamily,
+  type GridAxis,
+  type GridBackbone,
+  type GridDeferral,
+} from "./grid";
+export {
   DEFAULT_TUNING,
   classifyCaption,
   mayYieldInstances,

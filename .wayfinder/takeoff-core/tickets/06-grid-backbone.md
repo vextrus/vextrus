@@ -1,8 +1,9 @@
 # The grid backbone
 
 wayfinder:task
-Status: open
+Status: closed
 Blocked by: 05-view-partition.md
+Claimed by:
 
 ## Objective
 
@@ -39,8 +40,25 @@ Matching on the block name `GRID_BUBBLE` is not an option — same species as la
 
 ## Exit criteria
 
-- [ ] Both fixture revisions georeference: 3 letter axes, 3 numeral axes, positions asserted
+- [x] Both fixture revisions georeference: 3 letter axes, 3 numeral axes, positions asserted
       against the generator's own `GRID_X` / `GRID_Y`.
-- [ ] A layout-plan view stripped of bubble evidence defers with a named reason; a bubble
+- [x] A layout-plan view stripped of bubble evidence defers with a named reason; a bubble
       stamped inside a non-layout view moves no axis (assert both).
-- [ ] `pnpm verify` green and under 60s.
+- [x] `pnpm verify` green and under 60s.
+
+## Build note
+
+The ruling, first: **the circle corroborates, it never invents.** A bubble is anchored on an
+original — an INSERT's attribute channel (§3 collects attributes off the INSERT, so they are
+original evidence) with a circle from *either* channel enclosing the label, position taken from
+the INSERT's own world point; or a free-standing bare label inside an *original* circle,
+position from that circle's centre. Both forms land, so a template drawing its bubbles either
+way reads identically; a label with no circle is a mark, and paint with no attribute is nothing.
+
+`src/modules/takeoff/grid.ts` — `georeferenceGrid(graph, partition)` filters on
+`mayYieldInstances` before detection, so the detail's stamped "A" is not evidence at all. Axis
+direction is read off the drawing (repeated labels are collinear along their axis; distinct
+labels string out along its normal), a family that decides neither takes the other's
+perpendicular, and one that still cannot defers `NOT_ESTABLISHED` — the shared taxonomy, no new
+enum value and so no migration. `minSpacing` (4500 on the fixture) is computed here and once:
+ticket 07's placement constants are shares of it and must read this field.
