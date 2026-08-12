@@ -43,9 +43,29 @@ the machine reports success while being materially not the machine that was aske
   without asking the network — a marker with the installed version in it, or probing the
   install path directly rather than PATH.
 
+## Added by [What a disposable machine makes possible](07-what-a-disposable-machine-makes-possible.md) — 2026-08-12
+
+That ticket ruled that a result from a discarded container is only citable if it **carries what
+varied**, and chose a mechanism over a discipline: an **environment fingerprint**, homed in
+`pnpm checkup` rather than in a new block at the tail of `provision.sh` (which would print Node
+twice from two code paths that can disagree). It lands here because this ticket already owns
+installed-vs-ambient, already touches checkup's node line, and already requires a fresh-container
+proof run.
+
+Checkup already reports database, roles, drift, and the session's Node against the engines pin.
+Missing are the facts that make a container result quotable: **which Postgres path was taken and
+its version/origin, whether a Docker daemon existed, and the run's date.**
+
+The constraint that keeps [ticket 03](03-pnpm-doctor.md)'s ruling intact: checkup now **describes**
+as well as **judges**, and **descriptive lines never affect the exit code**. "Postgres came from
+apt, not compose" is not a fitness question — both are fit.
+
 ## Exit criteria
 
 - [ ] The ruling in `## Resolution`, covering all three axes above.
+- [ ] `pnpm checkup`'s output is sufficient to cite a container result: it names the Postgres path
+      and version/origin, whether a Docker daemon existed, and the date — as descriptive lines that
+      cannot change the exit code.
 - [ ] A re-run on a provisioned machine with **egress blocked** succeeds — the standing proof
       that "re-running is the repair" no longer depends on the network.
 - [ ] A session on a fresh container reports Node ≥24 with no `Unsupported engine` warning,
