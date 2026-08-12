@@ -343,7 +343,17 @@ Two axes, deliberately one map because they collide at every step:
   point of the workflow. **The trigger is precise: the commit that lands migration 0012** — the
   first on which the drill is green and meaningful. Pinning `REPLAY_BASELINE` past 0010 was put and
   rejected as rigging a check to pass. Not fog so much as a dated debt, recorded here because the
-  step's absence is invisible in a passing build.
+  step's absence is invisible in a passing build. **Measured 2026-08-12 at `f7cfa2d`, and the
+  measurement moved the subject** — the drill is **23.8s** end to end (baseline install 7.2s,
+  baseline suite 38 tests in 12.7s, 92 of 92 rows restored), so the expense objection to running
+  it per-commit is dead, and what is left is a question of *meaning*: the baseline is derived from
+  the newest migration in the tree, so `applying` is never empty for committed state and the
+  `nothing to replay` skip cannot fire on the case ticket 13 wrote it for. Wiring the step after
+  0012 would produce a green on every commit forever that says nothing about the commit it ran on.
+  The red itself is an uncaught `PostgresError` with a V8 stack trace, naming neither `0010` as
+  landed nor ticket 10 as the ruling. Charted as
+  [ticket 17](tickets/17-the-drills-unit-and-what-it-says-when-it-fails.md): the drill's unit, its
+  failure speech, and whether the CI step's trigger should be a mechanism rather than a comment.
 
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no
