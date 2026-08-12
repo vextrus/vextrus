@@ -206,10 +206,40 @@ Two axes, deliberately one map because they collide at every step:
   Proven by stopping Postgres for real: `--hook` EXIT=0 with the full report, bare checkup EXIT=1,
   `conduct.mjs` refusing in 1.1s naming the repair; repair `parity: ok in 101s`; fit line **1.4s**.
 
+- 2026-08-12 — [CI — the missing trigger](tickets/13-ci-the-missing-trigger.md) — **CI exists, as
+  GitHub Actions, and it runs the provisioner rather than a recipe of its own.** One job, two
+  commands: checkout at `fetch-depth: 0` → `bash scripts/provision.sh` (whose last act *is*
+  `parity.sh`, so this is checkup | verify | test:db | dev in full) → `pnpm db:replay`
+  unconditionally, its no-new-migration skip pushed into the script. The workflow holds **no
+  project knowledge** — no setup recipe, no service block, no stage list, no path filter — so it
+  cannot drift from what a session runs. A workflow with its own setup was rejected as a **second
+  provisioner**, the divergence this effort exists to kill. Triggers: `pull_request` → `main`,
+  `push` on `main`, `workflow_dispatch`; no `schedule`, because an unread red is worse than no
+  signal. The PR run becomes a **required check with require-up-to-date** — the sub-option that
+  exists only once a required check does, which is why ADR-0010 could not have it; the `main` run
+  is a **canary, never required**. The check unblocks the button, **the human still presses it**.
+  **No timing budget**, forced by a 2.2× spread on one commit: verify **90.3s** at the machine's
+  first touch of its own image vs **41.4s** warm, so any threshold sharp enough to catch route
+  growth fires on a machine's history instead — the assertion ticket 09 deleted. What
+  *"re-measure, not relax"* lacked was a **series**, not a threshold. Cost premise corrected: the
+  repo is **public**, so runners are free and unmetered. **Playwright ruled a non-subject** — it
+  exists nowhere but prose. Ticket 07's declines stay declined. **ADR-0010 amended**: the required
+  check supersedes the evidence comment, *when the check exists*. Limitation named, not papered
+  over: `ubuntu-latest` has Docker, so CI takes the **compose** path and the **native branch every
+  cloud session runs still has no unattended exerciser** — fog below. Build handed to `/to-spec`.
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
      destination and this section is expected to stay thin. -->
+
+- **Nothing unattended exercises the native-Postgres path.** Ticket 13 put CI on `ubuntu-latest`,
+  which ships a Docker daemon, so every CI run takes the **compose** path — the one the Windows
+  workstation already covers. The native-cluster branch runs on every cloud session and is checked
+  by nobody but the session that happens to be in it. Forcing native by hiding the daemon was put
+  and rejected: it feeds ticket 05's detector a false premise. The question is sharp; every route
+  to answering it waits on a measurement not yet taken — whether `provision.sh` goes green on a
+  hosted runner at all — so it graduates once the workflow lands.
 
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no

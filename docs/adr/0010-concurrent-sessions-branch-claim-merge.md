@@ -81,3 +81,32 @@ exists it slots in as a required check and the click stops carrying the weight.
   guardrail catching a genuine merged-red — the case the whole rule exists for.
 - **Not yet exercised with two concurrent sessions.** The failure modes are human-side, so the
   first real two-session run is the test.
+
+## Amendment — 2026-08-12: CI takes the evidence, the click stays human
+
+The harness map ruled on CI (`.wayfinder/harness/tickets/13-ci-the-missing-trigger.md`): GitHub
+Actions, one job running `scripts/provision.sh` — whose last act is `pnpm parity` — then
+`pnpm db:replay`. The PR run becomes a **required status check with "require branches to be up to
+date before merging"**. This ADR named that seam and fenced it off; it is now decided, and two
+clauses above change.
+
+**The evidence comment is superseded.** Its stated reason was *"nothing mechanical can confirm
+that a session ran verify"*, and that sentence stops being true. A CI run is strictly better
+evidence than a session's testimony: it runs on a machine the session cannot touch, at the head
+SHA, on a tree GitHub resolved itself, and it runs the whole gate rather than the one leg a
+session chose to paste. A session's last act becomes `git fetch origin main` → **merge** →
+`pnpm verify` → push. It still verifies — fast feedback, and don't-push-red — it just stops
+testifying. **This takes effect when the check exists**, not when the ticket closed: until the
+workflow lands, the SHA-stamped comment is the only mechanism there is and the rule above stands
+unchanged.
+
+**"Require branches to be up to date" stops being discipline.** The paragraph above says GitHub
+cannot enforce it because the setting is a sub-option of required status checks and there is no
+check to require. There is one now, so it is enforced mechanically. Merge-not-rebase holds for the
+reason already given.
+
+**Unchanged, and load-bearing:** the required check *unblocks* the merge button — it does not
+press it. **The click is still the human's and still the gate.** The dispatcher still owns
+branches, tickets and claims; sessions still own neither. The alternative listed above — "a CI
+workflow as the required status check", called *the correct long-run answer and the only one that
+removes trust entirely* — is the one that was taken.
