@@ -43,60 +43,55 @@ BIM, module counts, or agent counts.
 ## The feedback loop
 
 ```
-pnpm verify        # tsc -> eslint -> vitest -> cad (ruff+pytest) -> next build; exit code is the contract
+pnpm verify     # tsc -> eslint -> vitest -> cad (ruff+pytest) -> next build; the exit code is
+                # the contract, and only its output is evidence
+pnpm db:replay  # wrote a migration? run it once before you commit — the only path on which a
+                # migration meets rows written before it
+pnpm land       # your last act: fetch main -> merge -> verify -> push (ADR-0010)
+pnpm checkup    # the machine, not the tree; it reports, `scripts/provision.sh` repairs
 ```
 
-Run it, read the exit code, fix, repeat. Playwright e2e is outside this lane.
+Run verify, read the exit code, fix, repeat. Playwright e2e is outside this lane.
 
 ```
-pnpm db:replay     # wrote a migration? run it once, before you commit
+DB:  localhost:5544/vextrus — compose where a Docker daemon answers, a native cluster where
+     none does (every cloud container); `pnpm checkup` says which one you are on.
+Web: localhost:3210 (`pnpm dev` for a terminal; `pnpm dev:bg` runs it in the background and
+     logs to `.data/dev.log` — `pnpm dev:stop` frees the port)
 ```
 
-Verify never touches a row. `db:replay` stands the schema up at the last committed
-migration, populates it by running that tree's own `pnpm test:db`, restores the rows those
-fixtures deleted, and applies your migration to them — the only path on which a migration
-meets data written before it. Container only; it builds and drops its own database.
-
-```
-DB:  localhost:5544/vextrus  (compose-managed; pnpm db:migrate is the only writer)
-Web: localhost:3210  (`pnpm dev` for a terminal; `pnpm dev:bg` boots it in the background,
-     probes it, and leaves the output in `.data/dev.log` — `pnpm dev:stop` releases the port)
-```
+Your container is disposable and nothing outside git survives it — `.data/` included. A
+measurement worth keeping is quoted into the ticket with the commit and machine it was taken
+on; `checkup`'s environment line carries both.
 
 ## Pointers — read on demand, not up front
 
-- `docs/specs/genesis.md` — the founding spec; why everything is the way it is.
 - `docs/domain/` — the domain law: quantity contract, identity, measurement rules, BD
   authority, formulas. **Code implements these; tickets cite them.**
-- `docs/CONTEXT.md` — commercial truth, glossary, Bangladesh rules.
-- `docs/TRAPS.md` — environment faults that present as build faults. Read when debugging.
-- `docs/adr/` — dated decisions; superseded, never edited.
+- `docs/CONTEXT.md` commercial truth, glossary, BD rules · `docs/TRAPS.md` environment faults
+  that present as build faults, read when debugging · `docs/specs/genesis.md` the founding
+  spec · `docs/adr/` dated decisions, superseded and never edited.
 
 ## Session protocol
 
 1. **One ticket per session.** `/clear` at the boundary. Never `/compact`.
-2. **`pnpm verify` is the contract.** Run it; read the exit code; fix; repeat.
-3. Work larger than one session is charted with `/wayfinder` into `.wayfinder/<effort>/`,
-   specced with `/to-spec`, broken into arc tickets with `/to-tickets`, and either worked one
-   ticket at a time or executed by the loop (`docs/specs/loop.md`).
-4. **Delegate only for large, genuinely independent investigation.** Never to verify your own
+2. Work larger than one session is charted with `/wayfinder` into `.wayfinder/<effort>/`,
+   specced with `/to-spec`, ticketed with `/to-tickets`, then worked one ticket at a time or
+   run by the loop (`docs/specs/loop.md`).
+3. **Delegate only for large, genuinely independent investigation.** Never to verify your own
    work. One agent beats three.
-5. **You work on the branch you were given.** Never `main`; never create, rename, or switch a
-   branch. On `main` by accident, stop and say so. You do not choose your ticket and you do not
-   write `Claimed by:` — the dispatcher does both (`.wayfinder/TRACKER.md`).
-6. **A session's last act, before it reports done** (ADR-0010): `git fetch origin main` →
-   **merge** `origin/main` into your branch (never rebase — it invalidates the verify that
-   justified the commits) → `pnpm verify` on that exact tree → push → post the head SHA and the
-   verify tail as a PR comment. Nothing lands on the strength of a verify that ran on a
-   different tree. **You never merge the PR** — the click is the human's, and it is the gate.
-
-## How to work here
-
-Keep responses focused and brief; spend the response on the answer, not the preamble.
-Match written documents to what the task needs — no filler sections or redundant summaries.
-Deliver what was asked, at the scope intended. Make routine judgment calls yourself and
-check in only when different readings lead to materially different work. Finish the whole
-task; stop short of what wasn't asked.
+4. **You work on the branch you were given.** Never `main`; never create, rename, or switch a
+   branch — the push guard refuses `main`, and a refusal there means stop and report. You do
+   not choose your ticket and never write `Claimed by:` — the dispatcher does both
+   (`.wayfinder/TRACKER.md`).
+5. **Nobody is watching while you work**, and you cannot ask mid-session. Where a reading is
+   genuinely ambiguous, take the most defensible one, name the assumption in the work and in
+   the PR, and finish. Stop only when proceeding would be unsafe or the result useless if
+   wrong: unfinished and said so beats a guess reported as done.
+6. **A session's last act:** `pnpm land` — fetch, merge `origin/main` (never rebase: it
+   invalidates the verify that justified the commits), verify that exact tree, push. CI runs
+   the whole gate on the pushed head, which is better evidence than your own testimony
+   (ADR-0010). **You never merge the PR** — the click is the human's, and it is the gate.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -285,10 +285,43 @@ Two axes, deliberately one map because they collide at every step:
   go BROKEN on a machine that signs perfectly. Signature *verification* ruled out of scope. verify
   green; checkup fit in **1.5s**.
 
+- 2026-08-12 — [The harness for an unattended machine](tickets/16-the-harness-for-an-unattended-machine.md)
+  — fifteen tickets made the *machine* correct and left the *session protocol* almost entirely
+  prose, which is what an unwatched container is worst at honouring. **The one mechanical guard in
+  the repo had never executed**: `.githooks/pre-push` is committed, but git reads `.git/hooks`,
+  `core.hooksPath` is repo-local config no clone carries, and the file was mode `644` — ADR-0008's
+  "safety by mechanism" was neither, on every Linux machine this repo has ever run on. Cured at the
+  provisioner (set, read back, executable bit tested, **refuse** if it did not take) and the hook
+  gained the guard it should have had: a push to `main` is refused, override named, proven on a
+  real push rather than a dry run. **Rule 6 became `pnpm land`** — fetch → merge → verify → push,
+  refusing a dirty tree, a conflicted merge, a red verify and `main`; ADR-0010 unchanged in
+  substance, its three subtle failure modes now refusals instead of reading comprehension.
+  **A session was told to check in and cannot** (`AskUserQuestion` denied, nobody watching):
+  ruled **assume, name, finish**. **`main` is unprotected on GitHub** — the required check
+  ADR-0010's amendment leans on unblocks nothing today; not papered over, named as the one human
+  step (below). `checkup`'s environment line gains `branch@sha +dirty`, completing ticket 07's
+  citability rule, and its unfit verdict now names the ~2s `pg_ctlcluster … start` when the only
+  BROKEN line is a native database — the question this map left open. Rejected: repair in the
+  hook (again), a BROKEN line for an unwired hook (fitness is verify/`test:db`/dev, and widening
+  it makes checkup a second verify), the Docker-stopping CI job (below, on its own merits), and
+  CLAUDE.md's response-style section (the platform prompt carries it). CLAUDE.md came out
+  **smaller while gaining four subjects** — 5,410 → 5,287 chars — and its `DB:` line stopped
+  saying *compose-managed*, which was false on every cloud container. **ADR-0011.**
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
      destination and this section is expected to stay thin. -->
+
+- **`main` is unprotected, so the required check is a plan and not a gate.** Read from the API
+  2026-08-12 (ticket 16): `"protected": false`. ADR-0010's amendment retires the SHA-stamped
+  evidence comment "when the check exists" — `ci` exists and is green on four runs, but nothing
+  requires it and nothing requires a branch to be up to date, so the merge button is gated by the
+  dispatcher's eye alone and a red PR can still be clicked. This is not a session's to fix: it is
+  one administrative act by a repository admin (require the `ci` check, tick *require branches to
+  be up to date*), and it is the last mechanical step in the landing path. Recorded here because
+  an amendment that reads as landed and is not is precisely the fault ticket 13 corrected in
+  ticket 15.
 
 - **Nothing unattended exercises the native-Postgres path.** Ticket 13 put CI on `ubuntu-latest`,
   which ships a Docker daemon, so every CI run takes the **compose** path — the one the Windows

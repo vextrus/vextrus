@@ -76,6 +76,9 @@ function run(cmd, args, ms = PROBE_MS) {
   const r = spawnSync(cmd, args, {
     encoding: "utf8",
     timeout: ms,
+    // The repo, never the caller's cwd: `pnpm checkup` from a subdirectory must
+    // read this checkout's git state, not whatever repository encloses it.
+    cwd: root,
     shell: process.platform === "win32",
   });
   return {
@@ -514,6 +517,16 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
       : "native (daemon present, no compose postgres)";
   }
 
+  // The commit is part of "what varied" and was the one axis missing: a number
+  // quoted into a ticket from a container that no longer exists is only a
+  // measurement if it says which tree produced it. Local reads, no network.
+  const head = run("git", ["rev-parse", "--short", "HEAD"], 500);
+  const branch = run("git", ["rev-parse", "--abbrev-ref", "HEAD"], 500);
+  const dirty = run("git", ["status", "--porcelain"], PROBE_MS);
+  const tree = head.ok
+    ? `${branch.ok ? branch.out : "?"}@${head.out}${dirty.ok && dirty.out ? " +dirty" : ""}`
+    : "no git checkout";
+
   report(
     INFO,
     "environment",
@@ -521,6 +534,7 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
       new Date().toISOString().replace(/\.\d+Z$/, "Z"),
       `${process.platform} ${process.arch}`,
       `node ${process.version}`,
+      tree,
       dbReachable
         ? `postgres via ${path_}${pgOrigin?.build ? ` · ${pgOrigin.build}` : ""}` +
           `${pgOrigin?.dataDir ? ` · ${pgOrigin.dataDir}` : ""}`
@@ -566,10 +580,20 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
   const who = name || email ? `${name || "(no name)"} <${email || "no email"}>` : "not configured";
   const signs = /^true$/i.test(cfg("commit.gpgsign"));
   const program = cfg("gpg.ssh.program") || cfg("gpg.program");
+  // Whether the committed push guard is actually wired. A clone reads
+  // .git/hooks and carries no core.hooksPath, so `.githooks/pre-push` sat inert
+  // on every Linux machine this repo has ever run on. provision.sh sets and
+  // asserts it; this line is for the machine somebody set up by hand.
+  //
+  // Descriptive like the rest of this line, not gating: fitness is verify,
+  // test:db and dev, and an unwired hook stops none of them. What it stops is
+  // the guard, which is why it is worth a word here.
+  const hooks = cfg("core.hooksPath");
   report(
     INFO,
     "git",
-    `${who} · ${signs ? `signing on${program ? ` via ${program}` : ""}` : "signing off"}`,
+    `${who} · ${signs ? `signing on${program ? ` via ${program}` : ""}` : "signing off"} · ` +
+      `hooks ${hooks || "unwired (run scripts/provision.sh)"}`,
   );
 }
 
@@ -621,9 +645,30 @@ if (hookMode && broken.length === 0) {
   if (broken.length === 0) {
     console.log(`checkup: fit for work — verify, test:db and dev can all run (${elapsed}s)`);
   } else {
+    // The repair pointer is `scripts/provision.sh` because it repairs
+    // everything. When the *only* broken thing is the database on the native
+    // path, that is ~60s of parity to restart a cluster that comes back in ~2s
+    // — a cost the harness map named as an open question. So the cheap repair
+    // is named first, and only when it is measured to apply: the cluster is
+    // asked its own status, and a session is never told to run a command
+    // against a cluster that is already up. Still reporting, never repairing.
+    let cheaper = "";
+    if (broken.length === 1 && broken[0].label === "database" && !dockerProbe.ok) {
+      const clusters = run("pg_lsclusters", ["-h"]);
+      const down = clusters.out
+        .split("\n")
+        .map((l) => l.trim().split(/\s+/))
+        .find((f) => f.length >= 4 && f[3] !== "online");
+      if (down) {
+        const sudo = typeof process.getuid === "function" && process.getuid() === 0 ? "" : "sudo ";
+        cheaper =
+          `\n         the native cluster is ${down[3]} — ${sudo}pg_ctlcluster ${down[0]} ${down[1]} start` +
+          ` restarts it in ~2s; re-run pnpm checkup after.`;
+      }
+    }
     console.log(
       `checkup: NOT fit for work — ${broken.map((l) => l.label).join(", ")} (${elapsed}s)\n` +
-        `         checkup reports; run scripts/provision.sh to repair.`,
+        `         checkup reports; run scripts/provision.sh to repair.${cheaper}`,
     );
   }
 }
