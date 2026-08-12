@@ -30,7 +30,7 @@
 import { spawnSync } from "node:child_process";
 import net from "node:net";
 import path from "node:path";
-import { readFileSync } from "node:fs";
+import { readFileSync, statSync } from "node:fs";
 import postgres from "postgres";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -454,6 +454,44 @@ const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
 }
 
 // ── the fingerprint ─────────────────────────────────────────────────────────
+
+// provision — did the repair this command names ever run, and did it finish?
+//
+// Every unfit verdict below ends in "run scripts/provision.sh", and nothing
+// could say whether that had already been attempted. The cloud setup field's
+// transcript reaches no file, so a session inheriting a half-provisioned
+// container cannot read the run that produced it; `provision.sh` therefore
+// keeps its own log, and knowing to read it was prose in docs/TRAPS.md. It is a
+// fact about the machine, discoverable by a stat, and this command runs before
+// turn one — so it belongs here, and that trap is retired.
+//
+// INFO, so it cannot gate: a machine provisioned by hand and perfectly fit has
+// no log, and that is not a fault. An absent log is still the finding the trap
+// named — the provisioner never started, and re-running it is the repair. This
+// is also why the line is silent on the hook's fit path and printed on its
+// unfit one: "was this machine ever provisioned" is only a question once
+// something else is broken.
+{
+  const logPath = path.join(root, ".data", "provision.log");
+  let detail;
+  try {
+    const text = readFileSync(logPath, "utf8");
+    const stamp = statSync(logPath).mtime.toISOString().replace(/\.\d+Z$/, "Z");
+    // provision.sh's last act is parity.sh, and its closing line is the
+    // verdict. Anything else as the final word means the run never reached the
+    // end — which is a different finding from a run that reached it and failed.
+    const last = text.trimEnd().split("\n").at(-1) ?? "";
+    const verdict = /^provision: ok\b/.test(last)
+      ? "ok"
+      : /parity: FAILED|provision: FAILED/.test(text)
+        ? "failed"
+        : "did not finish";
+    detail = `last run ${stamp} · ${verdict} · ${logPath}`;
+  } catch {
+    detail = `never run on this machine (no ${logPath}) — if anything above is BROKEN, that is the first thing to try`;
+  }
+  report(INFO, "provision", detail);
+}
 
 // What a container result must carry to be citable after the container is gone
 // (ticket 07, folded into 08): which Postgres path ran, where that server came

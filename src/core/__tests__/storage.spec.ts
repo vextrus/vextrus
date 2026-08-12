@@ -59,6 +59,15 @@ describe("artifact storage", () => {
     expect(new Uint8Array(await readArtifact(ref))).toEqual(bytes);
   });
 
+  it("refuses to conjure a root that does not exist, rather than minting a second artifact tree", async () => {
+    const set = process.env.VEXTRUS_STORAGE_ROOT;
+    process.env.VEXTRUS_STORAGE_ROOT = path.join(root, "not-provisioned");
+    await expect(
+      writeArtifact(drawingRef(ids, "x.json"), new Uint8Array([1])),
+    ).rejects.toThrow(/does not exist/);
+    process.env.VEXTRUS_STORAGE_ROOT = set;
+  });
+
   it("refuses a reference that escapes the storage root", () => {
     expect(() => resolveRef("../../etc/passwd")).toThrow(
       /escapes the storage root/,

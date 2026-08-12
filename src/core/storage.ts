@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, stat, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { requireEnv } from "./env";
 
 /**
  * Artifact storage: the filesystem, for now (ticket 04 guardrail — object
@@ -20,10 +21,7 @@ import path from "node:path";
  * configuration error.
  */
 export function storageRoot(): string {
-  const root = process.env.VEXTRUS_STORAGE_ROOT;
-  if (!root) {
-    throw new Error("VEXTRUS_STORAGE_ROOT is not set (see .env.example)");
-  }
+  const root = requireEnv("VEXTRUS_STORAGE_ROOT");
   if (!path.isAbsolute(root)) {
     throw new Error(
       `VEXTRUS_STORAGE_ROOT must be an absolute path, not ${root}: every process must resolve a reference to the same place`,
@@ -61,11 +59,44 @@ export function resolveRef(ref: string): string {
   return resolved;
 }
 
-/** Writes bytes at `ref` (creating parents) and returns their sha256. */
+/**
+ * The root is a precondition, never something a writer conjures.
+ *
+ * `mkdir -p` on a reference would create the whole chain, root included, so a
+ * stale or mistyped `VEXTRUS_STORAGE_ROOT` never refuses on write — it mints a
+ * second artifact tree and works perfectly, and the fault surfaces days later
+ * as an ENOENT from a read of a row written under the *other* root. That reads
+ * like corruption or tampering rather than the configuration error it is,
+ * which is the same silent divergence the absolute-path rule above exists to
+ * prevent, arriving through a different door. So: the tenant/project/drawing
+ * segments below the root are ours to create, and the root itself must already
+ * be there. `scripts/provision.sh` creates it, so a provisioned machine passes
+ * this without noticing it.
+ */
+async function requireStorageRoot(): Promise<string> {
+  const root = storageRoot();
+  try {
+    const entry = await stat(root);
+    if (!entry.isDirectory()) {
+      throw new Error(
+        `VEXTRUS_STORAGE_ROOT=${root} is not a directory: artifacts cannot be stored under it`,
+      );
+    }
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== "ENOENT") throw err;
+    throw new Error(
+      `VEXTRUS_STORAGE_ROOT=${root} does not exist. Artifacts written under a root that is created on demand are invisible to every process resolving the configured one — create the directory, or fix the value (see .env.example).`,
+    );
+  }
+  return root;
+}
+
+/** Writes bytes at `ref` (creating parents below the root) and returns their sha256. */
 export async function writeArtifact(
   ref: string,
   bytes: Uint8Array,
 ): Promise<string> {
+  await requireStorageRoot();
   const target = resolveRef(ref);
   await mkdir(path.dirname(target), { recursive: true });
   await writeFile(target, bytes);

@@ -2,6 +2,7 @@ import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import * as schema from "../../db/schema/core";
+import { requireEnv } from "./env";
 
 /**
  * The tenant seam (ADR-0004). The raw db handle is deliberately NOT exported:
@@ -30,12 +31,6 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 let appDb: Db | undefined;
 let systemDb: Db | undefined;
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set`);
-  return value;
-}
 
 function getAppDb(): Db {
   appDb ??= drizzle(postgres(requireEnv("DATABASE_URL"), { max: 10 }), {
