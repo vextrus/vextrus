@@ -19,6 +19,14 @@ SKIP LOCKED table vs pg-boss) inside this ticket and record the decision on the 
 - Ingest failures and truncations surface on the drawing's screen-facing status — silence is
   the condemned state (`docs/domain/quantity-contract.md`).
 - Worker runs under `runAsSystem` with a reason; per-tenant writes go through `forTenant`.
+- Ticket 03's review found `completeIngest` silently drops the artifact's
+  `counters.unsupported_by_type` (the `ingests` table predates the field and both sides'
+  doc-comments claim the row mirrors the counters "verbatim"). Add the column by migration
+  and carry the counter through — also two review findings on `src/core/register.ts` to fix
+  while in there: complete/fail transitions guard by id only (a late `failIngest` can
+  overwrite a succeeded row and NULL its evidence — add a status predicate), and
+  `refused_sightings.ingest_id` is tenant-paired but not project-paired (same-tenant
+  cross-project evidence citation passes; close it the composite-FK way).
 
 ## Exit criteria
 

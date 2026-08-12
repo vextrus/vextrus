@@ -26,6 +26,30 @@ def test_unmapped_insunits_is_never_silently_unitless():
     validate(art)
 
 
+_ORIGINAL_WITHOUT_HANDLE = {
+    "h": None,
+    "t": "DIMENSION",
+    "layer": "0",
+    "color": "#ffffff",
+    "src": None,
+}
+_CLOSED_WITHOUT_AREA = {
+    "h": "FF",
+    "t": "LWPOLYLINE",
+    "layer": "0",
+    "color": "#ffffff",
+    "src": None,
+    "pts": [[0, 0], [1, 0], [1, 1]],
+    "closed": True,
+    "area": None,
+}
+_LINE = {"h": "AA", "t": "LINE", "layer": "0", "color": "#ffffff", "src": None}
+_NON_FINITE = {**_LINE, "p1": [1e999, 0.0], "p2": [1.0, 1.0]}
+_DERIVED_H_KEY_ABSENT = {"t": "LINE", "layer": "0", "color": "#ffffff", "src": "AA",
+                         "p1": [0.0, 0.0], "p2": [1.0, 1.0]}
+_TRAILING_NEWLINE_COLOR = {**_LINE, "color": "#ffffff\n", "p1": [0.0, 0.0], "p2": [1.0, 1.0]}
+
+
 @pytest.mark.parametrize(
     "mutate",
     [
@@ -33,7 +57,15 @@ def test_unmapped_insunits_is_never_silently_unitless():
         lambda d: d["source"].update(sha256="short"),
         lambda d: d["counters"].update(original=-1),
         lambda d: d["counters"].pop("explode_truncated"),
+        lambda d: d["counters"].pop("unsupported_by_type"),
+        lambda d: d["counters"].update(original=True),  # bools are not counts
+        lambda d: d["counters"].update(lost_by_type={"LINE": True}),
         lambda d: d["units"].update(detected="furlong"),
+        lambda d: d["entities"].append(_ORIGINAL_WITHOUT_HANDLE),
+        lambda d: d["entities"].append(_CLOSED_WITHOUT_AREA),
+        lambda d: d["entities"].append(_NON_FINITE),
+        lambda d: d["entities"].append(_DERIVED_H_KEY_ABSENT),
+        lambda d: d["entities"].append(_TRAILING_NEWLINE_COLOR),
     ],
 )
 def test_mutations_refuse(mutate):

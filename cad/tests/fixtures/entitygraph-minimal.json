@@ -14,7 +14,8 @@
     "original": 0,
     "derived": 0,
     "explode_truncated": false,
-    "lost_by_type": {}
+    "lost_by_type": {},
+    "unsupported_by_type": {}
   },
   "entities": []
 }

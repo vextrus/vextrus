@@ -1,0 +1,3 @@
+# DXF fixtures are byte-pinned (sha256 in committed EntityGraph artifacts);
+# any eol conversion breaks the pin.
+*.dxf -text

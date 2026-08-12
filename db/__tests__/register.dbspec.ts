@@ -411,6 +411,7 @@ describe("ingests", () => {
           derived: 7,
           explode_truncated: false,
           lost_by_type: {},
+          unsupported_by_type: {},
         },
         units: { insunits: 4, detected: "mm", insunits_unmapped: false },
       },

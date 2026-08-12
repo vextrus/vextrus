@@ -34,6 +34,13 @@ a named reason, and `pnpm verify` stays under 60s.
   foundation-class duplicates refuse; composite FKs close the FK-bypasses-RLS hole (review-caught
   live); register/acts/refusals frozen or append-only by grant; seam CRUD in
   `src/core/register.ts`; verify 4.9s, test:db 22.
+- [03 — DXF to EntityGraph](tickets/03-dxf-to-entitygraph.md) — `ingest` CLI lands: closed
+  10-type entity vocabulary, `src is None` as the original predicate, per-type loss AND
+  `unsupported_by_type` counters (counted, never dropped); synthetic revision-pair fixtures
+  regenerate byte-identically (pinned hash seed + `.gitattributes` `-text` guard the sha256
+  pin); sanity number 34/48/{POINT: 4}; review caught mesh-variant crash, decimation leaking
+  into area, and four validator-drift edges — all fixed in-ticket; db-side counter column +
+  register guards routed to ticket 04; verify 7.0s.
 
 ## Not yet specified
 
