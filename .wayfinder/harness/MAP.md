@@ -108,11 +108,6 @@ Two axes, deliberately one map because they collide at every step:
   **1.24s warm**. So the cold gate fails on a coin flip, and the question is now whether the cure
   is a warm-up in `provision.sh`, a timeout that reflects a cold machine, or a parity check that
   distinguishes "slow" from "broken".
-- Whether **JavaScript** sorting is as machine-stable as the database now is. `pairing.ts`
-  derives ordinals with `signature.localeCompare(...)` and no explicit locale, so the order
-  depends on the Node runtime's default ICU locale — the same parity hazard ticket 05 just
-  closed at the database layer, one layer above it, and this one is *not* inert: it is the
-  frozen-ordinal path itself.
 
 ## Out of scope
 
