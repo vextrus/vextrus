@@ -59,7 +59,8 @@ meets data written before it. Container only; it builds and drops its own databa
 
 ```
 DB:  localhost:5544/vextrus  (compose-managed; pnpm db:migrate is the only writer)
-Web: localhost:3210
+Web: localhost:3210  (`pnpm dev` for a terminal; `pnpm dev:bg` boots it in the background,
+     probes it, and leaves the output in `.data/dev.log` — `pnpm dev:stop` releases the port)
 ```
 
 ## Pointers — read on demand, not up front

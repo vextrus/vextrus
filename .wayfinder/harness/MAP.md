@@ -228,6 +228,31 @@ Two axes, deliberately one map because they collide at every step:
   over: `ubuntu-latest` has Docker, so CI takes the **compose** path and the **native branch every
   cloud session runs still has no unattended exerciser** — fog below. Build handed to `/to-spec`.
 
+- 2026-08-12 — [Legibility past `pnpm checkup`](tickets/14-legibility-past-checkup.md) — **the
+  storage hole ticket 03 left was misdiagnosed, and the right check is cheaper than the one it
+  asked for.** *Exists and writable* survives neither half: `writeArtifact`'s recursive `mkdir`
+  **creates the root itself**, and an unwritable one already throws `EACCES` with the path. The
+  unguarded thing is a third — **divergence between two roots that both work**: a stale
+  `VEXTRUS_STORAGE_ROOT` writes perfectly to a second tree and surfaces days later as an `ENOENT`
+  that reads like tampering, the same symptom the absolute-path rule exists to prevent, through
+  another door. Ruled **identity, not liveness** — the root is a precondition, checked at the one
+  boundary that creates directories, **no per-call `stat`**. Env preconditions turned out to be
+  one concept implemented **four times**, two of them a verbatim-duplicated `requireEnv`, and the
+  only two carrying `(see .env.example)` were the hand-written ones — unified into
+  `src/core/env.ts`; a process-start env schema rejected as a second checkup living in the app.
+  The ticket's other two suspects (`runCadIngest`, the tenant seam) came out **clean and were
+  left alone**. The dev server got **`pnpm dev:bg`/`dev:stop`** — a second command, not a flag,
+  because wrapping `pnpm dev` needs a shim between a human and Next's TTY that behaves alike on
+  Windows and Linux, which is the divergence this effort exists to kill; `parity.sh`'s private
+  arrangement made shared. **checkup absorbed nothing from those three** (each widens what
+  fitness *means*; no parity leg touches storage) and **one line from the TRAPS pass**:
+  `INFO provision — last run … · ok|failed|did not finish`, because a command that names
+  `provision.sh` as the repair but cannot say whether it was ever attempted is the illegibility
+  in question. TRAPS: **1 retired** (*a dev server is a second writer* — checkup emits that
+  sentence verbatim), **2 trimmed to cause and signature**, **1 retired into the new line**,
+  the rest kept. Net prose down; `CLAUDE.md` gained one line only because a command nobody knows
+  exists is not a mechanism. verify green **31.2s**, `test:db` 46 in 12.6s, checkup **1.0s**.
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its

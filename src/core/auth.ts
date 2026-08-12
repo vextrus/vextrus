@@ -11,6 +11,7 @@ import {
   verifications,
 } from "../../db/schema/auth";
 import { memberships, tenants, users } from "../../db/schema/core";
+import { requireEnv } from "./env";
 
 /**
  * The auth machinery (ticket 01, ADR-0004). better-auth is extended, never
@@ -23,12 +24,6 @@ import { memberships, tenants, users } from "../../db/schema/core";
  * policies — migration 0003), never as owner. The handle is module-private;
  * app queries still cannot obtain anything but `forTenant`/`runAsSystem`.
  */
-
-function requireEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) throw new Error(`${name} is not set`);
-  return value;
-}
 
 const authSchema = {
   users,

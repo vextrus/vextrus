@@ -40,7 +40,6 @@ with a dated, observed cost — never speculatively.
   pushing 25 files). Never `git add -A` when another session may be live.
 - **Read baselines with `git show <sha>:<path>`, never `git checkout <sha> -- <path>`.** Any
   tree-mutating recovery is its own deliberate step, never chained after `;`.
-- **A dev server is a second writer.** Stop `pnpm dev` before unattended runs.
 
 ## Database
 
@@ -56,21 +55,15 @@ with a dated, observed cost — never speculatively.
   on PATH and no `/var/run/docker.sock` at all. Cloud Docker availability is not a constant
   across images — `provision.sh` and `pnpm checkup` both probe it every run and neither
   remembers the answer.
-- **The image's Node can outrank the one you installed — now corrected, not merely known.**
-  The container puts `/opt/node22/bin` ahead of `/usr/local/bin`, and a session's shell is
-  neither a login shell nor an interactive one, so it reads neither `/etc/profile.d` nor
-  `.bashrc`: a session ran Node 22 while `/usr/local/bin/node` was 24, with only pnpm's
-  `WARN Unsupported engine` to say so. `provision.sh` now walks the session's PATH and points
-  any older `node`/`npm`/`npx`/`corepack` ahead of ours at ours, moving the displaced binary to
-  `<name>.vextrus-displaced` — that suffix is the record of what the image shipped, and
-  restores by hand. The pin has teeth on both sides now: `pnpm verify` exits 1 below `engines`
-  before stage one, and `pnpm checkup`'s node line is BROKEN, so this drift can no longer be
-  silent. The residue worth remembering is the *cause* — PATH order is set by the image and no
-  file the repo writes is read by a bare `sh -c`.
-- **The cloud setup field's transcript reaches no file** — so a session inheriting a
-  half-provisioned container cannot read the run that produced it. `provision.sh` therefore keeps
-  its own: **`.data/provision.log`**, appended every run. Read that first. If it is absent the
-  provisioner never started, which is itself the finding; re-running it is the repair.
+- **PATH order is set by the image, and no file the repo writes is read by a bare `sh -c`.**
+  A session's shell is neither a login shell nor an interactive one, so it reads neither
+  `/etc/profile.d` nor `.bashrc` — which is how a container putting `/opt/node22/bin` ahead of
+  `/usr/local/bin` ran Node 22 while the installed Node was 24, with only pnpm's
+  `WARN Unsupported engine` to say so. Corrected, not merely known: `provision.sh` shadows any
+  older `node`/`npm`/`npx`/`corepack` ahead of ours (displaced to `<name>.vextrus-displaced`,
+  which restores by hand), `pnpm verify` exits 1 below `engines` before stage one, and
+  `pnpm checkup`'s node line is BROKEN. The cause is the residue: a PATH you did not set, read
+  by a shell that sources nothing.
 
 ## Verification
 
@@ -88,14 +81,15 @@ with a dated, observed cost — never speculatively.
 
 - **`NODE_ENV=development` in the environment breaks `next build`.** Next sets `NODE_ENV` per
   command; forcing it makes the production prerender load React's *development* bundles, and
-  the server renderer ends up with a null dispatcher. 2026-08-12, a cloud sandbox whose env
-  vars set it: `TypeError: Cannot read properties of null (reading 'useContext')` on
-  `/_global-error` (Node 24) and `reading 'length'` on `/` (Node 22) — same fault, different
-  frame. The tell is a storm of `unique "key" prop` warnings naming `<html>`/`<head>`/`<meta>`
-  just before the throw: only dev React emits those, so seeing them during a *build* is the
-  diagnosis. `pnpm verify` stayed green throughout — it did not build then; since the ADR-0007
-  amendment of the same day it does, and this fault now fails the build stage. Cure: unset `NODE_ENV`
-  everywhere; never set it to force devDependency installation, which is pnpm's default anyway.
+  the server renderer ends up with a null dispatcher. The throw is a shapeshifter — it lands
+  wherever the prerender first touches a hook, so the frame it names is never the fault
+  (observed as `useContext` of null on `/_global-error` under Node 24 and `length` of null on
+  `/` under Node 22: one fault, two stories). The signature is a storm of `unique "key" prop`
+  warnings naming `<html>`/`<head>`/`<meta>` just before the throw — only dev React emits
+  those, so seeing them during a *build* is the diagnosis. Cure: unset `NODE_ENV` everywhere;
+  never set it to force devDependency installation, which is pnpm's default anyway. Verify's
+  build stage and `pnpm checkup`'s `NODE_ENV` line both catch it now; what neither can do is
+  make the throw look like its cause.
 
 ## cad/
 
