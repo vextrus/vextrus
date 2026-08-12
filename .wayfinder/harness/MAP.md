@@ -46,6 +46,13 @@ Two axes, deliberately one map because they collide at every step:
   image's Node 22, not the installed Node 24 (engine pin violated by warning only, green on
   both), and the re-run re-downloads Node every time. Both handed to
   [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md).
+- 2026-08-12 — [`pnpm doctor`](tickets/03-pnpm-doctor.md) — **`pnpm run doctor`** (the bare form
+  hits pnpm's own built-in, which prints nothing and exits 0). Nine lines, each tracing to a trap
+  that bit; **the exit code is the provisioner's, the output is the session's** — fit-for-work
+  means verify, `test:db` and dev can all run, so a stopped database is unfit. 2s/probe,
+  **1.3s** healthy. Not a verify stage; verify's *failure* path gains one inert pointer line.
+  Storage root and system Python cut, git identity deferred to the secrets ticket. TRAPS: cut 1,
+  trimmed 3, kept the three whose value is a cause or a signature. verify green **43.5s**.
 
 ## Not yet specified
 
@@ -58,9 +65,13 @@ Two axes, deliberately one map because they collide at every step:
   run — fine for dev, unexamined for anything that outlives one container, and unexamined for
   what credential a session pushes with. Sharpened by ticket 02: commits are ssh-signed
   (`commit.gpgsign=true`, `gpg.ssh.program=/tmp/code-sign`) with `user.signingkey` pointing at
-  `/home/claude/.ssh/…`, a path that does not exist under `HOME=/root`.
-- Legibility past `pnpm doctor`: dev-server logs a session can read without owning a background
-  shell, and error text at the failure sites themselves.
+  `/home/claude/.ssh/…`, a path that does not exist under `HOME=/root`. **Ticket 03 defers a
+  doctor line to this patch**: git identity earns one, but not before something sets the standard
+  it would assert.
+- Legibility past `pnpm run doctor`: dev-server logs a session can read without owning a
+  background shell, and error text at the failure sites themselves — starting with
+  `storageRoot()`, which ticket 03 ruled should own its own exists-and-writable check rather
+  than hand it to doctor.
 - Provisioning wall-clock as a target rather than a consequence — including what sandbox egress
   restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
   egress open throughout, so the restricted case is still unmeasured — and the re-run's Node

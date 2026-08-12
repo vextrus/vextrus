@@ -58,6 +58,14 @@ for (const stage of stages) {
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   if (result.status !== 0) {
     console.error(`\nverify: ${stage.name} FAILED in ${secs}s`);
+    // The pointer, on the failure path only. Half of docs/TRAPS.md exists
+    // because an environment fault presented as a build fault, and the stage
+    // that reports it names nothing about the machine. Inert by construction:
+    // no probe, no daemon, no stage, and nothing on the green path — verify's
+    // contract is unchanged (ADR-0007).
+    // `pnpm run doctor`, never `pnpm doctor`: the bare form hits pnpm's own
+    // built-in doctor, which prints nothing and exits 0 (docs/TRAPS.md).
+    console.error(`verify: if this looks like an environment fault, run pnpm run doctor`);
     process.exit(result.status ?? 1);
   }
   console.log(`verify: ${stage.name} ok (${secs}s)`);

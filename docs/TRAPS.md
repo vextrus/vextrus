@@ -40,25 +40,22 @@ with a dated, observed cost — never speculatively.
   pushing 25 files). Never `git add -A` when another session may be live.
 - **Read baselines with `git show <sha>:<path>`, never `git checkout <sha> -- <path>`.** Any
   tree-mutating recovery is its own deliberate step, never chained after `;`.
-- **A dev server is a second writer.** Stop `pnpm dev` before unattended runs; if :3210 still
-  answers, kill the port PID.
+- **A dev server is a second writer.** Stop `pnpm dev` before unattended runs.
 
 ## Database
 
-- **Drift presents as an application fault** (500 with an ORM stack trace). First command:
-  `pnpm db:drift`. Fix: `pnpm db:migrate` — never hand-applied SQL, which creates state the
-  drift checker cannot see.
+- **Drift presents as an application fault** (500 with an ORM stack trace). Fix:
+  `pnpm db:migrate` — never hand-applied SQL, which creates state the drift checker cannot
+  see. `pnpm run doctor` reports drift unprompted, so there is no first command to recall.
 - **RLS symptoms are silent**: empty result sets, blank screens, no error. Usually a code path
   outside `forTenant`/`runAsSystem`. The seam test (`pnpm test:db`) is the diagnosis tool.
-- **Prove which database you're in before theorizing** — a container proxy can own
-  `0.0.0.0:5544` while another listener holds `[::1]:5544`.
 
 ## Sandboxes and provisioning
 
 - **A Docker binary is not a Docker daemon.** 2026-08-12, a cloud sandbox had `/usr/bin/docker`
-  on PATH and no `/var/run/docker.sock` at all. `command -v docker` would have taken the compose
-  path and hung; `docker info` is the probe that tells the truth. Cloud Docker availability is not
-  a constant across images — detect it every run, never remember it.
+  on PATH and no `/var/run/docker.sock` at all. Cloud Docker availability is not a constant
+  across images — `provision.sh` and `pnpm run doctor` both probe it every run and neither
+  remembers the answer.
 - **The image's Node can outrank the one you installed.** The container puts `/opt/node22/bin`
   ahead of `/usr/local/bin` on PATH, and a session's shell is neither a login shell nor an
   interactive one, so it reads neither `/etc/profile.d` nor `.bashrc`. A session therefore runs
@@ -71,6 +68,10 @@ with a dated, observed cost — never speculatively.
 
 ## Verification
 
+- **The workspace command is `pnpm run doctor` — `pnpm doctor` is a pnpm built-in.** 2026-08-12,
+  ticket 03: pnpm 9's own `doctor` ("checks for known common issues") shadows the package script
+  and wins. It printed nothing at all and exited 0, so the shadowing looks exactly like a script
+  that ran and found everything fine. `pnpm run` is unambiguous; the bare form cannot be reclaimed.
 - **Only `pnpm verify` output is evidence.** It runs uncached by design; if a check was run any
   other way (IDE, partial command, memory of a prior run), it is a claim, not a result.
 - **Stack-dependent tests stay out of the verify lane** (`pnpm test:db`, Playwright). A live-
