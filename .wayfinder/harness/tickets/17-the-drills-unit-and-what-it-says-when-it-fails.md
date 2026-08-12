@@ -213,3 +213,11 @@ db:replay: nothing to replay — this tree adds no migration over origin/main (3
 resolvable, the in-script fetch succeeds on a runner (no `NOTE` line), and the skip is reached
 through the mechanism rather than by assertion. `ci` is now green *with* the step it was born
 holding.
+
+Then the same thing on the path that actually gates, where `actions/checkout` builds a merge
+commit rather than checking out the head: the `pull_request` run for
+[PR #14](https://github.com/vextrus/vextrus/pull/14) at `f502a31` —
+[31644012573](https://github.com/vextrus/vextrus/actions/runs/31644012573), **job success in
+73s, the `pnpm db:replay` step green in 1s**. So the merge-ref checkout resolves `origin/main`
+and reaches the same skip; the dispatch run's "same path a PR run does" is now measured rather
+than assumed.
