@@ -2,7 +2,7 @@
 
 wayfinder:grilling
 Status: open
-Claimed by:
+Claimed by: session 2026-08-12 (claude/two-postgres-paths-8on7nb)
 Blocked by: 02-the-cold-machine.md
 
 ## Objective
