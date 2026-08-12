@@ -2,7 +2,7 @@
 
 wayfinder:grilling
 Status: open
-Claimed by:
+Claimed by: claude/provisioner-installation-tracking-ftk02k
 Blocked by:
 
 ## Objective
