@@ -295,6 +295,17 @@ Two axes, deliberately one map because they collide at every step:
   to answering it waits on a measurement not yet taken — whether `provision.sh` goes green on a
   hosted runner at all — so it graduates once the workflow lands.
 
+- **`db:replay` has no CI invoker while it is red at head.** The workflow ticket 13 specified now
+  exists, but with one of its two steps held: the drill fails on 0010's
+  `ADD COLUMN "semantic" text NOT NULL` against restored rows — ticket 10's finding, ruled
+  unrepairable there and still standing. Because the baseline is the parent of the newest
+  migration-bearing commit, this is red on *every* commit until a new migration moves it past 0010,
+  so wiring it up today would make `ci` red from birth and block the required check that is the
+  point of the workflow. **The trigger is precise: the commit that lands migration 0012** — the
+  first on which the drill is green and meaningful. Pinning `REPLAY_BASELINE` past 0010 was put and
+  rejected as rigging a check to pass. Not fog so much as a dated debt, recorded here because the
+  step's absence is invisible in a passing build.
+
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no
   listener on 5544 six minutes later. `checkup` caught it and named the repair, so nothing is

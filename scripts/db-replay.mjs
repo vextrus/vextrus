@@ -141,10 +141,17 @@ if (!baselineNewest) {
 }
 const applying = head.filter((f) => !baselineSet.includes(f));
 if (applying.length === 0) {
+  // Exit 0, not the refusal code the other preconditions use. CI calls this
+  // blindly on every commit (ticket 13) and most commits add no migration, so
+  // the skip has to live here — a path filter in the workflow would be project
+  // knowledge in the one place this repo keeps free of it. It is a complete
+  // answer rather than a refusal: 2 means "I cannot tell you", and this is
+  // "there is nothing to tell". No finding is suppressed, because a commit with
+  // no migration has nothing for a migration to meet.
   console.error(
     `db:replay: ${baseline.slice(0, 8)} already has every migration — nothing to replay`,
   );
-  process.exit(2);
+  process.exit(0);
 }
 
 const childEnv = {

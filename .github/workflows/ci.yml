@@ -1,0 +1,85 @@
+# CI — the missing trigger (.wayfinder/harness/tickets/13-ci-the-missing-trigger.md).
+#
+# This workflow holds NO project knowledge, on purpose. No setup recipe, no Node
+# version, no Postgres service block, no stage list, no path filter. It runs the
+# provisioner and the drill, and nothing else — because `provision.sh`'s last act
+# is `parity.sh`, checkout-and-provision *is* checkup -> verify -> test:db -> a
+# `next dev` boot probed for 200. A stage added to verify tomorrow is picked up
+# with no change here.
+#
+# The rejected alternative was the conventional one: actions/setup-node plus a
+# postgres:16 service block. That is a *second provisioner* — two recipes for one
+# machine, drifting apart, each proving something about itself — and that
+# divergence is what the harness effort exists to kill. If `provision.sh` cannot
+# stand up a hosted runner, that is a provisioner defect, and here is where it
+# should be found.
+name: ci
+
+on:
+  # The gate. This run is the one that becomes a required status check with
+  # "require branches to be up to date before merging", which makes both halves
+  # of ADR-0010 mechanical: the tree that was tested is the tree that lands.
+  pull_request:
+    branches: [main]
+  # A canary, never a gate — by the time it fires there is nothing left to
+  # block. Its job is to make "is main broken, or is it me?" a lookup instead of
+  # an investigation, and to give the build stage a queryable series so
+  # "re-measure, not relax" has a history rather than a threshold.
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# No `schedule`: nothing consumes a 3am result, and an unread red is worse than
+# no signal.
+
+# Not a timing budget (ticket 13 rules none, ticket 12 rules wall-clock a
+# consequence with no target). Superseded runs on the same ref are wasted work,
+# and a job cancelled by a newer push never reports a red nobody caused.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    # A hang net in ticket 09's sense, not a latency assertion: the expected run
+    # is 2-4 minutes, and this is an order of magnitude clear of it. Nothing
+    # gates on how long a stage takes.
+    timeout-minutes: 30
+    steps:
+      # fetch-depth: 0 is load-bearing. Actions shallow-clones by default, and
+      # db:replay derives its baseline from git history — on a shallow clone the
+      # drill fails on a missing parent rather than on a bad migration.
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # The whole gate. provision.sh ends in parity.sh, which runs the legs on a
+      # session's PATH and fails fast; its exit code is the contract.
+      - run: bash scripts/provision.sh
+
+      # HELD, deliberately — ticket 13 specifies a second step here:
+      #
+      #     - run: pnpm db:replay
+      #
+      # called blindly and unconditionally, the skip living in the script (which
+      # it now does: "nothing to replay" exits 0, so a commit adding no
+      # migration is green). It is not wired up because the drill is *red at
+      # head* and has been since ticket 10 measured it: 0010's
+      # `ADD COLUMN "semantic" text NOT NULL` has no default and no backfill, so
+      # it aborts against the rows the drill restores. Ticket 10 ruled that
+      # unrepairable on purpose — a landed migration is never edited, and no
+      # database at 0009 with rows exists — and left it standing as a finding.
+      #
+      # The baseline is the parent of the commit that added the newest
+      # migration, so this stays red on *every* commit until a new migration
+      # lands and moves it past 0010. Adding the step today would make `ci` red
+      # from birth, which cannot become a required status check — and would take
+      # the parity gate's own gating down with it. An always-red check is the
+      # unread signal ticket 13 refused `schedule` to avoid.
+      #
+      # Trigger to add it: the commit that lands migration 0012. On that commit
+      # the drill is both green and meaningful for the first time.
+      #
+      # Not done instead: pinning REPLAY_BASELINE past 0010, which is rigging a
+      # check to pass.
