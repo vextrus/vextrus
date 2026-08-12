@@ -221,8 +221,11 @@ branch anywhere**, and it works — including `test:db`'s 46 tests against it.
 - [x] No fault stopped the run, so nothing was fixed in `scripts/provision.sh` and no repeat on a
       new container was owed. Faults A and B are silent, and this ticket's contract hands silent
       faults on: *"a failing leg is recorded as a fact and handed to a later ticket."*
-- [x] One trap appended to `docs/TRAPS.md` (Docker binary ≠ Docker daemon — environmental, not
-      mechanisable). Faults A and B are both mechanisable and go to
+- [x] Three traps appended to `docs/TRAPS.md` under a new "Sandboxes and provisioning" heading —
+      binary-is-not-daemon, the PATH ordering that outranks the installed Node, and the
+      unrecoverable cold-run transcript. All three are environmental residue: each records a
+      *symptom to recognise*, and the underlying faults still go to mechanism. Faults A and B are
+      both mechanisable and go to
       [The provisioner earns its ok](04-the-provisioner-earns-its-ok.md) and
       [pnpm doctor](03-pnpm-doctor.md) rather than into prose.
 
