@@ -56,11 +56,10 @@ Measured on a cloud container at `9436eb7`, before any of the changes below:
 - **Branch protection is a human action.** Requiring the `ci` check on `main`, with "require
   branches to be up to date", is what makes ADR-0010's amendment true. Until it is set, the
   amendment's supersession rests on the dispatcher reading the check by eye.
-- **The `ask` permission rules should go.** In an unattended session they stall rather than
-  gate, and their subjects are covered mechanically: `main` by the push hook, landing by the
-  human's click, a bad `reset` by the reflog. This clause is a recommendation and not a landed
-  change because an agent may not rewrite its own permission rules — the tool classifier
-  refuses, which is correct, and the refusal is why this is written down rather than applied.
+- ~~**The `ask` permission rules should go.**~~ **Landed the same day, on the dispatcher's
+  explicit instruction** (see the amendment below). The first attempt was refused by the tool
+  classifier — an agent may not rewrite its own permission rules unprompted, which is correct —
+  and the refusal is why the change is recorded here rather than made silently.
 
 ## Consequences
 
@@ -74,3 +73,32 @@ Measured on a cloud container at `9436eb7`, before any of the changes below:
   holds, measured on the whole file.
 - What was cut to pay for it: a *How to work here* section of response-style guidance that the
   platform prompt already carries. Derivable content is what the cap exists to keep out.
+
+## Amendment — 2026-08-12: the permission surface stops being a second gate
+
+Ruled by the dispatcher, in session, after the clause above was written: **a permission prompt is
+not one of this repo's gates and must not behave like one.** The gates are named and mechanical —
+`pnpm verify`'s exit code, the pre-push hook, the `ci` check, the human's merge click — and each
+one works whether or not anybody is looking. A prompt does the opposite: it converts a routine
+step into a stall whose only resolution is a person, which in a container nobody is watching is
+indistinguishable from the session hanging.
+
+- **`ask` is gone**, and the granular `Bash(...)` allow-list with it: under
+  `defaultMode: bypassPermissions` it decided nothing, and on a machine placed in a stricter mode
+  it decided the wrong thing — a session repairing a dead Postgres cluster or re-running the
+  provisioner would sit behind a prompt for a command the harness itself tells it to run. The
+  allow-list is now the tool names, `Bash` among them.
+- **`deny` is unchanged, and stays a context decision, not a safety one** (ADR-0007). Two entries
+  are load-bearing for autonomy rather than against it: `AskUserQuestion` and the plan-mode pair
+  block on a human by construction, and this repo's answer to ambiguity is decision 3 above —
+  assume, name, finish.
+- **`BASH_DEFAULT_TIMEOUT_MS` is raised to 600s.** `provision.sh` (~70–100s), `pnpm parity`
+  (~61–101s) and `pnpm land` (fetch + verify + push) all live well inside the old 120s default
+  *until a machine is cold*, at which point the tool kills the repair the harness just prescribed.
+- `additionalDirectories: ["/tmp"]` and `enableAllProjectMcpServers` follow the same rule: a
+  scratch directory and a repo-declared MCP server are things a session is expected to use.
+
+**What this does not touch.** Every mechanical refusal in the repo is still refusing: the push
+guard on `main`, the loop's `.loop/ACTIVE` guard, `land`'s four refusals, `verify`'s exit code,
+`provision.sh`'s assertions. Removing the prompts *raises* the value of those, because they are
+now the only things that say no — and unlike a prompt, none of them needs a person awake.

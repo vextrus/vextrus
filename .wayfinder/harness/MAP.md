@@ -353,7 +353,15 @@ Two axes, deliberately one map because they collide at every step:
   brought the cluster back in ~2s, so the mid-session repair is not necessarily the full parity
   gate that made this look expensive. What stays: whether the **compose path shares the fault**,
   what actually kills the cluster, and whether `checkup`'s repair pointer should name the cheap
-  restart when the *only* BROKEN line is the database.
+  restart when the *only* BROKEN line is the database. **Two of those three moved on 2026-08-12
+  (ticket 16).** The pointer question is answered — `checkup` now names the cheap restart when it
+  measures the cluster down on the native path — and it was answered *by the fault*: the same
+  session's container restarted its process tree between turns, the cluster died, the hook
+  reported it before turn one, and `pg_ctlcluster 16 main start` brought it back in **2.95s**
+  printing *"Removed stale pid file"*. That stale pid file is the first evidence about the cause
+  and the second observation of the ~2s figure. What stays open is the compose path — nobody has
+  seen this on a machine with a Docker daemon — and *what* stops the cluster, which the pid file
+  narrows but does not name.
 
 - **A dbspec assumes it owns the database.** `tenancy.dbspec`'s cleanup is
   `delete from users where email like '%@dbspec.local'` — a reach across every suite, which holds

@@ -6,7 +6,8 @@
     "CLAUDE_CODE_NO_FLICKER": "1",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000",
     "BASH_MAX_OUTPUT_LENGTH": "50000",
-    "BASH_MAX_TIMEOUT_MS": "600000"
+    "BASH_DEFAULT_TIMEOUT_MS": "600000",
+    "BASH_MAX_TIMEOUT_MS": "900000"
   },
   "hooks": {
     "SessionStart": [
@@ -26,7 +27,7 @@
   },
   "autoMemoryEnabled": false,
   "showTurnDuration": true,
-  "enableAllProjectMcpServers": false,
+  "enableAllProjectMcpServers": true,
   "skillOverrides": {
     "dataviz": "off",
     "claude-api": "off",
@@ -43,35 +44,21 @@
   },
   "permissions": {
     "defaultMode": "bypassPermissions",
+    "additionalDirectories": ["/tmp"],
     "allow": [
-      "Bash(pnpm *)",
-      "Bash(node *)",
-      "Bash(npx *)",
-      "Bash(tsx *)",
-      "Bash(git *)",
-      "Bash(uv *)",
-      "Bash(python *)",
-      "Bash(docker compose *)",
-      "Bash(ls *)",
-      "Bash(cat *)",
-      "Bash(grep *)",
-      "Bash(rg *)",
-      "Bash(head *)",
-      "Bash(tail *)",
-      "Bash(wc *)",
-      "Bash(find *)",
-      "Bash(sort *)",
-      "Bash(awk *)",
-      "Bash(sed -n *)",
-      "Bash(which *)",
-      "Bash(echo *)",
-      "Bash(time *)",
-      "Bash(netstat *)",
-      "Bash(mkdir *)",
-      "Bash(mv *)",
-      "Bash(curl *)"
+      "Bash",
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "Skill",
+      "Task",
+      "TodoWrite",
+      "WebFetch",
+      "WebSearch",
+      "mcp__github"
     ],
-    "ask": ["Bash(git push *)", "Bash(git reset *)", "Bash(rm -r *)"],
     "deny": [
       "Artifact",
       "AskUserQuestion",
