@@ -18,12 +18,14 @@ import {
   actTypes,
   disciplines,
   elementTypes,
+  ingestJobStatuses,
   ingestStatuses,
   levelBases,
   refusalCauses,
   type ActType,
   type Discipline,
   type ElementType,
+  type IngestJobStatus,
   type IngestStatus,
   type LevelBasis,
   type RefusalCause,
@@ -211,6 +213,8 @@ export const drawings = pgTable(
   (t) => [
     index("drawings_project_idx").on(t.projectId),
     unique("drawings_id_tenant_uq").on(t.id, t.tenantId),
+    // pair target for the revision chain's project-carrying FKs
+    unique("drawings_id_project_uq").on(t.id, t.projectId),
     foreignKey({
       name: "drawings_project_tenant_fk",
       columns: [t.projectId, t.tenantId],
@@ -226,6 +230,10 @@ export const drawings = pgTable(
  * assigned at upload and never reassigned — registration order, not a
  * correctable attribute. The DB stores the file reference + sha256, never the
  * blob (ticket 04 guardrail).
+ *
+ * project_id is carried (not just reachable through the drawing) so that every
+ * row downstream of a revision can be project-paired by FK — evidence must not
+ * be citable across projects inside one tenant.
  */
 export const drawingRevisions = pgTable(
   "drawing_revisions",
@@ -234,6 +242,7 @@ export const drawingRevisions = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
     drawingId: uuid("drawing_id").notNull(),
     seq: integer("seq").notNull(),
     sourceFilename: text("source_filename").notNull(),
@@ -246,10 +255,16 @@ export const drawingRevisions = pgTable(
   (t) => [
     index("drawing_revisions_drawing_idx").on(t.drawingId),
     unique("drawing_revisions_id_tenant_uq").on(t.id, t.tenantId),
+    unique("drawing_revisions_id_project_uq").on(t.id, t.projectId),
     foreignKey({
       name: "drawing_revisions_drawing_tenant_fk",
       columns: [t.drawingId, t.tenantId],
       foreignColumns: [drawings.id, drawings.tenantId],
+    }),
+    foreignKey({
+      name: "drawing_revisions_drawing_project_fk",
+      columns: [t.drawingId, t.projectId],
+      foreignColumns: [drawings.id, drawings.projectId],
     }),
     unique("drawing_revisions_drawing_seq_uq").on(t.drawingId, t.seq),
     check("drawing_revisions_seq_ck", sql.raw(`"seq" >= 1`)),
@@ -270,6 +285,7 @@ export const ingests = pgTable(
     tenantId: uuid("tenant_id")
       .notNull()
       .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
     drawingRevisionId: uuid("drawing_revision_id").notNull(),
     status: text("status").$type<IngestStatus>().notNull().default("pending"),
     /** EntityGraph artifact reference (filesystem path for now) + hash. */
@@ -279,6 +295,14 @@ export const ingests = pgTable(
     entitiesDerived: integer("entities_derived"),
     explodeTruncated: boolean("explode_truncated"),
     lostByType: jsonb("lost_by_type").$type<Record<string, number>>(),
+    /**
+     * Entity types the extractor has no code for (cad-ingestion.md §3) — a
+     * different species of loss from `lost_by_type` (a cap that tripped), and
+     * the register's ENTITY_TYPE_UNHANDLED evidence. Counted, never dropped.
+     */
+    unsupportedByType: jsonb("unsupported_by_type").$type<
+      Record<string, number>
+    >(),
     insunits: integer("insunits"),
     unitDetected: text("unit_detected").$type<DetectedUnit>(),
     insunitsUnmapped: boolean("insunits_unmapped"),
@@ -291,23 +315,86 @@ export const ingests = pgTable(
   (t) => [
     index("ingests_revision_idx").on(t.drawingRevisionId),
     unique("ingests_id_tenant_uq").on(t.id, t.tenantId),
+    unique("ingests_id_project_uq").on(t.id, t.projectId),
     foreignKey({
       name: "ingests_revision_tenant_fk",
       columns: [t.drawingRevisionId, t.tenantId],
       foreignColumns: [drawingRevisions.id, drawingRevisions.tenantId],
+    }),
+    foreignKey({
+      name: "ingests_revision_project_fk",
+      columns: [t.drawingRevisionId, t.projectId],
+      foreignColumns: [drawingRevisions.id, drawingRevisions.projectId],
     }),
     enumCheck("ingests_status_ck", "status", ingestStatuses),
     enumCheck("ingests_unit_detected_ck", "unit_detected", detectedUnits),
     check(
       "ingests_succeeded_ck",
       sql.raw(
-        `"status" <> 'succeeded' or ("artifact_ref" is not null and "artifact_sha256" is not null and "entities_original" is not null and "entities_derived" is not null and "explode_truncated" is not null and "lost_by_type" is not null and "insunits_unmapped" is not null and "error" is null)`,
+        `"status" <> 'succeeded' or ("artifact_ref" is not null and "artifact_sha256" is not null and "entities_original" is not null and "entities_derived" is not null and "explode_truncated" is not null and "lost_by_type" is not null and "unsupported_by_type" is not null and "insunits_unmapped" is not null and "error" is null)`,
       ),
     ),
     check(
       "ingests_failed_ck",
       sql.raw(`"status" <> 'failed' or "error" is not null`),
     ),
+  ],
+);
+
+/**
+ * The ingest queue (ADR-0009): a plain table claimed with
+ * `FOR UPDATE SKIP LOCKED`, in this repo's one migration lane. One job per
+ * ingest — a re-run is a new ingest, so the evidence row and the work that
+ * produced it stay one-to-one.
+ *
+ * `locked_at` is a lease, not a lock: a worker that dies mid-job leaves a
+ * `running` row, and the claim query reclaims it once the lease expires,
+ * bumping `attempts`. A job whose attempts exceed the cap fails with a named
+ * error rather than looping forever — an invisible retry loop is silence.
+ */
+export const ingestJobs = pgTable(
+  "ingest_jobs",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
+    ingestId: uuid("ingest_id").notNull(),
+    status: text("status")
+      .$type<IngestJobStatus>()
+      .notNull()
+      .default("queued"),
+    attempts: integer("attempts").notNull().default(0),
+    lockedAt: timestamp("locked_at", { withTimezone: true }),
+    error: text("error"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    // the claim query's index: oldest claimable job first
+    index("ingest_jobs_claim_idx").on(t.status, t.createdAt),
+    unique("ingest_jobs_ingest_uq").on(t.ingestId),
+    foreignKey({
+      name: "ingest_jobs_project_tenant_fk",
+      columns: [t.projectId, t.tenantId],
+      foreignColumns: [projects.id, projects.tenantId],
+    }),
+    foreignKey({
+      name: "ingest_jobs_ingest_project_fk",
+      columns: [t.ingestId, t.projectId],
+      foreignColumns: [ingests.id, ingests.projectId],
+    }),
+    enumCheck("ingest_jobs_status_ck", "status", ingestJobStatuses),
+    check(
+      "ingest_jobs_failed_ck",
+      sql.raw(`"status" <> 'failed' or "error" is not null`),
+    ),
+    check("ingest_jobs_attempts_ck", sql.raw(`"attempts" >= 0`)),
   ],
 );
 
@@ -413,10 +500,14 @@ export const refusedSightings = pgTable(
       columns: [t.projectId, t.tenantId],
       foreignColumns: [projects.id, projects.tenantId],
     }),
+    // project-paired, not merely tenant-paired: a same-tenant sighting citing
+    // a sibling project's ingest as evidence would otherwise pass. The ingest's
+    // own project_id is tenant-anchored up the revision chain, so this FK
+    // subsumes the tenant pairing it replaces (ticket 04 review finding).
     foreignKey({
-      name: "refused_sightings_ingest_tenant_fk",
-      columns: [t.ingestId, t.tenantId],
-      foreignColumns: [ingests.id, ingests.tenantId],
+      name: "refused_sightings_ingest_project_fk",
+      columns: [t.ingestId, t.projectId],
+      foreignColumns: [ingests.id, ingests.projectId],
     }),
     foreignKey({
       name: "refused_sightings_object_project_fk",

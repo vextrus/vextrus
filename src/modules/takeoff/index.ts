@@ -5,4 +5,14 @@
  *
  * This file is the module's only public surface (ADR-0001).
  */
-export {};
+export {
+  MAX_SOURCE_BYTES,
+  drawingStatus,
+  runIngestJob,
+  uploadRevision,
+  type IngestFidelity,
+  type RevisionStatus,
+  type Upload,
+  type UploadInput,
+} from "./ingestion";
+export { CAD_TIMEOUT_MS, runCadIngest } from "./cad";

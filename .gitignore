@@ -27,3 +27,6 @@ __pycache__/
 
 # loop state — evidence per run, never committed
 .loop/
+
+# uploaded drawings and their EntityGraph artifacts (VEXTRUS_STORAGE_ROOT)
+.data/

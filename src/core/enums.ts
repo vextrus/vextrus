@@ -73,8 +73,29 @@ export const refusalCauses = [
 export type RefusalCause = (typeof refusalCauses)[number];
 
 /**
- * Ingest lifecycle. Failures are loud: a failed ingest carries a named error
- * (CHECK-enforced). Ticket 04's queue decision may extend this.
+ * Ingest lifecycle — the screen-facing status of a drawing revision. Failures
+ * are loud: a failed ingest carries a named error (CHECK-enforced). `running`
+ * exists so a claimed-but-unfinished ingest reads as work in progress rather
+ * than as a queue that never started (quantity-contract §2: silence is the
+ * condemned state).
  */
-export const ingestStatuses = ["pending", "succeeded", "failed"] as const;
+export const ingestStatuses = [
+  "pending",
+  "running",
+  "succeeded",
+  "failed",
+] as const;
 export type IngestStatus = (typeof ingestStatuses)[number];
+
+/**
+ * The queue row's own lifecycle (ADR-0009), distinct from the ingest's: it
+ * describes the *work*, not the evidence. A job is claimed by exactly one
+ * worker (`FOR UPDATE SKIP LOCKED`); `running` past its lease is reclaimable.
+ */
+export const ingestJobStatuses = [
+  "queued",
+  "running",
+  "succeeded",
+  "failed",
+] as const;
+export type IngestJobStatus = (typeof ingestJobStatuses)[number];

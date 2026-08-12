@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import type { RefusedSightingSubject } from "../../db/schema/core";
 import { withAct } from "./acts";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
@@ -173,22 +173,89 @@ export async function listDrawings(
 
 /* ------------------------------ drawing revisions ------------------------- */
 
+export type DrawingRevisionInput = {
+  projectId: string;
+  drawingId: string;
+  seq: number;
+  sourceFilename: string;
+  sourceRef: string;
+  sourceSha256: string;
+};
+
+/**
+ * Tx-level primitive: an upload lands the revision, its ingest and its queued
+ * job in one transaction, so a revision can never exist with no work queued
+ * against it (the shape of a silently unprocessed drawing).
+ */
+export async function insertDrawingRevision(
+  tx: Tx,
+  tenantId: string,
+  input: DrawingRevisionInput,
+): Promise<DrawingRevision> {
+  const [row] = await tx
+    .insert(schema.drawingRevisions)
+    .values({ tenantId, ...input })
+    .returning();
+  return found(row, "drawing revision insert", input.drawingId);
+}
+
 export async function createDrawingRevision(
   ctx: TenantCtx,
-  input: {
-    drawingId: string;
-    seq: number;
-    sourceFilename: string;
-    sourceRef: string;
-    sourceSha256: string;
-  },
+  input: DrawingRevisionInput,
 ): Promise<DrawingRevision> {
+  return forTenant(ctx, (tx) =>
+    insertDrawingRevision(tx, ctx.tenantId, input),
+  );
+}
+
+/**
+ * The next revision seq, under a row lock on the drawing: concurrent uploads
+ * to one drawing serialise here rather than racing to the same seq and losing
+ * one to a raw constraint error. The unique (drawing, seq) still backstops it.
+ *
+ * The lock doubles as the ownership check — the drawing must be in tenant
+ * scope and in the named project, or the upload refuses before it costs
+ * anything.
+ */
+export async function nextRevisionSeq(
+  tx: Tx,
+  projectId: string,
+  drawingId: string,
+): Promise<number> {
+  const [drawing] = await tx
+    .select({ id: schema.drawings.id })
+    .from(schema.drawings)
+    .where(
+      and(
+        eq(schema.drawings.id, drawingId),
+        eq(schema.drawings.projectId, projectId),
+      ),
+    )
+    .for("update");
+  if (!drawing) {
+    throw new Error(
+      `drawing ${drawingId} is not in project ${projectId} within tenant scope`,
+    );
+  }
+  const rows = await tx
+    .select({ seq: schema.drawingRevisions.seq })
+    .from(schema.drawingRevisions)
+    .where(eq(schema.drawingRevisions.drawingId, drawingId))
+    .orderBy(desc(schema.drawingRevisions.seq))
+    .limit(1);
+  return (rows[0]?.seq ?? 0) + 1;
+}
+
+export async function getDrawingRevision(
+  ctx: TenantCtx,
+  id: string,
+): Promise<DrawingRevision | undefined> {
   return forTenant(ctx, async (tx) => {
     const [row] = await tx
-      .insert(schema.drawingRevisions)
-      .values({ tenantId: ctx.tenantId, ...input })
-      .returning();
-    return found(row, "drawing revision insert", input.drawingId);
+      .select()
+      .from(schema.drawingRevisions)
+      .where(eq(schema.drawingRevisions.id, id));
+    return row;
   });
 }
 
@@ -207,16 +274,62 @@ export async function listDrawingRevisions(
 
 /* ----------------------------------- ingests ------------------------------ */
 
+export type IngestInput = { projectId: string; drawingRevisionId: string };
+
+/** Tx-level for the same reason as insertDrawingRevision. */
+export async function insertIngest(
+  tx: Tx,
+  tenantId: string,
+  input: IngestInput,
+): Promise<Ingest> {
+  const [row] = await tx
+    .insert(schema.ingests)
+    .values({ tenantId, ...input })
+    .returning();
+  return found(row, "ingest insert", input.drawingRevisionId);
+}
+
 export async function createIngest(
   ctx: TenantCtx,
-  input: { drawingRevisionId: string },
+  input: IngestInput,
+): Promise<Ingest> {
+  return forTenant(ctx, (tx) => insertIngest(tx, ctx.tenantId, input));
+}
+
+/**
+ * A succeeded ingest is terminal: its evidence never changes afterwards. Both
+ * transitions below carry this predicate, so a late worker — one whose job was
+ * reclaimed and re-run by another — cannot overwrite the finished row or NULL
+ * its counters. The transition simply finds no row and says so by name.
+ */
+const notYetSucceeded = (ingestId: string) =>
+  and(eq(schema.ingests.id, ingestId), ne(schema.ingests.status, "succeeded"));
+
+function transitioned(
+  row: Ingest | undefined,
+  transition: string,
+  ingestId: string,
+): Ingest {
+  if (row === undefined) {
+    throw new Error(
+      `${transition} refused: ingest ${ingestId} is not in tenant scope, or has already succeeded`,
+    );
+  }
+  return row;
+}
+
+/** Claimed by a worker: the screen says "running", never nothing. */
+export async function startIngest(
+  ctx: TenantCtx,
+  ingestId: string,
 ): Promise<Ingest> {
   return forTenant(ctx, async (tx) => {
     const [row] = await tx
-      .insert(schema.ingests)
-      .values({ tenantId: ctx.tenantId, ...input })
+      .update(schema.ingests)
+      .set({ status: "running" })
+      .where(notYetSucceeded(ingestId))
       .returning();
-    return found(row, "ingest insert", input.drawingRevisionId);
+    return transitioned(row, "startIngest", ingestId);
   });
 }
 
@@ -246,6 +359,7 @@ export async function completeIngest(
         entitiesDerived: counters.derived,
         explodeTruncated: counters.explode_truncated,
         lostByType: counters.lost_by_type,
+        unsupportedByType: counters.unsupported_by_type,
         insunits: units.insunits,
         unitDetected: units.detected,
         insunitsUnmapped: units.insunits_unmapped,
@@ -254,9 +368,9 @@ export async function completeIngest(
         error: null,
         finishedAt: new Date(),
       })
-      .where(eq(schema.ingests.id, input.ingestId))
+      .where(notYetSucceeded(input.ingestId))
       .returning();
-    return found(row, "ingest", input.ingestId);
+    return transitioned(row, "completeIngest", input.ingestId);
   });
 }
 
@@ -281,14 +395,15 @@ export async function failIngest(
         entitiesDerived: null,
         explodeTruncated: null,
         lostByType: null,
+        unsupportedByType: null,
         insunits: null,
         unitDetected: null,
         insunitsUnmapped: null,
         finishedAt: new Date(),
       })
-      .where(eq(schema.ingests.id, input.ingestId))
+      .where(notYetSucceeded(input.ingestId))
       .returning();
-    return found(row, "ingest", input.ingestId);
+    return transitioned(row, "failIngest", input.ingestId);
   });
 }
 
@@ -303,6 +418,38 @@ export async function getIngest(
       .where(eq(schema.ingests.id, id));
     return row;
   });
+}
+
+/**
+ * The drawing's screen-facing ingestion state: every revision with its ingest,
+ * newest revision first. A revision whose ingest is still queued reads
+ * `pending` — there is no row shape here that means "nothing happened".
+ *
+ * A re-run is a new ingest, so a revision may have several. DISTINCT ON keeps
+ * the newest: one row per revision, and the state shown is the current one —
+ * a superseded failure must never render as the revision's state.
+ */
+export async function listRevisionIngests(
+  ctx: TenantCtx,
+  drawingId: string,
+): Promise<{ revision: DrawingRevision; ingest: Ingest | null }[]> {
+  const rows = await forTenant(ctx, (tx) =>
+    tx
+      .selectDistinctOn([schema.drawingRevisions.id], {
+        revision: schema.drawingRevisions,
+        ingest: schema.ingests,
+      })
+      .from(schema.drawingRevisions)
+      .leftJoin(
+        schema.ingests,
+        eq(schema.ingests.drawingRevisionId, schema.drawingRevisions.id),
+      )
+      .where(eq(schema.drawingRevisions.drawingId, drawingId))
+      // DISTINCT ON demands its own column lead the sort; the seq order the
+      // caller wants is applied after
+      .orderBy(schema.drawingRevisions.id, desc(schema.ingests.createdAt)),
+  );
+  return rows.sort((a, b) => b.revision.seq - a.revision.seq);
 }
 
 /* ------------------------------ register objects -------------------------- */

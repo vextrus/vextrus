@@ -10,6 +10,7 @@ import {
   createIngest,
   createProject,
   failIngest,
+  getIngest,
   listRefusedSightings,
   recordRefusedSighting,
   registerObject,
@@ -189,6 +190,7 @@ describe("composite FKs (FK validation bypasses RLS)", () => {
   it("refuses a revision against another tenant's drawing", async () => {
     const refused = await refusalOf(() =>
       createDrawingRevision(ctx(), {
+        projectId,
         drawingId: foreignDrawingId,
         seq: 1,
         sourceFilename: "intruder.dxf",
@@ -196,7 +198,9 @@ describe("composite FKs (FK validation bypasses RLS)", () => {
         sourceSha256: "1".repeat(64),
       }),
     );
-    expect(refused).toMatch(/drawing_revisions_drawing_tenant_fk/);
+    // the revision is both tenant- and project-paired to its drawing; a
+    // foreign drawing violates both, and either name is the refusal
+    expect(refused).toMatch(/drawing_revisions_drawing_(tenant|project)_fk/);
   });
 
   it("refuses a register object citing a sibling project's level", async () => {
@@ -360,23 +364,41 @@ describe("the act log", () => {
   });
 });
 
+/** A revision + its pending ingest, on the home project. */
+async function seedIngest(title: string) {
+  const drawing = await createDrawing(ctx(), {
+    projectId,
+    title,
+    disciplineProposed: "structural",
+  });
+  const revision = await createDrawingRevision(ctx(), {
+    projectId,
+    drawingId: drawing.id,
+    seq: 1,
+    sourceFilename: "layout.dxf",
+    sourceRef: `artifacts/dbspec/${crypto.randomUUID()}.dxf`,
+    sourceSha256: "0".repeat(64),
+  });
+  return createIngest(ctx(), {
+    projectId,
+    drawingRevisionId: revision.id,
+  });
+}
+
+const fidelity = {
+  counters: {
+    original: 42,
+    derived: 7,
+    explode_truncated: false,
+    lost_by_type: {},
+    unsupported_by_type: { POINT: 4 },
+  },
+  units: { insunits: 4, detected: "mm", insunits_unmapped: false },
+} as const;
+
 describe("ingests", () => {
   it("a failed ingest carries a named error, never silence", async () => {
-    const drawing = await createDrawing(ctx(), {
-      projectId,
-      title: "STRUCTURAL LAYOUT",
-      disciplineProposed: "structural",
-    });
-    const revision = await createDrawingRevision(ctx(), {
-      drawingId: drawing.id,
-      seq: 1,
-      sourceFilename: "layout.dxf",
-      sourceRef: "artifacts/dbspec/layout.dxf",
-      sourceSha256: "0".repeat(64),
-    });
-    const ingest = await createIngest(ctx(), {
-      drawingRevisionId: revision.id,
-    });
+    const ingest = await seedIngest("STRUCTURAL LAYOUT");
     await expect(
       failIngest(ctx(), { ingestId: ingest.id, error: "   " }),
     ).rejects.toThrow(/named error/);
@@ -405,20 +427,77 @@ describe("ingests", () => {
       ingestId: ingest.id,
       artifactRef: "artifacts/dbspec/layout.entitygraph.json",
       artifactSha256: "2".repeat(64),
-      fidelity: {
-        counters: {
-          original: 42,
-          derived: 7,
-          explode_truncated: false,
-          lost_by_type: {},
-          unsupported_by_type: {},
-        },
-        units: { insunits: 4, detected: "mm", insunits_unmapped: false },
-      },
+      fidelity,
     });
     expect(succeeded.status).toBe("succeeded");
     expect(succeeded.error).toBeNull();
     expect(succeeded.entitiesOriginal).toBe(42);
+  });
+
+  it("carries the artifact's counters verbatim, unsupported types included", async () => {
+    const ingest = await seedIngest("COUNTER CARRY");
+    const succeeded = await completeIngest(ctx(), {
+      ingestId: ingest.id,
+      artifactRef: "artifacts/dbspec/counters.entitygraph.json",
+      artifactSha256: "3".repeat(64),
+      fidelity,
+    });
+    expect(succeeded.lostByType).toEqual({});
+    expect(succeeded.unsupportedByType).toEqual({ POINT: 4 });
+    // and the DB refuses a success that drops the counter block
+    const refused = await refusalOf(() =>
+      forTenant(ctx(), (tx) =>
+        tx
+          .update(schema.ingests)
+          .set({ unsupportedByType: null })
+          .where(eq(schema.ingests.id, ingest.id)),
+      ),
+    );
+    expect(refused).toMatch(/ingests_succeeded_ck/);
+  });
+
+  it("a succeeded ingest is terminal: a late failure cannot NULL its evidence", async () => {
+    const ingest = await seedIngest("LATE FAILURE");
+    await completeIngest(ctx(), {
+      ingestId: ingest.id,
+      artifactRef: "artifacts/dbspec/late.entitygraph.json",
+      artifactSha256: "4".repeat(64),
+      fidelity,
+    });
+    const refused = await refusalOf(() =>
+      failIngest(ctx(), {
+        ingestId: ingest.id,
+        error: "a reclaimed job's late worker reporting failure",
+      }),
+    );
+    expect(refused).toMatch(/already succeeded/);
+    const after = await getIngest(ctx(), ingest.id);
+    expect(after?.status).toBe("succeeded");
+    expect(after?.artifactRef).toBe("artifacts/dbspec/late.entitygraph.json");
+    expect(after?.error).toBeNull();
+  });
+
+  it("refuses a refused sighting citing a sibling project's ingest", async () => {
+    const ingest = await seedIngest("EVIDENCE PAIRING");
+    const refused = await refusalOf(() =>
+      recordRefusedSighting(ctx(), {
+        projectId: siblingProjectId, // same tenant, wrong project
+        cause: "ENTITY_TYPE_UNHANDLED",
+        subject: {
+          identity: {
+            discipline: "structural",
+            levelId: null,
+            levelBasis: null,
+            elementType: null,
+            mark: null,
+            ordinal: null,
+          },
+          handles: ["7F2C"],
+        },
+        ingestId: ingest.id,
+      }),
+    );
+    expect(refused).toMatch(/refused_sightings_ingest_project_fk/);
   });
 });
 

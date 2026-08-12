@@ -17,8 +17,9 @@ export type TenantCtx = {
 };
 
 /**
- * Mint a tenant context. Call sites: auth middleware and tests only — minting
- * one anywhere else is a review-blocking defect.
+ * Mint a tenant context. Call sites: the auth middleware, the ingest worker
+ * (which enters with a job's tenant, not a session's), and tests — minting one
+ * anywhere else is a review-blocking defect.
  */
 export function mintTenantCtx(tenantId: string): TenantCtx {
   return { tenantId } as TenantCtx;

@@ -41,12 +41,24 @@ a named reason, and `pnpm verify` stays under 60s.
   pin); sanity number 34/48/{POINT: 4}; review caught mesh-variant crash, decimation leaking
   into area, and four validator-drift edges — all fixed in-ticket; db-side counter column +
   register guards routed to ticket 04; verify 7.0s.
+- [04 — Drawing upload and the ingest job](tickets/04-upload-and-ingest-job.md) — the queue is a
+  plain `ingest_jobs` table claimed with `FOR UPDATE SKIP LOCKED` (ADR-0009: pg-boss would be a
+  second migration lane, and enqueue must commit with the revision it describes); the app lane
+  enqueues and reads, only the worker's system lane moves a job. Upload → revision + ingest +
+  job in one transaction → `src/server/worker.ts` runs the cad CLI as a subprocess → artifact on
+  disk, counters (unsupported_by_type included) on the ingest row, truncations surfaced as
+  warnings on the drawing's status. Ticket 03's three routed findings closed: the counter column,
+  a `<> 'succeeded'` predicate making a succeeded ingest terminal, and evidence citation
+  project-paired by FK (project_id now carried down the revision chain). Review caught a timeout
+  that could still hang (the grandchild python holds the pipe), a one-to-many status join, and a
+  claim failure that killed the worker — all fixed in-ticket. verify 6.3s, test:db 33.
 
 ## Not yet specified
 
 - Scale-family affirmation UX (fail-closed per region) — chart after 05 lands.
 - Quantity fan-out and the pricing seam — a separate effort once the register holds objects.
-- Job queue shape (plain SKIP LOCKED vs pg-boss) — decided inside ticket 04, recorded here.
+- Object storage for artifacts (the filesystem root is ticket 04's stated interim) — a named
+  need once a second process needs the tree.
 
 ## Out of scope
 
