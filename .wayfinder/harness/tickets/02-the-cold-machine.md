@@ -36,8 +36,23 @@ From two failed setup runs on 2026-08-12, before this ticket was formally taken:
 - `scripts/provision.sh` was committed mode 644, which breaks a bootstrap that `exec`s it
   directly. Fixed to 755.
 
-Nothing past the bootstrap has run yet, so every phase of `provision.sh` is still unproven on a
-cloud machine.
+Third run (bootstrap succeeded, node phase failed, exit 3):
+
+- The image is **not bare**. Node 22 at `/opt/node22/bin/node`, Docker present at
+  `/usr/bin/docker`, and a global npm tree already holding `pnpm@10.33.0`, `eslint@10.1.0`,
+  `typescript@6.0.2`, `playwright@1.56.1`, `chromedriver`, `yarn`, `prettier`, `ts-node`.
+  Provisioning is therefore *displacement*, not installation — the repo's pinned versions must
+  win over the image's, and the image's `/opt/node22/bin` may sit ahead of `/usr/local/bin` on a
+  session's PATH.
+- **Docker is present on this image.** The Postgres branch will take the compose path
+  (see [Two Postgres paths](05-two-postgres-paths.md)), which means the native-cluster branch
+  still has no exerciser anywhere.
+- **nvm is unusable here.** Sourcing `nvm.sh` into a `set -euo pipefail` script exited 3 and took
+  the provision with it, without tripping the ERR trap. Replaced by the official Node tarball.
+- The ERR trap did not fire, because a *sourced* script that exits does not trip ERR. An EXIT
+  trap was added to cover every route out.
+
+Every phase after `node` is still unproven on a cloud machine.
 
 ## What to do
 

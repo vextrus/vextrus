@@ -17,6 +17,7 @@ set -euo pipefail
 # a cloud setup field shows the user. Name the phase, the line and the command,
 # so one failed run is a diagnosis instead of a guess.
 phase="startup"
+done_ok=""
 on_err() {
   local code=$? line=$1
   echo >&2
@@ -25,6 +26,19 @@ on_err() {
   exit "$code"
 }
 trap 'on_err $LINENO' ERR
+
+# ERR is not enough. A *sourced* script that exits takes this one with it without
+# tripping ERR at all — observed 2026-08-12, when sourcing nvm.sh under `set -u`
+# exited 3 and the log simply stopped. EXIT catches every route out.
+on_exit() {
+  local code=$?
+  if [ -z "$done_ok" ] && [ "$code" -ne 0 ]; then
+    echo >&2
+    echo "provision: EXITED $code during phase '$phase' — no phase reported it," >&2
+    echo "provision: so something this script called exited on its behalf." >&2
+  fi
+}
+trap on_exit EXIT
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
@@ -40,24 +54,52 @@ else
   as_postgres() { $SUDO -u postgres sh -c "$*"; }
 fi
 
-# --- Node 24 (package.json engines) ------------------------------------------
-# Cloud images ship Node 22 on PATH, so every pnpm call prints Unsupported
-# engine. nvm's default alias only helps shells that source nvm.sh, which a
-# non-interactive session shell does not — hence profile.d *and* bashrc *and*
-# symlinks, covering login, interactive, and bare `sh -c` respectively.
+# --- Node 24 (package.json engines, .nvmrc) -----------------------------------
+# Cloud images ship Node 22 on PATH (observed: /opt/node22), so every pnpm call
+# prints Unsupported engine.
+#
+# NOT nvm. Installing it means sourcing nvm.sh — thousands of lines of shell —
+# into this `set -euo pipefail` script, and on the 2026-08-12 image that exited 3
+# right after the installer finished, taking the whole provision with it. The
+# official tarball is a download and an untar: it cannot have an opinion about
+# our shell options, it does not edit .bashrc behind us, and it pins a real
+# version we can print.
+#
+# The PATH still needs three treatments, because a non-interactive session shell
+# reads none of the files an interactive one does: profile.d for login shells,
+# .bashrc for interactive, and /usr/local/bin symlinks for a bare `sh -c`.
 phase="node"
 node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
 if [ "$(node_major)" -lt 24 ]; then
-  export NVM_DIR="$HOME/.nvm"
-  [ -s "$NVM_DIR/nvm.sh" ] || curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
-  # shellcheck disable=SC1091
-  . "$NVM_DIR/nvm.sh"
-  nvm install 24 >/dev/null && nvm alias default 24 >/dev/null
+  case "$(uname -m)" in
+    x86_64 | amd64) NARCH="x64" ;;
+    aarch64 | arm64) NARCH="arm64" ;;
+    *) echo "provision: unsupported architecture $(uname -m)" >&2; exit 1 ;;
+  esac
+  # .tar.xz is smaller, but only if this image can unpack it.
+  if command -v xz >/dev/null; then NEXT="tar.xz"; TARFLAG="-xJf"; else NEXT="tar.gz"; TARFLAG="-xzf"; fi
 
-  # `|| true`: pipefail makes a failing `ls` fatal, and "no v24 dir" is a case
-  # the next line already handles.
-  NODE24_BIN="$(ls -d "$NVM_DIR"/versions/node/v24.*/bin 2>/dev/null | sort -V | tail -1 || true)"
-  if [ -n "$NODE24_BIN" ]; then
+  # Ask the dist index which v24 is current rather than pinning a patch that
+  # goes stale in the repo. .nvmrc holds the major (24) and is the source here.
+  NODE_MAJOR="$(tr -dc '0-9' < .nvmrc 2>/dev/null || true)"; NODE_MAJOR="${NODE_MAJOR:-24}"
+  NODE_PKG="$(curl -fsSL "https://nodejs.org/dist/latest-v${NODE_MAJOR}.x/SHASUMS256.txt" \
+              | grep -o "node-v${NODE_MAJOR}\.[0-9.]*-linux-${NARCH}\.${NEXT}" | head -1 || true)"
+  [ -n "$NODE_PKG" ] || {
+    echo "provision: could not resolve a Node ${NODE_MAJOR} ${NARCH} build from nodejs.org" >&2
+    echo "provision: (network egress blocked at provision time?)" >&2
+    exit 1
+  }
+  # `node-v24.19.0-linux-x64.tar.xz` -> `v24.19.0`; the strip leaves the v on.
+  NODE_VER="${NODE_PKG#node-}"; NODE_VER="${NODE_VER%%-linux-*}"
+  echo "provision: installing Node $NODE_VER ($NARCH) from nodejs.org"
+
+  curl -fsSL "https://nodejs.org/dist/${NODE_VER}/${NODE_PKG}" -o "/tmp/${NODE_PKG}"
+  $SUDO mkdir -p /usr/local/lib/nodejs
+  $SUDO tar $TARFLAG "/tmp/${NODE_PKG}" -C /usr/local/lib/nodejs
+  rm -f "/tmp/${NODE_PKG}"
+  NODE24_BIN="/usr/local/lib/nodejs/${NODE_PKG%.$NEXT}/bin"
+
+  if [ -x "$NODE24_BIN/node" ]; then
     export PATH="$NODE24_BIN:$PATH"
     if [ -w /etc/profile.d ] || [ -n "$SUDO" ]; then
       echo "export PATH=\"$NODE24_BIN:\$PATH\"" | $SUDO tee /etc/profile.d/vextrus-node.sh >/dev/null
@@ -67,9 +109,19 @@ if [ "$(node_major)" -lt 24 ]; then
     for b in node npm npx corepack; do
       [ -x "$NODE24_BIN/$b" ] && $SUDO ln -sf "$NODE24_BIN/$b" "/usr/local/bin/$b" 2>/dev/null || true
     done
+  else
+    echo "provision: unpacked Node but $NODE24_BIN/node is not executable" >&2
+    exit 1
   fi
 fi
-echo "provision: node $(node -v)"
+# The image's own Node (e.g. /opt/node22/bin) may still sit ahead of us on a
+# session's PATH, so this is a check, not a report: a silent Node 22 is the
+# fault this phase exists to prevent.
+if [ "$(node_major)" -lt 24 ]; then
+  echo "provision: node is still $(node -v) at $(command -v node) — PATH not taken" >&2
+  exit 1
+fi
+echo "provision: node $(node -v) at $(command -v node)"
 
 # --- Postgres on 5544 ---------------------------------------------------------
 phase="postgres"
@@ -150,5 +202,6 @@ export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 phase="migrate"
 pnpm db:migrate
 
+done_ok=1
 echo
 echo "provision: ok — pnpm verify | pnpm test:db | pnpm dev (:3210)"
