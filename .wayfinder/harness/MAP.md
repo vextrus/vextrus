@@ -64,11 +64,27 @@ Two axes, deliberately one map because they collide at every step:
   four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
   open.
 
+- 2026-08-12 — [What a cloud session owns](tickets/06-what-a-cloud-session-owns.md) — **ADR-0010**:
+  the dispatcher owns branch, ticket, claim and merge; the session owns the work and the evidence.
+  The prior lost both halves. *Merge is a human act on your machine* was refuted by `main`'s own
+  history — PR #1 squash-landed through the button — and rescued by arithmetic instead: a squash of
+  a branch containing `main`'s tip yields a tree byte-identical to the one verify ran on, so
+  fetch → **merge** → `pnpm verify` → push → SHA-stamped evidence comment, then the human clicks.
+  *The claim is pushed as its own commit* failed on visibility — a claim on a session branch is
+  invisible on `main` (this session proved it, `ce001b9`), so the **dispatcher** picks the ticket
+  and claims. The loop differs by unit, not rule: the arc directory is the campaign's alone. Not
+  mechanically enforceable — "require up to date" is a sub-option of required status checks, and
+  there is no CI; CI is the named seam that would take the weight. **Not yet exercised with two
+  concurrent sessions**; deferral and its three watch-fors are named in the resolution.
+
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
   "CI" that does not exist (`.github/workflows` is absent). Sharpened by the possibility that the
-  cloud sandbox *is* that lane rather than a thing beside it.
+  cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 06: CI is
+  now the named seam that would make the merge gate mechanical — until it exists, "verify ran on
+  this head" is a human-read claim and "branch up to date" is unenforceable, since GitHub offers
+  that setting only as a sub-option of required status checks.
 - When the build stage stops being cheap (it grows with every route), what the contract does
   about it — re-measure, not relax, but the trigger is unstated.
 - Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per
@@ -89,7 +105,9 @@ Two axes, deliberately one map because they collide at every step:
 - Whether a **cold** container passes the parity check now that `provision.sh` gates on it.
   Ticket 04 wired and proved every leg, but only on this already-provisioned machine; the cold
   path with the gate in place has never run, and the map ranks disposability first precisely
-  because that is the path that validates the rest.
+  because that is the path that validates the rest. (Ticket 06's session hit this by accident: its
+  container was unprovisioned, `pnpm checkup` named the stopped database, and `provision.sh` ran to
+  a green gate — `parity: ok in 73s`, verify 47.9s, 46 db tests. Evidence, not the ticket's test.)
 
 ## Out of scope
 
