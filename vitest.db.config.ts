@@ -15,6 +15,10 @@ export default defineConfig({
     environment: "node",
     include: ["db/**/*.dbspec.ts", "src/**/*.dbspec.ts"],
     fileParallelism: false,
+    // Same net, same reason as vitest.config.ts: these cross Postgres and the
+    // cad subprocess, and this lane runs inside the parity gate on machines
+    // whose first read of any file is their most expensive one.
+    testTimeout: 60_000,
   },
   resolve: {
     alias: {

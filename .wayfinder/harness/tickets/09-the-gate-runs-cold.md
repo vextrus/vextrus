@@ -1,7 +1,7 @@
 # The gate runs cold
 
 wayfinder:task
-Status: open
+Status: closed
 Claimed by:
 Blocked by:
 
@@ -87,14 +87,20 @@ What the run must produce:
 
 ## Exit criteria
 
-- [ ] `bash scripts/provision.sh` run on a container that started empty, exit status recorded.
-- [ ] If it fails: the failing leg named, the cause diagnosed, and the fix landed — then re-run
+- [x] `bash scripts/provision.sh` run on a container that started empty, exit status recorded.
+      *Five containers. The first four were snapshot-restored — a finding in itself — and the
+      fifth arrived genuinely empty, provisioned itself at boot in ~83s with a real Node
+      download, and reached `parity: ok in 57s`.*
+- [x] If it fails: the failing leg named, the cause diagnosed, and the fix landed — then re-run
       cold on a *second* empty container, because a fix proven on the machine it was written on
-      is the thing this ticket exists to stop.
-- [ ] Timings recorded in `## Resolution`, split provisioning vs parity.
-- [ ] The environment facts the result depended on transcribed into `## Resolution` — Postgres
+      is the thing this ticket exists to stop. *It failed, twice, and the second failure was
+      caught by exactly this criterion.*
+- [x] Timings recorded in `## Resolution`, split provisioning vs parity.
+- [x] The environment facts the result depended on transcribed into `## Resolution` — Postgres
       path and version, Docker daemon present or not, the Node the session actually got. `.data/`
       is gitignored, so the log dies with the container; what is not transcribed is gone.
+      *Transcribed below; raw captures, including both provisioning runs of an empty container,
+      archived in [09-cold-proof.md](09-cold-proof.md).*
 
 ## Guardrails
 
@@ -103,3 +109,173 @@ What the run must produce:
 - Do not weaken or skip a parity leg to get to "ok". If a leg is wrong, the leg is wrong.
 - No fix to `provision.sh` counts until it has run cold on a container that never saw the fix
   being written.
+
+## Resolution
+
+**No — the gate did not earn its "ok", and it failed on the leg this ticket most feared.** The
+cause is neither the gate's logic nor a broken machine: it is a **timeout bound nobody wrote**
+meeting a container whose first read of any file is its most expensive one. Two commits, because
+the first was too narrow and a container that had never seen it said so.
+
+Final state: `provision: ok` on a fresh container at `c78979b`, `EXIT=0`, 113/113 tests green.
+
+### What actually failed
+
+`bash scripts/provision.sh`, 2026-08-12T12:20:42Z, **exit 1 in 38s**:
+
+```
+parity: --- verify ---
+  × cad.spec.ts > ingests the fixture into the artifact the pipeline committed   5006ms
+  Error: Test timed out in 5000ms.
+parity: NOT ok after 26s — verify: the tree's contract does not hold on this machine
+provision: NOT ok — the machine provisioned but does not pass the parity check.
+```
+
+The same test takes **1.06s warm**. Every other leg was green before it: checkup 0.9s, the native
+Postgres path, 12 migrations, typecheck 7.6s, lint 3.3s. This is the third time this leg has
+reddened the gate (ticket 11's session, and both runs here).
+
+### The measurement that forced it
+
+The ticket's own text guessed "first-`uv run`-in-a-cold-container cost". That guess is wrong in a
+way that matters, and four measurements say so:
+
+1. **Page cache is not the mechanism.** `echo 3 > /proc/sys/vm/drop_caches`, three times, then
+   the cad spec: **1.26s / 1.38s / 1.45s**. Dropping the cache does not reproduce the fault.
+   The full suite with caches dropped ran `ingests…` in **708ms**.
+2. **First touch of an image layer is.** 68MB of never-read image files (`/opt/ruby-3.3.6`,
+   irrelevant to this repo and therefore untouched): first read **1.53s**, re-read **0.256s** —
+   *with the page cache dropped before both*. The image's blocks are materialized on first
+   access, and that cost cannot be replayed inside a container. It is once per container, and
+   it lands precisely where the parity gate runs.
+3. **Ticket 08's cold container is the counter-example that proves it.** It ran this same test in
+   **1516ms** — because `uv sync` *downloaded and built* the venv, so those 149MB / 2709 files
+   were written by that container and already local. The containers that fail are the ones that
+   **inherit** a pre-built venv from the image.
+4. So the trigger is not a cold container. It is a **pre-warmed image**, which is now the normal
+   case: every container in this environment arrives snapshot-restored.
+
+### The fix, and why it is not a weakened check
+
+The seam declares its own tolerance — `CAD_TIMEOUT_MS = 120_000`, *"generous: ingestion is
+seconds-long, and a slow drawing is not a failure"* — while the runner killed it at vitest's
+default **5s**. The bound was **inverted**: a hung pipeline could never produce the seam's named
+refusal, only vitest's anonymous `Test timed out in 5000ms`, and `pnpm verify` answered a slow
+machine by reporting *that the tree's contract does not hold*. That accusation is false, it names
+no repair, and it is the exact failure this effort exists to end.
+
+Nothing in either suite asserts latency. The 5s was never authored — it is vitest's default, and
+applying it to specs that cross an external toolchain is a latency assertion nobody wrote. Raising
+it removes no check: artifact equality, the boundary rules failing closed, and the seam's 1ms
+refusal test are all untouched.
+
+- `82e025d` — the cad suite bound **above** `CAD_TIMEOUT_MS`, derived from it so the two cannot
+  drift, so the seam's timer always fires first and a hang leaves by name. Vitest's suite-level
+  `timeout` was proven honoured before being relied on (a 6s test under an 8s suite bound passes;
+  it dies at the 5s default).
+- `c78979b` — `testTimeout: 60_000` in **both** vitest configs. ~6× the worst first-touch cost
+  measured, and a hang still fails inside a minute.
+
+### The second commit exists because of this ticket's guardrail
+
+`82e025d` was proven on the machine it was written on. A container that had never seen it then
+went red on a **different** spec — `boundaries.spec.ts`, **9.2s** against the same 5s bound, for a
+test that takes **713ms** warm. Fixing suites one at a time was the wrong altitude; the fault is
+the class, and only a machine that never saw the fix could say so. *"A fix proven on the machine
+it was written on is the thing this ticket exists to stop"* — it stopped it.
+
+### Timings, split
+
+| Run | Machine | Provisioning | Parity | Total | Exit |
+|---|---|---|---|---|---|
+| 12:20:42Z | snapshot-restored, 5 min from boot | 12s | 26s (red) | **38s** | 1 |
+| 12:23:40Z | same, now warm, fix in tree | 4s | 65s | **69s** | 0 |
+| container #4 | fresh, at `c78979b` | — | — | — | **0** |
+
+Parity's 65s: checkup 0.6s, verify 36.9s (typecheck 5.1s, lint 2.0s, test 4.1s, ruff 0.0s,
+pytest 0.9s, build 24.7s), `test:db` 46 tests in 14.3s, dev 200 on :3210 and the port released.
+Against ticket 04's 61s parity on a warm machine, and ticket 02's ~25s provisioning.
+
+### Environment facts the result depended on
+
+- **The container was not empty.** Its rootfs was created 12:15:52Z; `node_modules`, `.env`,
+  `cad/.venv`, a Node 24 install at `/usr/local/lib/nodejs`, and a Postgres cluster already
+  configured for port 5544 all carry mtimes of **10:37–10:38Z** — an image layer, not this
+  container. No `.data/provision.log` existed, so `provision.sh` had never run here.
+- **A session arrives unfit.** First act of the session, before anything was touched:
+  `pnpm checkup` **exit 1 — NOT fit for work — database, node**. Nothing listening on 5544
+  (`pg_lsclusters`: cluster `16/main`, port 5544, **down**), and the session's PATH resolved
+  **v22.22.2** against `engines >=24`. The image predates ticket 08, so `/opt/node22/bin` was
+  unshadowed; this session's run shadowed it for the first time. Checkup named both faults and
+  named the repair, and the repair worked — which is ticket 03's and ticket 08's claim, held.
+- Postgres: **native path**, PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu0.24.04.1), `C.UTF-8`, no
+  extensions, at `/var/lib/postgresql/16/main`. `/usr/bin/docker` present, **no daemon** — the
+  fourth consecutive sandbox observation of binary-without-daemon (ticket 05's pin precondition
+  fails a fourth time).
+- The `next dev` boot probe behaved: 200 on a port nothing had ever bound, and `:3210 released`.
+- Four CPUs. `cad/.venv` is 149MB / 2709 files; uv's managed interpreter another 213MB.
+
+The numbers above are this session's own container, measured directly. Container #4's run at
+`c78979b` contributed its exit status and test count only — a sibling session cannot be messaged
+from here, so its per-file durations died with it. Container #5's full capture, including both of
+its provisioning runs verbatim, is archived in [09-cold-proof.md](09-cold-proof.md).
+
+### Alternatives put and rejected
+
+- **A warm-up before the gate** (an `eslint`/`uv run` in `provision.sh`'s python phase) — the
+  cure the ticket's own text proposed first. Rejected: it cures the *gate* and not the *fault*.
+  A session that types `pnpm verify` on a snapshot-restored machine still gets the false
+  accusation, and this container proves that is the normal case, not the exotic one.
+- **Retry the timed-out test.** Rejected: it converts a false red into a slow green, and would
+  mask a real hang just as effectively.
+- **Call the machine slow and leave the 5s.** Rejected: three reds in three sessions is not a
+  coin flip, and the governing sentence forbids a refusal that names the wrong thing.
+- **Raise vitest's global default only, dropping the cad suite's override.** Rejected: the two
+  bounds have different jobs — one is a hang net, the other keeps the seam's own timer first so
+  a genuine hang is refused by name. Keeping both is not duplication.
+
+### The empty container, found on the fifth try
+
+A fifth container was sent to archive the raw capture, and it **arrived empty** — overturning
+what the first four suggested. Its rootfs is stamped `12:47:05`; `.env` `12:47:19`, `cad/.venv`
+`12:47:35`, `node_modules` `12:47:57`. Every artefact of provisioning is *newer* than `/`, so all
+of it was made in that container. It provisioned itself at boot, unattended, in **~83s**, and the
+node phase **downloaded**: `provision: installing Node v24.19.0 (x64) from nodejs.org`, then
+shadowed `/opt/node22/bin` for real. `parity: ok in 57s`, and the re-entrant run 90 seconds later
+was quiet — no second download, no second shadow, `.env exists — leaving it alone`,
+`Cluster is already running.` **The install path is exercised and green at `c78979b`**, which is
+the criterion ticket 04 left open and ticket 08 last satisfied at `174ce4c`.
+
+So this effort has **two kinds of container**, and only one of them is disposable in the sense the
+map assumed:
+
+- **Freshly created with a git source** — empty, provisions itself at boot, exercises the install
+  path. Containers #4 and #5.
+- **Snapshot-restored** — this session's own machine: rootfs `12:15:52`, but `node_modules`,
+  `.env`, `cad/.venv`, a Node 24 install and a 5544 cluster all stamped `10:37–10:38`, from an
+  image layer built by an earlier session at a commit predating ticket 08. It arrives **unfit**
+  (`checkup` exit 1 — database down, Node 22) and skips the install path entirely.
+
+Which kind a session gets was not chosen and is not visible without checking mtimes against `/`.
+Carried to [Two kinds of container](12-two-kinds-of-container.md).
+
+### What the capture does not support
+
+The empty container **did not reproduce the timeout fault**. Its worst spec file was 2315ms,
+under half the 5s bound; `cad.spec › ingests the fixture` was 1644ms cold against 450ms warm
+(3.7×, the right direction, a fraction of the magnitude), and `boundaries.spec` showed **no cold
+penalty at all** — 876ms cold against 1004ms warm.
+
+That is a finding, not a retraction, and it sharpens the fix rather than undermining it. The three
+reds are real and independently observed (ticket 11's session, this session's container, container
+#3). What the capture establishes is that the cost is **machine-dependent and unpredictable** — a
+container with a hot package cache that builds its own venv is a milder machine than one that
+inherits a 149MB venv it has never read. An unpredictable red against a bound nobody wrote is
+precisely the case for a generous net, since nothing in these lanes measures speed. Had the
+capture come first, the fix would be the same; its justification would rest on the reds rather
+than on any expectation that every machine reproduces them.
+
+Incidental: two sibling containers created without a `source_url` died at boot with
+*"Setup script failed"* in 5–6s. Not an environment fault — `cloud-bootstrap.sh` exiting 1 with
+*"no checkout containing scripts/provision.sh found"*, which is the script doing exactly what it
+says. Its error path is now observed working.

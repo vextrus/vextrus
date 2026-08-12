@@ -25,6 +25,19 @@ Two axes, deliberately one map because they collide at every step:
   "does this repo work for someone who just cloned it" can be honestly verified. This machine
   is already provisioned, so locally the only exercisable path is the idempotent re-run — the
   path least likely to be broken. Disposability is ranked first because it validates the rest.
+  **Amended by ticket 09: there are two kinds of cloud container, and nothing announces which
+  one you got.** A freshly created one *is* empty and provisions itself at boot — Node
+  downloaded, cluster created, `parity: ok in 57s`, the install path genuinely exercised. A
+  snapshot-restored one is a photograph of a machine an earlier session provisioned, at a commit
+  that may predate the current head: unfit on arrival (database down, Node 22 against the pin),
+  install path skipped as "already up to date". The only tell is file mtimes against `/`.
+- **A container's first read of a file is its most expensive one.** Image blocks are materialized
+  on first access: 68MB of never-touched image files read in 1.53s, then 0.26s on re-read *with
+  the page cache dropped before both*. It is not page cache, it cannot be replayed inside one
+  container, and it lands exactly where the parity gate runs. The size of the penalty is
+  machine-dependent — worst on a container that inherits a 149MB venv it has never read, absent
+  on one that built its own — so a bound it can cross fails unpredictably, on some machines and
+  not others (ticket 09).
 - Every `docs/TRAPS.md` entry is a question the environment failed to answer cheaply. The
   standing preference is to retire traps from prose into mechanism, not to write more prose.
 
@@ -130,51 +143,41 @@ Two axes, deliberately one map because they collide at every step:
   Postgres path *measured by provision.sh's own predicate* rather than inferred from `version()`.
   INFO cannot gate, because the verdict counts BROKEN only.
 
+- 2026-08-12 — [The gate runs cold](tickets/09-the-gate-runs-cold.md) — **the gate refused, and it
+  refused for the wrong reason.** `provision.sh` exit 1 in 38s: `cad.spec` timed out at 5006ms
+  against a test that takes 1.06s warm, and `verify` answered by reporting *the tree's contract
+  does not hold on this machine* — a false accusation naming no repair. The ticket's own guess
+  (cold page cache) is **disproven**: `drop_caches` three times reproduces nothing (1.26–1.45s).
+  The mechanism is **first-touch materialization of image blocks**, once per container — and
+  ticket 08's cold container is the counter-example that proves it, running the same test in
+  1516ms because it *built* the venv itself instead of inheriting one. So the trigger is a
+  **pre-warmed image, not a cold container**. Cured at the class, not the suite: vitest's default
+  5s is a latency assertion nobody wrote, raised to a 60s hang net in both configs, with the cad
+  suite bound above `CAD_TIMEOUT_MS` so a real hang leaves by name. **The first fix was too narrow
+  and a container that had never seen it said so** — `boundaries.spec` red at 9.2s — which is this
+  ticket's guardrail doing precisely its job. Green at `c78979b` on a fresh container, EXIT=0.
+  Rejected: a warm-up before the gate (cures the gate, not the fault), a retry (a false red
+  becomes a slow green), and calling the machine slow. **The fifth container arrived genuinely
+  empty** — provisioned itself at boot in ~83s, downloading Node and creating the cluster from
+  nothing, `parity: ok in 57s`, so **the install path is proven at this head** (ticket 04's last
+  open criterion). It also **did not reproduce the fault** — worst file 2315ms — which makes the
+  cost machine-dependent rather than universal, and is the argument for a generous net rather
+  than against it. Two kinds of container, indistinguishable on arrival:
+  [ticket 12](tickets/12-two-kinds-of-container.md). Raw captures:
+  [09-cold-proof.md](tickets/09-cold-proof.md).
+
 ## Not yet specified
 
-- Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
-  "CI" that does not exist (`.github/workflows` is absent). Sharpened by the possibility that the
-  cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 07: the
-  **Linux-native check is already written** — `pnpm parity`, which every cloud session runs — so
-  what CI supplies is not a script but a *trigger*, and the absence of any invoker is what
-  disqualified every per-commit capability from being charted. And by ticket 06: CI is the named
-  seam that would make the merge gate mechanical — until it exists, "verify ran on this head" is a
-  human-read claim and "branch up to date" is unenforceable, since GitHub offers that setting only
-  as a sub-option of required status checks. Two tickets now converge on one trigger.
-- When the build stage stops being cheap (it grows with every route), what the contract does
-  about it — re-measure, not relax, but the trigger is unstated.
-- Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per
-  run — fine for dev, unexamined for anything that outlives one container, and unexamined for
-  what credential a session pushes with. Sharpened by ticket 02: commits are ssh-signed
-  (`commit.gpgsign=true`, `gpg.ssh.program=/tmp/code-sign`) with `user.signingkey` pointing at
-  `/home/claude/.ssh/…`, a path that does not exist under `HOME=/root`. **Ticket 03 defers a
-  checkup line to this patch**: git identity earns one, but not before something sets the standard
-  it would assert.
-- Legibility past `pnpm checkup`: dev-server logs a session can read without owning a
-  background shell, and error text at the failure sites themselves — starting with
-  `storageRoot()`, which ticket 03 ruled should own its own exists-and-writable check rather
-  than hand it to checkup.
-- Provisioning wall-clock as a target rather than a consequence. Now measured end to end with the
-  parity gate in place: **~71s cold** (of which parity is 52s), **52s re-run with egress blocked
-  and no download** (ticket 08). The re-download is gone, so the two cases are finally close, and
-  what remains unstated is the *target* — and whether 52s of parity on every re-run is the right
-  price for "re-running is the repair".
-- A **packet-level** egress proof. Ticket 08's block was `curl`/`wget` shims, because the
-  permission classifier declined `iptables`; that proves the provisioner makes no outbound call,
-  not that nothing on the machine could. Sharpened by what it would take to block egress in a
-  container whose own agent proxy sits on loopback.
+<!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
+     destination and this section is expected to stay thin. -->
+
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no
   listener on 5544 six minutes later. `checkup` caught it and named the repair, so nothing is
-  silent — but "re-run provision.sh" is a 52s parity gate to restart a database, and the compose
-  path may not share the fault. What a session should do when the machine decays *after*
-  provisioning is unspecified.
-- The loop's caps as measured numbers rather than inherited ones. `docs/specs/loop.md` marks
-  `MAX_TURNS = 150` and the 30-minute wall fuse "re-derive, don't trust" — carried from a legacy
-  environment whose verify was ~100s against our ~43s. Re-deriving needs a real campaign, and a
-  campaign seizes a precious machine (the loop's preflight demands a clean tree, nothing on :3210,
-  and a pre-push guard). A disposable container removes that objection for free — but there are
-  **no arcs yet**, so this cannot be ticketed until one exists.
+  silent — but "re-run provision.sh" is a full parity gate to restart a database. Ticket 09 moved
+  the *arrival* half of this to [ticket 12](tickets/12-two-kinds-of-container.md); what stays here
+  is the part neither covers — whether the **compose path shares the fault**, and what a session
+  should do when the machine decays *mid-session* rather than before it.
 
 ## Out of scope
 
@@ -183,3 +186,14 @@ Two axes, deliberately one map because they collide at every step:
 - **Production deployment.** This effort proves cold-start provisioning of a *dev workspace*;
   a deployment target is its own effort and must not be smuggled in through the provisioner.
   The shared property — clean checkout, nothing pre-warmed — stays in.
+- **A packet-level egress proof.** Ticket 08 blocked egress with `curl`/`wget` shims because the
+  permission classifier declined `iptables`, proving the provisioner makes no outbound call but
+  not that nothing on the machine could. The stronger proof is curiosity: no decision waits on it,
+  and it would mean blocking egress in a container whose own agent proxy sits on loopback. Ruled
+  out 2026-08-12 while charting the map's end.
+- **The loop's caps as measured numbers.** `docs/specs/loop.md` marks `MAX_TURNS = 150` and the
+  30-minute wall fuse "re-derive, don't trust", carried from a legacy environment whose verify was
+  ~100s against our ~28–43s. Re-deriving needs a real campaign and **there are no arcs yet**, so
+  it cannot be ticketed here; it belongs to whichever effort runs the first one. A disposable
+  container removes the "seizes a precious machine" objection for free, which is this effort's
+  contribution and the end of it.
