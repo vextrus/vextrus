@@ -23,6 +23,22 @@ Two cloud images already differed in Docker availability and system Python, and 
 (`NODE_ENV=development` in the ambient environment) reached a human round-trip before anyone saw
 it. Each was found by accident. This ticket finds them on purpose.
 
+## Facts already in hand
+
+From two failed setup runs on 2026-08-12, before this ticket was formally taken:
+
+- The sandbox runs as **root**, with **`HOME=/root`** but **`PWD=/home/user`**, and the checkout
+  at **`/home/user/vextrus`**. `$HOME` is not where the code is — a bootstrap that searches from
+  `$HOME` finds nothing.
+- A bare `set -euo pipefail` script reports only "exit code 1" through the setup field. The ERR
+  trap added in `ccb20b7` (phase, line, command, true exit code) is what made the second run
+  diagnosable; keep any future failure's full output in this ticket.
+- `scripts/provision.sh` was committed mode 644, which breaks a bootstrap that `exec`s it
+  directly. Fixed to 755.
+
+Nothing past the bootstrap has run yet, so every phase of `provision.sh` is still unproven on a
+cloud machine.
+
 ## What to do
 
 On a fresh cloud sandbox, from the bootstrap in the setup field through to a working session:
