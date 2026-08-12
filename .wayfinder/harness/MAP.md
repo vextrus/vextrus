@@ -308,6 +308,32 @@ Two axes, deliberately one map because they collide at every step:
   **smaller while gaining four subjects** — 5,410 → 5,287 chars — and its `DB:` line stopped
   saying *compose-managed*, which was false on every cloud container. **ADR-0011.**
 
+- 2026-08-12 — [The drill's unit, and what it says when it fails](tickets/17-the-drills-unit-and-what-it-says-when-it-fails.md)
+  — **the unit was the fault, and the other two questions were its consequences.**
+  `db:replay`'s baseline is now `merge-base(HEAD, origin/main)`: a run is about *what this tree
+  adds over main*, which is exactly the set ADR-0010's merge introduces. The old rule — parent of
+  the commit that added the repo's newest migration — was retrospective and could not be right in
+  either direction: never empty, so ticket 13's `nothing to replay` skip could not fire on the case
+  it was written for; red on every commit today, and green on every commit forever once 0012 lands,
+  re-proving a migration that run never touched. One rule serves both callers because `head` is
+  read from the working tree, so the uncommitted-migration special case was **deleted, not kept**.
+  The drill is now **green and meaningful at head in 2.4s** — not the rejected `REPLAY_BASELINE`
+  pin, because nothing is pinned and a tree adding no migration has nothing for a migration to
+  meet; **0010 is not amnestied** and still reproduces on demand. So the CI step is **wired now**
+  and the held comment deleted: the debt was never the YAML, and the *"guard that goes red when it
+  becomes payable"* was rejected as machinery for a debt this ticket discharges. The red speaks in
+  two voices: `db:migrate` says what the database said (file, error/detail/hint/relation/column/
+  code, rolled-back state) in place of a V8 stack through `postgres/src/connection.js`, and
+  `db:replay` says whose it is — **working tree / this branch / landed / cannot tell** — with the
+  failing file *measured* from `__migrations` rather than parsed from text. **Not amnesty:** the
+  exit code never moves. The fourth class was **forced by the proof, not designed** — a base ref
+  that could not be refreshed made the first cut call landed `0010` "still yours to repair", the
+  precise false accusation ticket 09 deleted, because ancestry proves landed while its absence
+  proves nothing. Hence a best-effort fetch (never fatal), a header `NOTE`, and a refusal (exit 2)
+  when the ref resolves to nothing. Not hypothetical: `origin/main` was **13 commits stale** on the
+  closing container. All four classes and both refusals exercised against a real database; verify
+  green **28.2s**.
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
@@ -333,27 +359,6 @@ Two axes, deliberately one map because they collide at every step:
   whenever someone picks it up. What the run also showed is that a *runner is not the sandbox*: it
   is the first non-root machine the provisioner has met, and it found a real defect there, which
   is the argument that a second unattended machine shape is worth having rather than a formality.
-
-- **`db:replay` has no CI invoker while it is red at head.** The workflow ticket 13 specified now
-  exists, but with one of its two steps held: the drill fails on 0010's
-  `ADD COLUMN "semantic" text NOT NULL` against restored rows — ticket 10's finding, ruled
-  unrepairable there and still standing. Because the baseline is the parent of the newest
-  migration-bearing commit, this is red on *every* commit until a new migration moves it past 0010,
-  so wiring it up today would make `ci` red from birth and block the required check that is the
-  point of the workflow. **The trigger is precise: the commit that lands migration 0012** — the
-  first on which the drill is green and meaningful. Pinning `REPLAY_BASELINE` past 0010 was put and
-  rejected as rigging a check to pass. Not fog so much as a dated debt, recorded here because the
-  step's absence is invisible in a passing build. **Measured 2026-08-12 at `f7cfa2d`, and the
-  measurement moved the subject** — the drill is **23.8s** end to end (baseline install 7.2s,
-  baseline suite 38 tests in 12.7s, 92 of 92 rows restored), so the expense objection to running
-  it per-commit is dead, and what is left is a question of *meaning*: the baseline is derived from
-  the newest migration in the tree, so `applying` is never empty for committed state and the
-  `nothing to replay` skip cannot fire on the case ticket 13 wrote it for. Wiring the step after
-  0012 would produce a green on every commit forever that says nothing about the commit it ran on.
-  The red itself is an uncaught `PostgresError` with a V8 stack trace, naming neither `0010` as
-  landed nor ticket 10 as the ruling. Charted as
-  [ticket 17](tickets/17-the-drills-unit-and-what-it-says-when-it-fails.md): the drill's unit, its
-  failure speech, and whether the CI step's trigger should be a mechanism rather than a comment.
 
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no

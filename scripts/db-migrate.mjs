@@ -28,6 +28,9 @@ const authRolePassword =
 const sql = postgres(url, { max: 1, onnotice: () => {} });
 const migrationsDir = path.resolve(import.meta.dirname, "../db/migrations");
 
+/** Set by the loop below; reported after the connection is closed, not inside it. */
+let failure = null;
+
 try {
   // Roles first: migrations GRANT to them. Dev passwords by default; prod sets
   // APP_DB_PASSWORD / AUTH_DB_PASSWORD (and may rotate with ALTER ROLE).
@@ -79,22 +82,57 @@ try {
   for (const file of files) {
     if (applied.has(file)) continue;
     const body = readFileSync(path.join(migrationsDir, file), "utf-8");
-    await sql.begin(async (tx) => {
-      // drizzle-kit emits `--> statement-breakpoint` between statements
-      for (const statement of body.split("--> statement-breakpoint")) {
-        if (statement.trim()) await tx.unsafe(statement);
-      }
-      await tx`INSERT INTO __migrations (name) VALUES (${file})`;
-    });
+    try {
+      await sql.begin(async (tx) => {
+        // drizzle-kit emits `--> statement-breakpoint` between statements
+        for (const statement of body.split("--> statement-breakpoint")) {
+          if (statement.trim()) await tx.unsafe(statement);
+        }
+        await tx`INSERT INTO __migrations (name) VALUES (${file})`;
+      });
+    } catch (err) {
+      // Caught only to be *said*. An uncaught rejection here exits 1 with a V8
+      // stack trace through postgres/src/connection.js: the database's own
+      // sentence is in there, but which file asked the question is not, and the
+      // reader's first job is to work out what the runtime is doing in the
+      // frame list. What a migration failure has to answer is which file, what
+      // the server said, and what state the schema is in now (ticket 17).
+      failure = { file, err };
+      break;
+    }
     console.log(`applied ${file}`);
     ran += 1;
   }
-  console.log(ran === 0 ? "up to date" : `db:migrate: ${ran} applied`);
 
-  // constrained roles must be able to see the schema at all
-  await sql.unsafe(
-    `GRANT USAGE ON SCHEMA public TO vextrus_app, vextrus_auth;`,
-  );
+  if (!failure) {
+    console.log(ran === 0 ? "up to date" : `db:migrate: ${ran} applied`);
+
+    // constrained roles must be able to see the schema at all
+    await sql.unsafe(
+      `GRANT USAGE ON SCHEMA public TO vextrus_app, vextrus_auth;`,
+    );
+  }
 } finally {
   await sql.end();
+}
+
+if (failure) {
+  const { file, err } = failure;
+  console.error(`\ndb:migrate: FAILED applying ${file}`);
+  for (const [label, value] of [
+    ["error", err.message],
+    ["detail", err.detail],
+    ["hint", err.hint],
+    ["relation", err.table_name],
+    ["column", err.column_name],
+    ["constraint", err.constraint_name],
+    ["code", err.code],
+  ]) {
+    if (value) console.error(`  ${label.padEnd(10)} ${value}`);
+  }
+  console.error(
+    `  state      rolled back — ${file} is not in __migrations, the schema is\n` +
+      `             as it stood before it, and re-running resumes here.`,
+  );
+  process.exit(1);
 }

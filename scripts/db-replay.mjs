@@ -8,16 +8,26 @@
  * re-keys register rows breaks identity stability *quietly* — a wrong quantity,
  * not a red build. This is the drill that makes it loud.
  *
- * The unit is the commit, not the migration file. Migrations land in ticket-
- * sized groups (twelve migrations across six commits, schema and RLS always
- * paired), so there is no tree in this history where the second migration of a
- * pair was head — the fixtures that match migration N-1 do not exist. What does
- * exist, and what a landing migration actually meets, is the previous
- * migration-bearing commit: last session's schema, populated by last session's
- * code.
+ * The unit is the *change*: the migrations this tree adds over `origin/main`,
+ * which is exactly the set that will meet main's rows in one landing (ADR-0010).
+ * Not the migration file — migrations land in ticket-sized groups (twelve across
+ * six commits, schema and RLS always paired), so there is no tree in this history
+ * where the second migration of a pair was head, and the fixtures that match
+ * migration N-1 do not exist. And not the repo's newest migration, which was the
+ * first rule here: that asks a *retrospective* question no committed tree can
+ * answer honestly. It is never empty, so it re-proves the last landed group on
+ * every commit forever — a green that says nothing about the commit it ran on,
+ * and, while 0010 stands unrepaired, a red that accuses every commit of a fault
+ * it did not cause (ticket 17).
  *
- *   1. Find the commit that added the newest migration; take its parent as the
- *      baseline. Stand up a scratch database at the baseline's migration set.
+ * So the baseline is `git merge-base HEAD origin/main`: last landed schema,
+ * populated by last landed code. A session that has just written a migration and
+ * not committed it is served by the same rule — `head` is read from the working
+ * tree — as is a branch that has committed two migration groups across two
+ * commits, which the old rule under-measured.
+ *
+ *   1. Take `merge-base(HEAD, origin/main)` as the baseline. Stand up a scratch
+ *      database at the baseline's migration set.
  *   2. Check the baseline tree out into a worktree and run *its* `pnpm test:db`
  *      against that database. Its fixtures match its schema, so they pass.
  *   3. Restore the rows those fixtures deleted on their way out (see below).
@@ -46,7 +56,8 @@
  * `vextrus_replay`), drops it on the next run, and refuses to run against the
  * database named in .env.
  *
- * Usage:  pnpm db:replay                 # baseline derived from git history
+ * Usage:  pnpm db:replay                 # baseline = merge-base with origin/main
+ *         REPLAY_BASE_REF=<ref> pnpm db:replay
  *         REPLAY_BASELINE=<commit-ish> pnpm db:replay
  */
 import { readdirSync, rmSync } from "node:fs";
@@ -84,8 +95,16 @@ function withDatabase(rawUrl, database) {
   return u.toString();
 }
 
+function gitTry(...args) {
+  return spawnSync("git", args, {
+    cwd: repoRoot,
+    encoding: "utf-8",
+    timeout: 20_000,
+  });
+}
+
 function git(...args) {
-  const r = spawnSync("git", args, { cwd: repoRoot, encoding: "utf-8" });
+  const r = gitTry(...args);
   if (r.status !== 0) {
     console.error(`db:replay: git ${args.join(" ")} failed\n${r.stderr}`);
     process.exit(2);
@@ -104,29 +123,59 @@ const committed = git("ls-tree", "-r", "--name-only", "HEAD", "db/migrations/")
   .map((f) => path.basename(f.trim()))
   .filter((f) => f.endsWith(".sql"));
 
+const BASE_REF = process.env.REPLAY_BASE_REF ?? "origin/main";
+
+let baseRefSha = null;
+let staleNote = null;
 let baseline = process.env.REPLAY_BASELINE;
 if (!baseline) {
-  // The usual caller has just written a migration and has not committed it, so
-  // the tree it must survive is HEAD. Once it lands, the same question is asked
-  // of the commit before the one that added it.
-  if (head.some((f) => !committed.includes(f))) {
-    baseline = git("rev-parse", "HEAD");
-  } else {
-    const adding = git(
-      "log",
-      "--diff-filter=A",
-      "-1",
-      "--format=%H",
-      "--",
-      `db/migrations/${head.at(-1)}`,
+  // Refresh the tracking ref before reading it. A stale one is not a smaller
+  // question, it is a *wrong* one: it puts already-landed migrations back into
+  // `applying`, and the drill then goes red at someone else for a migration
+  // that has been on main for weeks. Measured 2026-08-12 on the container that
+  // wrote this: `origin/main` sat 13 commits behind, which under this rule
+  // would have replayed 0010 and 0011 all over again.
+  //
+  // Best effort, never fatal — an offline machine still gets a drill, it just
+  // gets told what its baseline is as of, in the header and again in whatever
+  // it goes red about. A stale ref never suppresses a finding (a lagging base
+  // can only put *more* migrations into `applying`); what it does is invite
+  // every red in the run to be read as this branch's fault.
+  const remote = BASE_REF.includes("/") ? BASE_REF.split("/")[0] : null;
+  if (remote && gitTry("remote").stdout?.split("\n").includes(remote)) {
+    const fetched = gitTry(
+      "fetch",
+      "--quiet",
+      remote,
+      BASE_REF.slice(remote.length + 1),
     );
-    const parents = git("rev-list", "--parents", "-n", "1", adding).split(/\s+/);
-    if (parents.length < 2) {
-      console.error("db:replay: the newest migration landed in the root commit");
-      process.exit(2);
+    if (fetched.status !== 0) {
+      staleNote =
+        `could not fetch ${BASE_REF} — using the tracking ref as it stands ` +
+        `locally, last committed ${gitTry("log", "-1", "--format=%cs", BASE_REF).stdout?.trim() || "unknown"}`;
     }
-    baseline = parents[1];
   }
+
+  const resolved = gitTry("rev-parse", "--verify", "--quiet", `${BASE_REF}^{commit}`);
+  if (resolved.status !== 0) {
+    console.error(
+      `db:replay: ${BASE_REF} does not resolve to a commit here.\n` +
+        `The drill's unit is what this tree adds over it, so there is no honest\n` +
+        `baseline without it. Fetch it (git fetch origin main), or name the base\n` +
+        `yourself with REPLAY_BASE_REF=<ref> / REPLAY_BASELINE=<commit-ish>.`,
+    );
+    process.exit(2);
+  }
+  baseRefSha = resolved.stdout.trim();
+
+  const merged = gitTry("merge-base", "HEAD", baseRefSha);
+  if (merged.status !== 0) {
+    console.error(
+      `db:replay: HEAD and ${BASE_REF} share no history — no baseline exists.`,
+    );
+    process.exit(2);
+  }
+  baseline = merged.stdout.trim();
 }
 
 const baselineSet = git("ls-tree", "-r", "--name-only", baseline, "db/migrations/")
@@ -146,10 +195,15 @@ if (applying.length === 0) {
   // the skip has to live here — a path filter in the workflow would be project
   // knowledge in the one place this repo keeps free of it. It is a complete
   // answer rather than a refusal: 2 means "I cannot tell you", and this is
-  // "there is nothing to tell". No finding is suppressed, because a commit with
-  // no migration has nothing for a migration to meet.
+  // "there is nothing to tell". No finding is suppressed, because a tree that
+  // adds no migration has nothing for a migration to meet.
+  //
+  // Under the first rule this branch was unreachable for any committed tree,
+  // which is how ticket 17 found the unit was wrong: a skip written for CI's
+  // most common case that could not fire on it.
   console.error(
-    `db:replay: ${baseline.slice(0, 8)} already has every migration — nothing to replay`,
+    `db:replay: nothing to replay — this tree adds no migration over ` +
+      `${BASE_REF} (${baseline.slice(0, 8)})`,
   );
   process.exit(0);
 }
@@ -175,9 +229,115 @@ function run(label, command, args, opts = {}) {
     shell: process.platform === "win32",
   });
   if (r.status !== 0) {
+    if (opts.allowFailure) return r.status;
     console.error(`\ndb:replay: FAILED at ${label} (exit ${r.status})`);
     process.exit(1);
   }
+  return 0;
+}
+
+/**
+ * Whose migration is this? The drill can answer mechanically — the commit that
+ * added the file, tested for ancestry against the base ref — and until ticket 17
+ * it answered with a V8 stack trace through postgres/src/connection.js instead.
+ * A check that accuses you of something you did not do is worse than no check,
+ * and the cure is speech, not a pass: the exit code does not move for any of
+ * these three.
+ */
+function provenance(file) {
+  if (!committed.includes(file)) {
+    return { kind: "working-tree" };
+  }
+  const adding = gitTry(
+    "log",
+    "--diff-filter=A",
+    "-1",
+    "--format=%H%x00%s%x00%an",
+    "HEAD",
+    "--",
+    `db/migrations/${file}`,
+  );
+  const [sha, subject, author] = (adding.stdout ?? "").trim().split("\0");
+  if (!sha) return { kind: "committed" };
+  const base =
+    baseRefSha ??
+    gitTry("rev-parse", "--verify", "--quiet", `${BASE_REF}^{commit}`).stdout?.trim();
+  const landed =
+    base && gitTry("merge-base", "--is-ancestor", sha, base).status === 0;
+  // The ancestry test is sound in one direction only, and the direction matters:
+  // a tracking ref only ever *lags* the branch it tracks, so ancestry proves
+  // landed, while absence of ancestry proves nothing unless the ref is current.
+  // Reading it as symmetric is how the first cut of this function told a session
+  // to amend migration 0010 — the exact false accusation the speech exists to
+  // delete — on a machine whose fetch had failed. Say "I cannot tell" instead.
+  if (landed) return { kind: "landed", sha, subject, author };
+  return { kind: staleNote ? "unsure" : "branch", sha, subject, author };
+}
+
+function speakTheRed(file, rows) {
+  const say = (...lines) => console.error(lines.join("\n"));
+  console.error("\ndb:replay: --- what this red is ---");
+  if (!file) {
+    say(
+      `db:replay: db:migrate failed with every migration in this run recorded in`,
+      `  __migrations. The fault is after the last statement of the last file —`,
+      `  read db:migrate's own output above; the drill has nothing to add.`,
+    );
+    return;
+  }
+  const p = provenance(file);
+  const met = `${file} failed against the ${rows} rows the baseline wrote before it.`;
+  if (p.kind === "working-tree") {
+    say(
+      `db:replay: ${met}`,
+      `  It is uncommitted, in your working tree — this one is yours, and this is`,
+      `  the drill doing its whole job: the migration is fine against the empty`,
+      `  database every other lane hands it, and wrong against rows. Repair it here,`,
+      `  before it lands: a DEFAULT, a backfill, or NOT NULL set in a later step.`,
+      `  Once it lands it is never edited (ADR-0002) and this becomes permanent.`,
+    );
+  } else if (p.kind === "landed") {
+    say(
+      `db:replay: ${met}`,
+      `  It is LANDED — ${p.sha.slice(0, 8)} "${p.subject}", already on ${BASE_REF}.`,
+      `  It is not yours and it is not repairable: a landed migration is superseded,`,
+      `  never edited (ADR-0002). Nor is this run's question a real one — a landed`,
+      `  migration has already met every database that exists.`,
+      `  A landed file should not be in this run at all, so the baseline is not`,
+      `  where you think it is:`,
+      staleNote
+        ? `    - ${staleNote}`
+        : `    - REPLAY_BASELINE / REPLAY_BASE_REF is set to something older than the merge-base.`,
+    );
+  } else if (p.kind === "unsure") {
+    say(
+      `db:replay: ${met}`,
+      `  It was added by ${p.sha?.slice(0, 8) ?? "an unknown commit"}` +
+        (p.subject ? ` "${p.subject}"` : "") +
+        (p.author ? ` — ${p.author}` : ""),
+      `  and the drill cannot tell you whose it is, because it could not refresh`,
+      `  the ref it measures against:`,
+      `    - ${staleNote}`,
+      `  Against a lagging ref, "not landed" is not a finding. Landed means never`,
+      `  edited (ADR-0002) and not yours; unlanded means repair it before it lands.`,
+      `  Opposite acts, so the drill names neither. Fetch ${BASE_REF} and run again.`,
+    );
+  } else {
+    say(
+      `db:replay: ${met}`,
+      `  It was added by ${p.sha?.slice(0, 8) ?? "an unknown commit"}` +
+        (p.subject ? ` "${p.subject}"` : "") +
+        (p.author ? ` — ${p.author}` : ""),
+      `  committed on this branch, not yet on ${BASE_REF}. So it is still this`,
+      `  branch's to repair, and it must not land as it stands: nothing is landed`,
+      `  until the merge, so amend it or supersede it within the branch. After the`,
+      `  merge neither is available (ADR-0002).`,
+    );
+  }
+  say(
+    `  The exit code does not move for any of this. The drill is not asking you to`,
+    `  agree with it — it is refusing to let the next migration meet rows quietly.`,
+  );
 }
 
 /**
@@ -206,9 +366,10 @@ const maintenance = postgres(withDatabase(ownerUrl, "postgres"), {
 let sql;
 try {
   console.log(
-    `db:replay: replaying ${applying.join(", ")}\n` +
+    `db:replay: replaying ${applying.join(", ")} — what this tree adds over ${BASE_REF}\n` +
       `db:replay: over ${baseline.slice(0, 8)} — ${git("log", "-1", "--format=%s", baseline)}\n` +
-      `db:replay: baseline schema through ${baselineNewest}`,
+      `db:replay: baseline schema through ${baselineNewest}` +
+      (staleNote ? `\ndb:replay: NOTE ${staleNote}` : ""),
   );
 
   step(`scratch database ${REPLAY_DB}`);
@@ -382,7 +543,28 @@ try {
   );
 
   step(`apply ${applying.join(", ")}`);
-  run("db:migrate (replayed)", process.execPath, ["scripts/db-migrate.mjs"]);
+  const applyStatus = run(
+    "db:migrate (replayed)",
+    process.execPath,
+    ["scripts/db-migrate.mjs"],
+    { allowFailure: true },
+  );
+  if (applyStatus !== 0) {
+    // Which file died is measured, not parsed out of the child's text: the
+    // ledger is written inside each migration's own transaction, so the first
+    // file of this run missing from __migrations is the one that rolled back.
+    const applied = new Set(
+      (await sql`SELECT name FROM __migrations`).map((r) => r.name),
+    );
+    console.error(
+      `\ndb:replay: FAILED at db:migrate (replayed) (exit ${applyStatus})`,
+    );
+    speakTheRed(
+      applying.find((f) => !applied.has(f)),
+      rowsWaiting,
+    );
+    process.exit(1);
+  }
 
   const after = await snapshot();
 
