@@ -57,9 +57,23 @@ try {
   const applied = new Set(
     (await sql`SELECT name FROM __migrations`).map((r) => r.name),
   );
-  const files = readdirSync(migrationsDir)
+  let files = readdirSync(migrationsDir)
     .filter((f) => f.endsWith(".sql"))
     .sort();
+
+  // MIGRATE_THROUGH stops the lane at a named migration, inclusive. It exists
+  // for scripts/db-replay.mjs, which must stand the database up at N-1 before
+  // it can let migration N meet rows. It is a stop point, not a second writer:
+  // the ordering, the ledger and the transaction below are unchanged.
+  const through = process.env.MIGRATE_THROUGH;
+  if (through) {
+    const stop = files.indexOf(through);
+    if (stop === -1) {
+      console.error(`MIGRATE_THROUGH=${through} is not a migration file`);
+      process.exit(2);
+    }
+    files = files.slice(0, stop + 1);
+  }
 
   let ran = 0;
   for (const file of files) {

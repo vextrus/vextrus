@@ -49,6 +49,15 @@ pnpm verify        # tsc -> eslint -> vitest -> cad (ruff+pytest) -> next build;
 Run it, read the exit code, fix, repeat. Playwright e2e is outside this lane.
 
 ```
+pnpm db:replay     # wrote a migration? run it once, before you commit
+```
+
+Verify never touches a row. `db:replay` stands the schema up at the last committed
+migration, populates it by running that tree's own `pnpm test:db`, restores the rows those
+fixtures deleted, and applies your migration to them — the only path on which a migration
+meets data written before it. Container only; it builds and drops its own database.
+
+```
 DB:  localhost:5544/vextrus  (compose-managed; pnpm db:migrate is the only writer)
 Web: localhost:3210
 ```
