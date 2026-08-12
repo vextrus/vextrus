@@ -1,6 +1,6 @@
 {
-  "id": "9a5148a8-2a7a-4c73-bef4-a343186be8af",
-  "prevId": "81e6ea23-de45-463f-a3e3-1c3c24f7e15f",
+  "id": "4985e9a3-b735-4a7d-b293-422c915bc657",
+  "prevId": "9a5148a8-2a7a-4c73-bef4-a343186be8af",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1724,6 +1724,12 @@
         },
         "view_key": {
           "name": "view_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "semantic": {
+          "name": "semantic",
           "type": "text",
           "primaryKey": false,
           "notNull": true

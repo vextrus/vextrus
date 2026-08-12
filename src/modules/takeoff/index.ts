@@ -26,6 +26,8 @@ export {
 } from "./grid";
 export {
   PLACEMENT_SHARES,
+  REVISION_CARRY_SHARE,
+  carryBounds,
   classWitnesses,
   isMemberMark,
   levelSlotOf,

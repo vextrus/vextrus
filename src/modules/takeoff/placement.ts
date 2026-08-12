@@ -75,6 +75,17 @@ export const PLACEMENT_SHARES = {
 } as const;
 
 /**
+ * The revision carry share (identity.md §4, ticket 08) — not one of §9's
+ * placement constants, and kept apart from them for that reason: it decides
+ * nothing about what a drawing *is*, only how far a member may move between
+ * revisions and still be paired with the identity it already froze. Half the
+ * minimum bay: a member that moved further sits at a different intersection,
+ * and pairing it would be a merge, so the prior and the new placement each
+ * present themselves instead.
+ */
+export const REVISION_CARRY_SHARE = 0.5;
+
+/**
  * The level slot of a placed instance (§9, identity.md §3). Foundation classes
  * sit below the level stack and take the lawful-null `FOUNDATION` basis;
  * vertical classes expand per level and take `UNRESOLVED` until a level is
@@ -316,6 +327,27 @@ export function placeInstances(
     }
     return placeInView(graph, view, backbone, witnesses);
   });
+}
+
+/**
+ * The carry bound of each placed view, in that view's own drawing units: the
+ * revision-carry share of the grid spacing ticket 06 computed for it. The
+ * register's door pairs a revision with these and nothing else — a bound in
+ * absolute units is the same species as a guessed scale. A view that stated no
+ * spacing appears in no entry at all: it carries nobody across a move, and the
+ * door says so by name rather than invent a distance for it.
+ */
+export function carryBounds(
+  placements: ViewPlacement[],
+  backbones: GridBackbone[],
+): Record<string, number> {
+  const bounds: Record<string, number> = {};
+  for (const placement of placements) {
+    const spacing = backbones.find((b) => b.viewId === placement.viewId)?.minSpacing;
+    if (spacing === undefined || spacing === null) continue;
+    bounds[placement.viewKey] = spacing * REVISION_CARRY_SHARE;
+  }
+  return bounds;
 }
 
 function placeInView(

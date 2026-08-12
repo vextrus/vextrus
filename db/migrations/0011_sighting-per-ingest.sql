@@ -1,0 +1,2 @@
+ALTER TABLE "register_object_sightings" DROP CONSTRAINT "register_object_sightings_placement_uq";--> statement-breakpoint
+ALTER TABLE "register_object_sightings" ADD CONSTRAINT "register_object_sightings_placement_uq" UNIQUE("project_id","drawing_id","ingest_id","placement_key");

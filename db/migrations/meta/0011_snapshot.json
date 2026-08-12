@@ -1,6 +1,6 @@
 {
-  "id": "9a5148a8-2a7a-4c73-bef4-a343186be8af",
-  "prevId": "81e6ea23-de45-463f-a3e3-1c3c24f7e15f",
+  "id": "6a6dfa77-c301-4f88-ab5a-c98963142680",
+  "prevId": "4985e9a3-b735-4a7d-b293-422c915bc657",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -1728,6 +1728,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "semantic": {
+          "name": "semantic",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "handles": {
           "name": "handles",
           "type": "jsonb",
@@ -1842,6 +1848,7 @@
           "columns": [
             "project_id",
             "drawing_id",
+            "ingest_id",
             "placement_key"
           ]
         }

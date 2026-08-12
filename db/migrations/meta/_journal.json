@@ -71,6 +71,20 @@
       "when": 1786513477385,
       "tag": "0009_register-sightings-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786514398719,
+      "tag": "0010_sighting-semantic",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1786514664274,
+      "tag": "0011_sighting-per-ingest",
+      "breakpoints": true
     }
   ]
 }

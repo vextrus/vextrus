@@ -485,6 +485,13 @@ export const registerObjectSightings = pgTable(
     /** Placement key (identity.md §3): view key + mark + quantized coordinates. */
     placementKey: text("placement_key").notNull(),
     viewKey: text("view_key").notNull(),
+    /**
+     * The row's order-normalized **semantic** (identity.md §5): canonical JSON
+     * of its content including its cited evidence handles. The **invalidator,
+     * never the key** — an unchanged semantic carries filed human dispositions
+     * forward across a revision, a changed one re-presents the row.
+     */
+    semantic: text("semantic").notNull(),
     /** DXF handles cited as evidence — provenance, never identity. */
     handles: jsonb("handles").$type<string[]>().notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -493,9 +500,16 @@ export const registerObjectSightings = pgTable(
   },
   (t) => [
     index("register_object_sightings_object_idx").on(t.registerObjectId),
+    // Evidence is append-only: the app lane may insert and read a sighting,
+    // never rewrite one (ADR-0004, migration 0009). So a revision that restates
+    // a placement — the same key, moved handles, a changed semantic — files a
+    // NEW sighting against its own ingest, and the superseded one stays as
+    // history. The ingest in the key is what keeps a re-run of one ingest
+    // idempotent while still letting the next revision speak.
     unique("register_object_sightings_placement_uq").on(
       t.projectId,
       t.drawingId,
+      t.ingestId,
       t.placementKey,
     ),
     foreignKey({

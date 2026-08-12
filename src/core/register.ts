@@ -1,9 +1,35 @@
-import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, desc, eq, isNull, ne } from "drizzle-orm";
 import type { RefusedSightingSubject } from "../../db/schema/core";
 import { withAct } from "./acts";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
 import type { Discipline, ElementType, LevelBasis, RefusalCause } from "./enums";
 import type { EntityGraph } from "./entitygraph";
+import {
+  pairRevision,
+  sightingSemantic,
+  type PairedClaim,
+  type PriorSighting,
+  type VacatedIdentity,
+} from "./pairing";
+
+/** The identity law itself is `./pairing` — pure, and the one site ordinals are
+ *  derived or inherited. It is re-exported here because the door is its only
+ *  caller and callers read this file. */
+export {
+  familyIdentities,
+  markFamily,
+  pairRevision,
+  placementAnchor,
+  sightingSemantic,
+  type Carry,
+  type ClaimedIdentity,
+  type PairedClaim,
+  type Pairing,
+  type PriorSighting,
+  type Sighting,
+  type VacatedIdentity,
+} from "./pairing";
+import type { Sighting } from "./pairing";
 
 /**
  * The register spine: typed primitives crossing the tenant seam, and — at the
@@ -557,105 +583,22 @@ export async function listRefusedSightings(
 
 /* ------------------------------- the door --------------------------------- */
 
-/**
- * A sighting offered at the register's door: one placed instance, described
- * only by content (identity.md §3 — content-derived keys, zero minted ids). The
- * takeoff module's placement stage produces these; the door decides what they
- * mean. Nothing here is a quantity.
- */
-export type Sighting = {
-  /** Placement key (§3): view key + mark + coordinates quantized to 0.1 unit.
-   *  Idempotency and provenance — **never** part of the identity key. */
-  placementKey: string;
-  viewKey: string;
-  elementType: ElementType;
-  /** The drawing's own mark string. */
-  mark: string;
-  /** The dotless-uppercase compare form: two spellings, one family
-   *  (cad-ingestion.md §9). */
-  family: string;
-  /** Content signature of authored inputs ONLY, fixed-precision (§4).
-   *  Correctable attributes — height, grade, rebar spec — are excluded. */
-  signature: string;
-  levelId?: string;
-  levelBasis: LevelBasis;
-  /** The DXF handles this sighting cites (cad-ingestion.md §2). */
-  handles: string[];
-};
-
-/**
- * The identity a sighting claims, plus the human-facing key form: `mark#i`
- * within a mark family of several, the bare mark for a singleton (§4).
- */
-export type ClaimedIdentity = {
-  sighting: Sighting;
-  mark: string;
-  ordinal: number;
-  key: string;
-};
-
-/**
- * Ordinals, by identity.md §4 and nothing else:
- *
- * - A **mark family** is one (element class, level slot, dotless mark) — the
- *   identity key's own axes minus the ordinal. Two classes sharing a mark
- *   string are two families, and so are two levels.
- * - Its members sort by a canonical **content signature of authored inputs
- *   only**, tie-broken by the row's own id — here the placement key, the one
- *   axis no correction can touch, since a placement mints no id at all.
- * - The ordinal is that 1-based index. It is assigned once, at first
- *   registration, and this function is deliberately the only place it is
- *   derived: an ordinal re-derived from moved geometry migrates, which is the
- *   exact defect the freeze exists to prevent.
- * - A family of one keeps the bare mark as its key form; its ordinal is still
- *   1, so a family that later grows gains an index without moving anybody.
- *
- * A family's members may be spelled two ways (`T.B` / `TB`); the family
- * registers under the spelling of its first-sorted member, so one physical
- * family is never two register families.
- */
-export function familyIdentities(sightings: Sighting[]): ClaimedIdentity[] {
-  const families = new Map<string, Sighting[]>();
-  for (const sighting of sightings) {
-    const key = [
-      sighting.elementType,
-      sighting.levelBasis,
-      sighting.levelId ?? "",
-      sighting.family,
-    ].join("|");
-    families.set(key, [...(families.get(key) ?? []), sighting]);
-  }
-  const claims: ClaimedIdentity[] = [];
-  for (const members of families.values()) {
-    const sorted = [...members].sort(
-      (a, b) =>
-        a.signature.localeCompare(b.signature) ||
-        a.placementKey.localeCompare(b.placementKey),
-    );
-    const mark = sorted[0]!.mark;
-    for (const [i, sighting] of sorted.entries()) {
-      const ordinal = i + 1;
-      claims.push({
-        sighting,
-        mark,
-        ordinal,
-        key: sorted.length > 1 ? `${mark}#${ordinal}` : mark,
-      });
-    }
-  }
-  return claims.sort((a, b) =>
-    a.sighting.placementKey.localeCompare(b.sighting.placementKey),
-  );
-}
-
 export type RegistrationOutcome = {
   /** Identities that landed on the register in this pass. */
-  registered: Array<{ claim: ClaimedIdentity; object: RegisterObject }>;
-  /** Placements already registered — a re-run is a no-op, never a refusal. */
-  unchanged: Array<{ claim: ClaimedIdentity; object: RegisterObject }>;
+  registered: Array<{ claim: PairedClaim; object: RegisterObject }>;
+  /** Sighted again with an identical semantic: identity *and* filed human
+   *  dispositions carry forward untouched (identity.md §5). A re-run of the
+   *  same drawing is wholly this — a no-op, never a refusal. */
+  unchanged: Array<{ claim: PairedClaim; object: RegisterObject }>;
+  /** Identity inherited, semantic changed — a move, or cited evidence that
+   *  moved. The row **re-presents for disposition** (§5); it never re-keys. */
+  represented: Array<{ claim: PairedClaim; object: RegisterObject }>;
+  /** Prior identities this revision does not sight: a named disposition, never
+   *  a silent absence. The ordinal stays retired. */
+  removed: Array<{ vacated: VacatedIdentity; object: RegisterObject }>;
   /** Second sightings of an identity already on the register: unpriceable
    *  evidence in its own table, with no join from any bill (identity.md §2). */
-  refused: Array<{ claim: ClaimedIdentity; sighting: RefusedSighting }>;
+  refused: Array<{ claim: PairedClaim; sighting: RefusedSighting }>;
 };
 
 /** PostgreSQL unique_violation, anywhere down the driver's cause chain. */
@@ -667,22 +610,30 @@ function uniqueViolation(err: unknown): boolean {
 }
 
 /**
- * **The register's door** (identity.md §2, §4). Every placed instance of one
- * drawing arrives here; each one either registers, is recognised as already
- * registered, or is **refused as a second sighting of the same physical
- * scope** — and a refusal lands in `refused_sightings`, never on the register
- * with a status flag (one forgotten WHERE from over-measurement).
+ * **The register's door** (identity.md §2, §4, §5). Every placed instance of
+ * one drawing arrives here; each one either registers, inherits an identity the
+ * register already froze, or is **refused as a second sighting of the same
+ * physical scope** — and a refusal lands in `refused_sightings`, never on the
+ * register with a status flag (one forgotten WHERE from over-measurement).
  *
- * Three laws are load-bearing in the order below:
+ * A second revision of a drawing comes through this same door, and what comes
+ * out is a **delta, not a do-over** (ticket 08): the pairing law inherits the
+ * frozen ordinals, the removals are named, and the semantic — not the key —
+ * decides which rows re-present for disposition.
+ *
+ * Four laws are load-bearing in the order below:
  *
  * 1. **Fails closed on discipline.** An unconfirmed drawing is not walked at
  *    all (§2) — the door refuses the whole pass by name rather than guess an
  *    authority.
- * 2. **A known placement is a no-op.** Placement keys are content-derived, so
- *    re-running the same drawing offers the same keys; they are matched before
- *    any identity is derived. This is what keeps a re-run from reading as nine
- *    duplicate refusals — and what keeps a genuine second sighting readable.
- * 3. **The constraint is the guard.** The identity insert runs on a savepoint
+ * 2. **Identity is inherited, never re-derived.** `pairRevision` sees what this
+ *    drawing already registered (one prior per register object: its latest
+ *    sighting) and decides what carries. Only a family this view has never
+ *    sighted derives ordinals from the offered batch.
+ * 3. **The semantic is the invalidator.** An identical semantic is `unchanged`
+ *    and carries filed dispositions forward; a changed one re-presents the row.
+ *    Neither ever moves the key.
+ * 4. **The constraint is the guard.** The identity insert runs on a savepoint
  *    and the DUPLICATE_IDENTITY refusal is written from its unique-violation —
  *    a pre-flight SELECT would leave a race between two workers, and the guard
  *    must be the one thing no concurrency can step around.
@@ -697,6 +648,13 @@ export async function registerSightings(
     drawingId: string;
     ingestId: string;
     sightings: Sighting[];
+    /** Per view key, the distance within which a moved member is still the
+     *  same member — a share of that view's own grid spacing, from the takeoff
+     *  module. A view with no bound carries nobody across a move, and says so. */
+    carryBounds?: Record<string, number>;
+    /** The views this pass walked, when that is more than the views its
+     *  sightings name — a view emptied by a revision still reports its losses. */
+    walkedViewKeys?: string[];
   },
 ): Promise<RegistrationOutcome> {
   const offered = new Set<string>();
@@ -726,30 +684,65 @@ export async function registerSightings(
       );
     }
 
-    const known = new Map<string, string>();
-    if (input.sightings.length > 0) {
-      const rows = await tx
-        .select({
-          placementKey: schema.registerObjectSightings.placementKey,
-          registerObjectId: schema.registerObjectSightings.registerObjectId,
-        })
-        .from(schema.registerObjectSightings)
-        .where(
-          and(
-            eq(schema.registerObjectSightings.projectId, input.projectId),
-            eq(schema.registerObjectSightings.drawingId, input.drawingId),
-            inArray(schema.registerObjectSightings.placementKey, [...offered]),
-          ),
-        );
-      for (const row of rows) known.set(row.placementKey, row.registerObjectId);
+    // What this drawing already registered: one prior per register object —
+    // its LATEST sighting. A superseded placement is history, and history is
+    // never a pairing candidate.
+    const priorRows = await tx
+      .selectDistinctOn([schema.registerObjectSightings.registerObjectId], {
+        sighting: schema.registerObjectSightings,
+        object: schema.registerObjects,
+      })
+      .from(schema.registerObjectSightings)
+      .innerJoin(
+        schema.registerObjects,
+        eq(schema.registerObjects.id, schema.registerObjectSightings.registerObjectId),
+      )
+      .where(
+        and(
+          eq(schema.registerObjectSightings.projectId, input.projectId),
+          eq(schema.registerObjectSightings.drawingId, input.drawingId),
+        ),
+      )
+      .orderBy(
+        schema.registerObjectSightings.registerObjectId,
+        desc(schema.registerObjectSightings.createdAt),
+        // two sightings filed in one transaction share a timestamp; the id
+        // settles it, so "the latest" is a fact and not a coin toss
+        desc(schema.registerObjectSightings.id),
+      );
+
+    const objectsById = new Map<string, RegisterObject>();
+    const priors: PriorSighting[] = [];
+    for (const row of priorRows) {
+      objectsById.set(row.object.id, row.object);
+      priors.push({
+        objectId: row.object.id,
+        placementKey: row.sighting.placementKey,
+        viewKey: row.sighting.viewKey,
+        semantic: row.sighting.semantic,
+        elementType: row.object.elementType,
+        mark: row.object.mark,
+        ordinal: row.object.ordinal,
+        levelBasis: row.object.levelBasis,
+        levelId: row.object.levelId,
+      });
     }
+
+    const pairing = pairRevision({
+      offered: input.sightings,
+      priors,
+      carryBounds: input.carryBounds ?? {},
+      walkedViewKeys: input.walkedViewKeys,
+    });
 
     const outcome: RegistrationOutcome = {
       registered: [],
       unchanged: [],
+      represented: [],
+      removed: [],
       refused: [],
     };
-    for (const claim of familyIdentities(input.sightings)) {
+    for (const claim of pairing.claims) {
       const { sighting } = claim;
       const identity = {
         projectId: input.projectId,
@@ -760,17 +753,36 @@ export async function registerSightings(
         mark: claim.mark,
         ordinal: claim.ordinal,
       };
+      const semantic = sightingSemantic(sighting);
 
-      const knownId = known.get(sighting.placementKey);
-      if (knownId !== undefined) {
-        const [object] = await tx
-          .select()
-          .from(schema.registerObjects)
-          .where(eq(schema.registerObjects.id, knownId));
-        outcome.unchanged.push({
-          claim,
-          object: found(object, "register object", knownId),
+      if (claim.prior !== null) {
+        const object = found(
+          objectsById.get(claim.prior.objectId),
+          "register object",
+          claim.prior.objectId,
+        );
+        if (claim.carry === "EXACT" && claim.prior.semantic === semantic) {
+          outcome.unchanged.push({ claim, object });
+          continue;
+        }
+        // The identity is inherited whole; only the evidence is restated. A
+        // moved member cites a new placement, an unmoved one whose evidence
+        // moved restates its own — and either way the row re-presents (§5).
+        // The restatement is a NEW sighting against this ingest: evidence is
+        // append-only, so the superseded placement stays as history and no
+        // sighting is ever rewritten to point somewhere else.
+        await tx.insert(schema.registerObjectSightings).values({
+          tenantId: ctx.tenantId,
+          projectId: input.projectId,
+          registerObjectId: object.id,
+          drawingId: input.drawingId,
+          ingestId: input.ingestId,
+          placementKey: sighting.placementKey,
+          viewKey: sighting.viewKey,
+          semantic,
+          handles: sighting.handles,
         });
+        outcome.represented.push({ claim, object });
         continue;
       }
 
@@ -785,6 +797,7 @@ export async function registerSightings(
             ingestId: input.ingestId,
             placementKey: sighting.placementKey,
             viewKey: sighting.viewKey,
+            semantic,
             handles: sighting.handles,
           });
           return row;
@@ -828,6 +841,21 @@ export async function registerSightings(
         });
         outcome.refused.push({ claim, sighting: sightingRow });
       }
+    }
+
+    // The absent, by name. Nothing is deleted from the register: a member the
+    // revision dropped keeps its row, its ordinal stays retired, and the delta
+    // reports the loss so a human dispositions it. Silence is the only
+    // condemned state.
+    for (const vacated of pairing.vacated) {
+      outcome.removed.push({
+        vacated,
+        object: found(
+          objectsById.get(vacated.prior.objectId),
+          "register object",
+          vacated.prior.objectId,
+        ),
+      });
     }
     return outcome;
   });
