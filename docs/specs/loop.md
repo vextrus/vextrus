@@ -26,9 +26,14 @@ surfaces it, and splitting an oversized ticket stays human graph-work.
 node scripts/loop/conduct.mjs .wayfinder/<effort>/arcs/<arc> [--arc <name>] [--max-tickets N] [--dry-run]
 ```
 
-Preflight (all mechanical, all refuse loudly): no concurrent run (`.loop/ACTIVE`), clean tree,
-nothing answering on :3210 (a dev server is a second writer), baseline `pnpm verify` green,
-pre-push guard armed (`.githooks/pre-push` refuses every push while a campaign is active).
+Preflight (all mechanical, all refuse loudly): `pnpm checkup` exit 0 **first** — a campaign
+assumes a known start state and a cloud container has two (ticket 12), so the machine is
+cleared before the tree is, and a snapshot-restored one refuses in ~1.3s naming
+`scripts/provision.sh` instead of burning a full verify to say something true and unhelpful;
+this subsumes the :3210 check (a dev server is a second writer). Then: no concurrent run
+(`.loop/ACTIVE`), clean tree, baseline `pnpm verify` green — checkup asks whether the machine
+is fit, verify whether the tree is green, and a campaign needs both — pre-push guard armed
+(`.githooks/pre-push` refuses every push while a campaign is active).
 
 Per iteration: `frontier.mjs` picks the next ticket (open + unclaimed + blockers closed,
 fail-closed) → a worker session runs `scripts/loop/PROMPT.md` against it → the conductor

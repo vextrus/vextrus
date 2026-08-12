@@ -31,6 +31,10 @@ Two axes, deliberately one map because they collide at every step:
   snapshot-restored one is a photograph of a machine an earlier session provisioned, at a commit
   that may predate the current head: unfit on arrival (database down, Node 22 against the pin),
   install path skipped as "already up to date". The only tell is file mtimes against `/`.
+  **Closed by ticket 12, by routing rather than detection:** the setup field runs at container
+  *creation* only and the platform caches the state afterwards, so a restore invokes nothing — a
+  `SessionStart` hook now runs `checkup` before turn one, and the kind of container you got is a
+  cause whose consequences checkup already names.
 - **A container's first read of a file is its most expensive one.** Image blocks are materialized
   on first access: 68MB of never-touched image files read in 1.53s, then 0.26s on re-read *with
   the page cache dropped before both*. It is not page cache, it cannot be replayed inside one
@@ -183,6 +187,25 @@ Two axes, deliberately one map because they collide at every step:
   `test:db`: that measured fixture isolation and failed on it. Trigger: `CLAUDE.md`, pre-commit.
   verify green **39.2s**. [Captures](tickets/10-replay-proof.md).
 
+- 2026-08-12 — [Two kinds of container](tickets/12-two-kinds-of-container.md) — **the subject was
+  never the divergence; it was that nothing invokes the repair.** The closing session landed on the
+  snapshot kind and measured it first: the *same* 10:37 image ticket 09 saw, four tickets later,
+  no `provision.log`, Node v22.22.2 unshadowed. So the snapshot **never refreshes** and the setup
+  field **does not fire on a restore** — it runs at container *creation*, after which the platform
+  caches the state, which is what manufactures the second kind. Ruling: **route, don't label.** A
+  `SessionStart` hook runs `node scripts/checkup.mjs --hook` before turn one and **reports, never
+  repairs** — repair in a hook would mutate a machine on an arrival nobody chose and pay parity's
+  61s in the least legible place there is. Output is proportional to the trouble: fit is **one
+  line** (ticket 07's environment stamp, so every later number is citable), unfit is all nine plus
+  the repair; **always exit 0**, because the exit code stays the provisioner's and this is the
+  first consumer of the *output* half. A **container-kind line was rejected** — checkup already
+  names every consequence by symptom, and the only tell is a mtime inference, which is exactly what
+  "measured, never inferred" bans. Agent-only routing accepted. The loop takes the same gate as its
+  **first** preflight (machine before tree, exit code, subsuming :3210). Wall-clock ruled a
+  consequence, **no target** — an unwritten latency threshold is what ticket 09 just deleted.
+  Proven by stopping Postgres for real: `--hook` EXIT=0 with the full report, bare checkup EXIT=1,
+  `conduct.mjs` refusing in 1.1s naming the repair; repair `parity: ok in 101s`; fit line **1.4s**.
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
@@ -191,10 +214,12 @@ Two axes, deliberately one map because they collide at every step:
 - **A natively-started Postgres does not survive the container's process tree restarting.** The
   cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no
   listener on 5544 six minutes later. `checkup` caught it and named the repair, so nothing is
-  silent — but "re-run provision.sh" is a full parity gate to restart a database. Ticket 09 moved
-  the *arrival* half of this to [ticket 12](tickets/12-two-kinds-of-container.md); what stays here
-  is the part neither covers — whether the **compose path shares the fault**, and what a session
-  should do when the machine decays *mid-session* rather than before it.
+  silent. Ticket 12 closed the *arrival* half — a `SessionStart` hook now routes a session to the
+  repair before turn one — and **narrowed the cost objection**: `pg_ctlcluster 16 main start`
+  brought the cluster back in ~2s, so the mid-session repair is not necessarily the full parity
+  gate that made this look expensive. What stays: whether the **compose path shares the fault**,
+  what actually kills the cluster, and whether `checkup`'s repair pointer should name the cheap
+  restart when the *only* BROKEN line is the database.
 
 - **A dbspec assumes it owns the database.** `tenancy.dbspec`'s cleanup is
   `delete from users where email like '%@dbspec.local'` — a reach across every suite, which holds
