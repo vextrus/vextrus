@@ -52,7 +52,18 @@ all measured on a cloud container at `9436eb7` before anything was changed; the 
   human who is not there. Their subjects are covered mechanically now — `main` by the hook,
   landing by the click, a bad reset by the reflog. **Recommended, not landed:** the permission
   classifier refuses an agent editing its own permission rules, which is the correct behaviour,
-  so the exact diff is recorded for the dispatcher instead of applied.
+  so the exact diff is recorded here for the dispatcher instead of applied — delete the `ask`
+  line from `.claude/settings.json`, and add the repair and script commands a session now needs
+  to reach without a prompt:
+
+  ```jsonc
+  // .claude/settings.json — permissions
+  -   "ask": ["Bash(git push *)", "Bash(git reset *)", "Bash(rm -r *)"],
+  +   // (removed: a prompt in an unattended session is a stall, not a gate)
+      "allow": [ …,
+  +     "Bash(bash scripts/*)", "Bash(pg_lsclusters *)", "Bash(pg_ctlcluster *)", "Bash(ss *)"
+      ]
+  ```
 - **The citable fingerprint carried no commit.** `checkup`'s environment line named time,
   platform, node and Postgres path — everything that varied except the tree. Now
   `branch@sha +dirty`, read locally, no network: ticket 07's citability rule finally complete.
@@ -93,3 +104,9 @@ about its own database.
 `9436eb7` — the delta is the build stage (19.8s → 21.1s) on a machine ticket 13 measured at a
 2.2× spread for its own history, and nothing here adds a stage. `checkup` fit in **1.4s** in hook
 mode, 2.5s bare.
+
+The provisioner change is proven where it is not this container's own PATH: **CI run 5, green at
+`1e27a58`** — `workflow_dispatch` on the session branch, `provision.sh` 70s, whole job 75s, on a
+GitHub-hosted runner, which is the first non-root machine the new `githooks` phase meets and the
+one that found ticket 13's corepack defect. The new `permissions: contents: read` grant does not
+break checkout.
