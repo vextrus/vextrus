@@ -2,7 +2,7 @@
 
 wayfinder:grilling
 Status: open
-Claimed by:
+Claimed by: claude (session 5cc892ca)
 Blocked by: 02-the-cold-machine.md
 
 ## Objective
