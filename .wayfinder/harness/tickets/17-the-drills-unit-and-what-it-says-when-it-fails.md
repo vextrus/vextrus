@@ -193,3 +193,23 @@ plus this diff:
 | `REPLAY_BASE_REF=origin/nope` | refusal naming the fetch and both overrides — **exit 2** |
 
 `pnpm verify` green in **28.2s**; `provision.sh` green on arrival, `parity: ok in 64s`.
+
+### The wired step, proven on a hosted runner
+
+The one assumption a session cannot check locally is whether `origin/main` exists on the runner
+after `actions/checkout` — the whole rule rests on it, and a wrong answer is exit 2 on every CI
+run. Dispatched at `2a9d0e6` (run
+[31643422509](https://github.com/vextrus/vextrus/actions/runs/31643422509), `workflow_dispatch`
+on this branch, which takes the same path a PR run does):
+
+```
+parity: ok in 43s — checkup | verify | test:db | dev (:3210) all pass
+provision: ok — checkup | verify | test:db | dev (:3210) all proven, not claimed
+##[group]Run pnpm db:replay
+db:replay: nothing to replay — this tree adds no migration over origin/main (3560eb16)
+```
+
+**Job success, 72s total, the drill's step 1s of it.** `fetch-depth: 0` does leave `origin/main`
+resolvable, the in-script fetch succeeds on a runner (no `NOTE` line), and the skip is reached
+through the mechanism rather than by assertion. `ci` is now green *with* the step it was born
+holding.

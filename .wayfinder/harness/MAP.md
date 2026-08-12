@@ -332,7 +332,10 @@ Two axes, deliberately one map because they collide at every step:
   proves nothing. Hence a best-effort fetch (never fatal), a header `NOTE`, and a refusal (exit 2)
   when the ref resolves to nothing. Not hypothetical: `origin/main` was **13 commits stale** on the
   closing container. All four classes and both refusals exercised against a real database; verify
-  green **28.2s**.
+  green **28.2s**. The wired step is **proven on a hosted runner** (run 31643422509, 72s, job
+  success): `fetch-depth: 0` does leave `origin/main` resolvable, the in-script fetch succeeds
+  there, and the skip is reached through the mechanism — `ci` is green with the step it was born
+  holding.
 
 ## Not yet specified
 
