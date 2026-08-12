@@ -16,6 +16,7 @@ export const detectedUnitSchema = z.enum([
   "cm",
   "m",
 ]);
+export type DetectedUnit = z.infer<typeof detectedUnitSchema>;
 
 export const entityGraphSchema = z.object({
   artifact: z.literal(ENTITYGRAPH_ARTIFACT),

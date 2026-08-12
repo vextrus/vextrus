@@ -29,6 +29,11 @@ a named reason, and `pnpm verify` stays under 60s.
 - 01 — better-auth's org plugin maps onto `tenants`/`memberships` (one model, B2C = single-member
   tenant); auth runs as a third constrained role `vextrus_auth`, never owner; signup's deferred
   after-hook is healed once in the tRPC auth middleware; verify 4.6s.
+- [02 — The register schema](tickets/02-register-schema.md) — spine tables landed (0004/0005);
+  identity is `UNIQUE NULLS NOT DISTINCT` with a two-column level slot (id + basis) so
+  foundation-class duplicates refuse; composite FKs close the FK-bypasses-RLS hole (review-caught
+  live); register/acts/refusals frozen or append-only by grant; seam CRUD in
+  `src/core/register.ts`; verify 4.9s, test:db 22.
 
 ## Not yet specified
 

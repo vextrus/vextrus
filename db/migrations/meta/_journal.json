@@ -29,6 +29,20 @@
       "when": 1786492814344,
       "tag": "0003_auth-lane-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786495869331,
+      "tag": "0004_register-spine",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786495870451,
+      "tag": "0005_register-rls",
+      "breakpoints": true
     }
   ]
 }
