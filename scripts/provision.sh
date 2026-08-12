@@ -13,9 +13,23 @@
 # cluster on the same port 5544 when it does not.
 set -euo pipefail
 
+# `set -e` with no reporting turns every fault into a bare exit 1, which is what
+# a cloud setup field shows the user. Name the phase, the line and the command,
+# so one failed run is a diagnosis instead of a guess.
+phase="startup"
+on_err() {
+  local code=$? line=$1
+  echo >&2
+  echo "provision: FAILED in phase '$phase' at line $line (exit $code)" >&2
+  echo "provision: command was: ${BASH_COMMAND}" >&2
+  exit "$code"
+}
+trap 'on_err $LINENO' ERR
+
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
 echo "provision: repo at $REPO"
+echo "provision: user=$(id -un) node=$(command -v node || echo none) docker=$(command -v docker || echo none)"
 
 if [ "$(id -u)" -eq 0 ]; then
   SUDO=""
@@ -31,6 +45,7 @@ fi
 # engine. nvm's default alias only helps shells that source nvm.sh, which a
 # non-interactive session shell does not — hence profile.d *and* bashrc *and*
 # symlinks, covering login, interactive, and bare `sh -c` respectively.
+phase="node"
 node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
 if [ "$(node_major)" -lt 24 ]; then
   export NVM_DIR="$HOME/.nvm"
@@ -39,7 +54,9 @@ if [ "$(node_major)" -lt 24 ]; then
   . "$NVM_DIR/nvm.sh"
   nvm install 24 >/dev/null && nvm alias default 24 >/dev/null
 
-  NODE24_BIN="$(ls -d "$NVM_DIR"/versions/node/v24.*/bin 2>/dev/null | sort -V | tail -1)"
+  # `|| true`: pipefail makes a failing `ls` fatal, and "no v24 dir" is a case
+  # the next line already handles.
+  NODE24_BIN="$(ls -d "$NVM_DIR"/versions/node/v24.*/bin 2>/dev/null | sort -V | tail -1 || true)"
   if [ -n "$NODE24_BIN" ]; then
     export PATH="$NODE24_BIN:$PATH"
     if [ -w /etc/profile.d ] || [ -n "$SUDO" ]; then
@@ -55,6 +72,7 @@ fi
 echo "provision: node $(node -v)"
 
 # --- Postgres on 5544 ---------------------------------------------------------
+phase="postgres"
 if docker info >/dev/null 2>&1; then
   echo "provision: docker present — using compose.yaml"
   docker compose up -d postgres
@@ -68,7 +86,8 @@ else
     $SUDO apt-get update -qq
     $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq postgresql postgresql-contrib
   fi
-  PGVER="$(ls /etc/postgresql | sort -V | tail -1)"
+  PGVER="$(ls /etc/postgresql 2>/dev/null | sort -V | tail -1 || true)"
+  [ -n "$PGVER" ] || { echo "provision: postgres installed but /etc/postgresql is empty" >&2; exit 1; }
   $SUDO sed -i "s/^port *=.*/port = 5544/" "/etc/postgresql/$PGVER/main/postgresql.conf"
   $SUDO pg_ctlcluster "$PGVER" main start || $SUDO pg_ctlcluster "$PGVER" main restart
   for _ in $(seq 60); do
@@ -95,6 +114,7 @@ fi
 # whole, sourcing each value from the environment with the dev default as
 # fallback. VEXTRUS_STORAGE_ROOT must be absolute and is only knowable here.
 # NODE_ENV is deliberately absent: setting it breaks `next build` (TRAPS).
+phase="env"
 if [ -f .env ]; then
   echo "provision: .env exists — leaving it alone"
 else
@@ -111,6 +131,7 @@ fi
 mkdir -p "$REPO/.data/artifacts"
 
 # --- Toolchain ----------------------------------------------------------------
+phase="toolchain"
 corepack enable >/dev/null 2>&1 || true
 corepack prepare pnpm@9.15.1 --activate
 pnpm install --frozen-lockfile
@@ -118,6 +139,7 @@ pnpm install --frozen-lockfile
 # uv owns cad/'s Python: pyproject requires >=3.13 and cloud system Python is
 # 3.11, so uv fetches its own interpreter. `pytest` is therefore NOT importable
 # from system python3 by hand — verify.mjs shells `uv run`, which is correct.
+phase="python"
 if ! command -v uv >/dev/null; then
   pip install --user -q uv 2>/dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
@@ -125,6 +147,7 @@ export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 (cd cad && uv sync --frozen)   # prefetch: sandbox egress may be restricted later
 
 # --- Schema -------------------------------------------------------------------
+phase="migrate"
 pnpm db:migrate
 
 echo
