@@ -25,6 +25,16 @@ Two axes, deliberately one map because they collide at every step:
   "does this repo work for someone who just cloned it" can be honestly verified. This machine
   is already provisioned, so locally the only exercisable path is the idempotent re-run — the
   path least likely to be broken. Disposability is ranked first because it validates the rest.
+  **Amended by ticket 09: a cloud container does not start empty.** It arrives snapshot-restored
+  — a photograph of a machine some earlier session already provisioned, taken at a commit that
+  may predate the current head. So it is unfit on arrival (database down, and on today's image
+  Node 22), the install path is skipped as "already up to date", and disposability buys a fresh
+  *process tree*, not a fresh *disk*.
+- **A container's first read of a file is its most expensive one.** Image blocks are materialized
+  on first access: 68MB of never-touched image files read in 1.53s, then 0.26s on re-read *with
+  the page cache dropped before both*. It is not page cache, it cannot be replayed inside one
+  container, and it lands exactly where the parity gate runs. Any bound a spec crosses on first
+  touch will fail there and nowhere else (ticket 09).
 - Every `docs/TRAPS.md` entry is a question the environment failed to answer cheaply. The
   standing preference is to retire traps from prose into mechanism, not to write more prose.
 
@@ -130,6 +140,24 @@ Two axes, deliberately one map because they collide at every step:
   Postgres path *measured by provision.sh's own predicate* rather than inferred from `version()`.
   INFO cannot gate, because the verdict counts BROKEN only.
 
+- 2026-08-12 — [The gate runs cold](tickets/09-the-gate-runs-cold.md) — **the gate refused, and it
+  refused for the wrong reason.** `provision.sh` exit 1 in 38s: `cad.spec` timed out at 5006ms
+  against a test that takes 1.06s warm, and `verify` answered by reporting *the tree's contract
+  does not hold on this machine* — a false accusation naming no repair. The ticket's own guess
+  (cold page cache) is **disproven**: `drop_caches` three times reproduces nothing (1.26–1.45s).
+  The mechanism is **first-touch materialization of image blocks**, once per container — and
+  ticket 08's cold container is the counter-example that proves it, running the same test in
+  1516ms because it *built* the venv itself instead of inheriting one. So the trigger is a
+  **pre-warmed image, not a cold container**. Cured at the class, not the suite: vitest's default
+  5s is a latency assertion nobody wrote, raised to a 60s hang net in both configs, with the cad
+  suite bound above `CAD_TIMEOUT_MS` so a real hang leaves by name. **The first fix was too narrow
+  and a container that had never seen it said so** — `boundaries.spec` red at 9.2s — which is this
+  ticket's guardrail doing precisely its job. Green at `c78979b` on a fresh container, EXIT=0.
+  Rejected: a warm-up before the gate (cures the gate, not the fault), a retry (a false red
+  becomes a slow green), and calling the machine slow. **No container was ever empty** — the
+  install path is still unrun, carried to
+  [the container that is never empty](tickets/12-the-container-that-is-never-empty.md).
+
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
@@ -168,7 +196,10 @@ Two axes, deliberately one map because they collide at every step:
   listener on 5544 six minutes later. `checkup` caught it and named the repair, so nothing is
   silent — but "re-run provision.sh" is a 52s parity gate to restart a database, and the compose
   path may not share the fault. What a session should do when the machine decays *after*
-  provisioning is unspecified.
+  provisioning is unspecified. **Ticket 09 makes this the arrival case, not the decay case**: a
+  snapshot-restored container starts with the cluster already down, so every session meets it
+  before doing any work. Fourth consecutive observation of docker-binary-without-daemon; partly
+  carried by [ticket 12](tickets/12-the-container-that-is-never-empty.md).
 - The loop's caps as measured numbers rather than inherited ones. `docs/specs/loop.md` marks
   `MAX_TURNS = 150` and the 30-minute wall fuse "re-derive, don't trust" — carried from a legacy
   environment whose verify was ~100s against our ~43s. Re-deriving needs a real campaign, and a
