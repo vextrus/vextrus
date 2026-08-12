@@ -8,10 +8,30 @@
  * needs no daemon, so it is a stage (ADR-0007 amendment, 2026-08-12).
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
+
+// Stage zero: the interpreter running this file must satisfy package.json's
+// engines. pnpm only *warns* on an unsupported engine, which is how a cloud
+// sandbox ran a whole session on Node 22 — green, and materially not the
+// machine that was asked for (ticket 08). The pin is declared; this makes it
+// true. Free by construction: no subprocess, no daemon, so ADR-0007's
+// fail-closed rule is untouched.
+{
+  const want = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8")).engines?.node ?? "";
+  const min = Number(want.match(/^>=\s*(\d+)/)?.[1]);
+  const running = Number(process.versions.node.split(".")[0]);
+  if (Number.isFinite(min) && running < min) {
+    console.error(
+      `verify: running Node v${process.versions.node} at ${process.execPath}, but engines wants "${want}".\n` +
+        `verify: this is not a warning to route around — a machine below the pin is not the\n` +
+        `verify: machine this contract was measured on. Run scripts/provision.sh.`,
+    );
+    process.exit(1);
+  }
+}
 
 // The build stage owns its own output directory: never `.next`, so a running
 // `next dev` is untouched, and safe to delete so every build is cold.

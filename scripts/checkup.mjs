@@ -282,11 +282,16 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 // fetches its own, so the system version is a red herring on a healthy machine
 // (provision.sh, and cad/pyproject.toml's requires-python >=3.13 vs a 3.11 host).
 
-// Node. Notable, not broken: ticket 02 measured all three legs green on 22, so
-// failing here would redden a machine that demonstrably works. The finding is
-// the *divergence* — the image's Node can outrank the one you installed
-// (docs/TRAPS.md); a bare version string hides exactly that. Ticket 08 owns
-// the cure, and this line is promoted to gating once PATH ordering is fixed.
+// Node. GATING as of ticket 08: the provisioner now shadows any older Node the
+// image put ahead of ours, so a session below the pin means that shadow did not
+// take — a machine that is not the one provisioning claimed to deliver. It was
+// a note only while nothing could correct it (ticket 02 measured all three legs
+// green on 22); a note nobody can act on is how the drift lasted a session.
+//
+// Below the pin is BROKEN. *Divergence* — other node binaries on PATH at other
+// versions — stays a note: after shadowing they all resolve to ours, and a
+// machine whose running Node is correct must not go red for what else is on
+// disk (docs/TRAPS.md).
 {
   const want = pkg.engines?.node ?? "";
   const min = Number(want.match(/^>=\s*(\d+)/)?.[1]);
@@ -302,15 +307,18 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 
   if (satisfied === null) {
     report(NOTE, "node", `v${running} — cannot tell against engines "${want}"`);
-  } else if (satisfied && others.length === 0) {
+  } else if (!satisfied) {
+    report(
+      BROKEN,
+      "node",
+      `running v${running} but engines wants ${want}` +
+        (others.length ? ` — ${others.join(", ")}` : "") +
+        " · run scripts/provision.sh",
+    );
+  } else if (others.length === 0) {
     report(OK, "node", `v${running} (engines ${want})`);
   } else {
-    report(
-      NOTE,
-      "node",
-      `running v${running}${satisfied ? "" : ` but engines wants ${want}`}` +
-        (others.length ? ` — ${others.join(", ")}` : ""),
-    );
+    report(NOTE, "node", `running v${running} — ${others.join(", ")}`);
   }
 }
 

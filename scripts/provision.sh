@@ -73,8 +73,8 @@ else
 fi
 
 # --- Node 24 (package.json engines, .nvmrc) -----------------------------------
-# Cloud images ship Node 22 on PATH (observed: /opt/node22), so every pnpm call
-# prints Unsupported engine.
+# Cloud images ship an older Node on PATH (observed: /opt/node22), so every pnpm
+# call prints Unsupported engine.
 #
 # NOT nvm. Installing it means sourcing nvm.sh — thousands of lines of shell —
 # into this `set -euo pipefail` script, and on the 2026-08-12 image that exited 3
@@ -83,12 +83,53 @@ fi
 # our shell options, it does not edit .bashrc behind us, and it pins a real
 # version we can print.
 #
-# The PATH still needs three treatments, because a non-interactive session shell
-# reads none of the files an interactive one does: profile.d for login shells,
-# .bashrc for interactive, and /usr/local/bin symlinks for a bare `sh -c`.
+# Three questions, deliberately separate (ticket 08). Conflating them is what
+# made this phase re-download Node on every run while sessions kept getting the
+# image's Node 22:
+#
+#   1. Is a Node >= the pin already ON THIS MACHINE?  — no network
+#   2. If not, fetch one.                             — the only step needing egress
+#   3. Make every shell resolve it.                   — unconditional, never inside (2)
+#
+# Step 3 sits outside the install branch on purpose: a machine that has Node 24
+# unpacked but unshadowed could never be repaired by a re-run while the
+# treatments lived under `if we just installed`.
 phase="node"
-node_major() { node -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
-if [ "$(node_major)" -lt 24 ]; then
+NODE_MAJOR="$(tr -dc '0-9' < .nvmrc 2>/dev/null || true)"; NODE_MAJOR="${NODE_MAJOR:-24}"
+
+# The major a given node binary reports, or 0 for "did not answer". Never fatal:
+# a binary that will not run is an absence, and absence is a fact we act on.
+bin_major() { "$1" -p 'process.versions.node.split(".")[0]' 2>/dev/null || echo 0; }
+
+# "Provisioned" as a testable state — NOT a marker file. A marker is a claim
+# about the machine stored beside the machine, and the guardrail on this ticket
+# is explicit that a stale marker skipping real work is worse than the download
+# it replaces. So the install directory is probed and the binary is asked its
+# own version: the thing asserted is the thing measured, and it cannot go stale.
+NODE_HOME=""
+find_installed_node() {
+  local d
+  for d in /usr/local/lib/nodejs/node-v"$NODE_MAJOR".*-linux-*/bin; do
+    if [ -x "$d/node" ] && [ "$(bin_major "$d/node")" -ge "$NODE_MAJOR" ]; then
+      NODE_HOME="$d"; return 0
+    fi
+  done
+  return 1
+}
+
+# 1. Already here? Ambient first — an image that ships a new enough Node needs
+#    nothing installed, and neither case touches the network.
+#    readlink -f, because after a previous run the ambient node may BE one of
+#    our shadows: taking the symlink's directory would make NODE_HOME the
+#    image's /opt/node22/bin and record that as where Node lives.
+AMBIENT_NODE="$(command -v node || true)"
+if [ -n "$AMBIENT_NODE" ] && [ "$(bin_major "$AMBIENT_NODE")" -ge "$NODE_MAJOR" ]; then
+  NODE_HOME="$(cd "$(dirname "$(readlink -f "$AMBIENT_NODE")")" && pwd)"
+  echo "provision: node $("$NODE_HOME/node" -v) already on PATH at $NODE_HOME — nothing to install"
+elif find_installed_node; then
+  echo "provision: node $("$NODE_HOME/node" -v) already installed at $NODE_HOME — no download"
+else
+  # 2. Fetch. Reached only when the machine genuinely has no Node >= the pin.
   case "$(uname -m)" in
     x86_64 | amd64) NARCH="x64" ;;
     aarch64 | arm64) NARCH="arm64" ;;
@@ -99,7 +140,6 @@ if [ "$(node_major)" -lt 24 ]; then
 
   # Ask the dist index which v24 is current rather than pinning a patch that
   # goes stale in the repo. .nvmrc holds the major (24) and is the source here.
-  NODE_MAJOR="$(tr -dc '0-9' < .nvmrc 2>/dev/null || true)"; NODE_MAJOR="${NODE_MAJOR:-24}"
   NODE_PKG="$(curl -fsSL "https://nodejs.org/dist/latest-v${NODE_MAJOR}.x/SHASUMS256.txt" \
               | grep -o "node-v${NODE_MAJOR}\.[0-9.]*-linux-${NARCH}\.${NEXT}" | head -1 || true)"
   [ -n "$NODE_PKG" ] || {
@@ -115,31 +155,96 @@ if [ "$(node_major)" -lt 24 ]; then
   $SUDO mkdir -p /usr/local/lib/nodejs
   $SUDO tar $TARFLAG "/tmp/${NODE_PKG}" -C /usr/local/lib/nodejs
   rm -f "/tmp/${NODE_PKG}"
-  NODE24_BIN="/usr/local/lib/nodejs/${NODE_PKG%.$NEXT}/bin"
-
-  if [ -x "$NODE24_BIN/node" ]; then
-    export PATH="$NODE24_BIN:$PATH"
-    if [ -w /etc/profile.d ] || [ -n "$SUDO" ]; then
-      echo "export PATH=\"$NODE24_BIN:\$PATH\"" | $SUDO tee /etc/profile.d/vextrus-node.sh >/dev/null
-    fi
-    grep -q vextrus-node24 "$HOME/.bashrc" 2>/dev/null ||
-      echo "export PATH=\"$NODE24_BIN:\$PATH\"  # vextrus-node24" >> "$HOME/.bashrc"
-    for b in node npm npx corepack; do
-      [ -x "$NODE24_BIN/$b" ] && $SUDO ln -sf "$NODE24_BIN/$b" "/usr/local/bin/$b" 2>/dev/null || true
-    done
-  else
-    echo "provision: unpacked Node but $NODE24_BIN/node is not executable" >&2
+  NODE_HOME="/usr/local/lib/nodejs/${NODE_PKG%.$NEXT}/bin"
+  [ -x "$NODE_HOME/node" ] || {
+    echo "provision: unpacked Node but $NODE_HOME/node is not executable" >&2
     exit 1
-  fi
+  }
 fi
-# The image's own Node (e.g. /opt/node22/bin) may still sit ahead of us on a
-# session's PATH, so this is a check, not a report: a silent Node 22 is the
-# fault this phase exists to prevent.
-if [ "$(node_major)" -lt 24 ]; then
-  echo "provision: node is still $(node -v) at $(command -v node) — PATH not taken" >&2
+
+# 3. Make every shell resolve it. Unconditional, idempotent, and four treatments
+#    because a session shell reads none of the files an interactive one does:
+#    profile.d for login shells, .bashrc for interactive, /usr/local/bin symlinks
+#    for a bare `sh -c` — and the shadow below, because none of the first three
+#    beats a directory the image put ahead of /usr/local/bin.
+export PATH="$NODE_HOME:$PATH"
+if [ -w /etc/profile.d ] || [ -n "$SUDO" ]; then
+  echo "export PATH=\"$NODE_HOME:\$PATH\"" | $SUDO tee /etc/profile.d/vextrus-node.sh >/dev/null
+fi
+if [ -f "$HOME/.bashrc" ] || [ -w "$HOME" ]; then
+  # Rewrite rather than append: the old line may point at a Node we replaced.
+  sed -i '/# vextrus-node$/d;/# vextrus-node24$/d' "$HOME/.bashrc" 2>/dev/null || true
+  echo "export PATH=\"$NODE_HOME:\$PATH\"  # vextrus-node" >> "$HOME/.bashrc"
+fi
+for b in node npm npx corepack; do
+  [ -x "$NODE_HOME/$b" ] && $SUDO ln -sf "$NODE_HOME/$b" "/usr/local/bin/$b" 2>/dev/null || true
+done
+
+# The shadow. A session that reads no profile inherits the container's PATH, and
+# on the 2026-08-12 image /opt/node22/bin sits ahead of /usr/local/bin — so the
+# symlinks above lose and every pnpm call warns Unsupported engine while the
+# provisioner reports success (ticket 02, fault B). There is no PATH file a
+# non-login non-interactive shell reads, so the only lever left is the directory
+# that precedes us: point its node at ours.
+#
+# Walked, not hardcoded. `/opt/node22` is a fact about one image and this map's
+# note is that images are not stable ground; a hardcoded path would keep
+# reporting success on the image that moves it. Walking says what it did.
+#
+# The displaced binary is moved aside, never deleted — .vextrus-displaced is the
+# record of what was there, and restores by hand.
+shadow_dir() {
+  local dir="$1" b
+  for b in node npm npx corepack; do
+    [ -e "$dir/$b" ] || continue
+    [ -x "$NODE_HOME/$b" ] || continue
+    if [ -L "$dir/$b" ] && [ "$(readlink -f "$dir/$b")" = "$(readlink -f "$NODE_HOME/$b")" ]; then
+      continue  # already ours
+    fi
+    if [ ! -L "$dir/$b" ] && [ ! -e "$dir/$b.vextrus-displaced" ]; then
+      $SUDO mv "$dir/$b" "$dir/$b.vextrus-displaced" || return 1
+    fi
+    $SUDO ln -sf "$NODE_HOME/$b" "$dir/$b" || return 1
+  done
+  return 0
+}
+
+shadowed=""
+seen=":"
+# The SESSION's PATH, not ours — ours already has $NODE_HOME prepended, which
+# would make the walk stop at entry one and prove nothing.
+IFS=':' read -ra _path_entries <<< "${PARITY_SESSION_PATH:-$PATH}"
+for dir in "${_path_entries[@]}"; do
+  [ -n "$dir" ] || continue
+  dir="$(cd "$dir" 2>/dev/null && pwd)" || continue
+  case "$seen" in *":$dir:"*) continue ;; esac
+  seen="$seen$dir:"
+  # Everything from our own directory onward is ours or behind us.
+  [ "$dir" = "$NODE_HOME" ] && break
+  [ -x "$dir/node" ] || continue
+  major="$(bin_major "$dir/node")"
+  [ "$major" -ge "$NODE_MAJOR" ] && continue
+  echo "provision: shadowing $dir/node (v$major) -> $NODE_HOME/node"
+  shadow_dir "$dir" || {
+    echo "provision: cannot shadow $dir — it holds a Node $major that will outrank ours" >&2
+    echo "provision: on every session shell, and this script will not report a" >&2
+    echo "provision: machine it did not deliver. Make $dir writable and re-run." >&2
+    exit 1
+  }
+  shadowed="$shadowed $dir"
+done
+[ -n "$shadowed" ] && echo "provision: shadowed:$shadowed"
+
+# The check that matters is not what THIS shell resolves — it exported $NODE_HOME
+# above and would pass no matter what. Re-resolve on the session's PATH, in a
+# shell that reads no profile, because that is the node a session actually gets.
+session_node="$(env -i PATH="${PARITY_SESSION_PATH:-$PATH}" sh -c 'command -v node' || true)"
+if [ -z "$session_node" ] || [ "$(bin_major "$session_node")" -lt "$NODE_MAJOR" ]; then
+  echo "provision: a session's PATH resolves node to '${session_node:-none}'," >&2
+  echo "provision: which is below the pin of $NODE_MAJOR — the shadow did not take." >&2
   exit 1
 fi
-echo "provision: node $(node -v) at $(command -v node)"
+echo "provision: node $("$session_node" -v) at $session_node (as a session resolves it)"
 
 # --- Postgres on 5544 ---------------------------------------------------------
 phase="postgres"
