@@ -57,6 +57,20 @@
       "when": 1786501709065,
       "tag": "0007_ingest-queue-rls",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786513477384,
+      "tag": "0008_register-sightings",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1786513477385,
+      "tag": "0009_register-sightings-rls",
+      "breakpoints": true
     }
   ]
 }

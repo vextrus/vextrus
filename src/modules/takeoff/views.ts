@@ -240,9 +240,9 @@ export const DEFAULT_TUNING: ViewTuning = { bandGap: 12, heading: 1.3 };
  *  but contributes no coverage interval. */
 const FRAME_SPAN_SHARE = 0.4;
 
-type Box = { x0: number; y0: number; x1: number; y1: number; cx: number; cy: number };
+export type Box = { x0: number; y0: number; x1: number; y1: number; cx: number; cy: number };
 
-function boxOf(e: Entity): Box | null {
+export function boxOf(e: Entity): Box | null {
   let x0 = Infinity;
   let y0 = Infinity;
   let x1 = -Infinity;
@@ -281,7 +281,7 @@ function boxOf(e: Entity): Box | null {
   return { x0, y0, x1, y1, cx: (x0 + x1) / 2, cy: (y0 + y1) / 2 };
 }
 
-function union(a: Box | null, b: Box | null): Box | null {
+export function unionBox(a: Box | null, b: Box | null): Box | null {
   if (a === null) return b;
   if (b === null) return a;
   const x0 = Math.min(a.x0, b.x0);
@@ -357,14 +357,14 @@ export function partitionViews(
   const paintBySrc = new Map<string, Box | null>();
   for (const e of graph.entities) {
     if (e.src === null) continue;
-    paintBySrc.set(e.src, union(paintBySrc.get(e.src) ?? null, boxOf(e)));
+    paintBySrc.set(e.src, unionBox(paintBySrc.get(e.src) ?? null, boxOf(e)));
   }
 
   const placed: Placed[] = [];
   const unplaceable: string[] = [];
   for (const entity of originals) {
     const handle = entity.h!;
-    const box = union(boxOf(entity), paintBySrc.get(handle) ?? null);
+    const box = unionBox(boxOf(entity), paintBySrc.get(handle) ?? null);
     if (box === null) unplaceable.push(handle);
     else placed.push({ entity, handle, box });
   }
@@ -465,7 +465,7 @@ export function partitionViews(
     for (const anchor of ordered) {
       const members = owned.get(anchor.handle)!;
       const klass = classifyCaption(anchor.text);
-      const bounds = members.reduce<Box | null>((acc, m) => union(acc, m.box), null);
+      const bounds = members.reduce<Box | null>((acc, m) => unionBox(acc, m.box), null);
       views.push({
         id: anchor.handle,
         type: klass?.type ?? "untyped",
@@ -494,7 +494,7 @@ export function partitionViews(
       message: `${orphans.length} original entities sit outside every caption's reach — assigned to no view, never dropped`,
     });
   }
-  const orphanBounds = orphans.reduce<Box | null>((acc, m) => union(acc, m.box), null);
+  const orphanBounds = orphans.reduce<Box | null>((acc, m) => unionBox(acc, m.box), null);
   if (unplaceable.length > 0) {
     reasons.push({
       code: "NO_GEOMETRY_TO_PLACE",

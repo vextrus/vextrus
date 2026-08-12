@@ -25,6 +25,22 @@ export {
   type GridDeferral,
 } from "./grid";
 export {
+  PLACEMENT_SHARES,
+  classWitnesses,
+  isMemberMark,
+  levelSlotOf,
+  markFamilyOf,
+  normalizeMark,
+  placeInstances,
+  placementDispositionCodes,
+  type GridRef,
+  type PlacedInstance,
+  type PlacementDeferral,
+  type PlacementDisposition,
+  type PlacementDispositionCode,
+  type ViewPlacement,
+} from "./placement";
+export {
   DEFAULT_TUNING,
   classifyCaption,
   mayYieldInstances,

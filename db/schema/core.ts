@@ -455,6 +455,72 @@ export const registerObjects = pgTable(
   ],
 );
 
+/**
+ * A sighting that landed ON the register: the placement that registered a
+ * register object, kept beside it rather than inside it (identity.md §3 — the
+ * placement key quantizes world coordinates, and **no coordinate may enter an
+ * identity key**). Two things hang on this table:
+ *
+ * - **Idempotency.** A second registration pass over the same drawing offers
+ *   the same content-derived placement keys, which are already here, so the
+ *   pass is a no-op — not a wall of duplicate refusals. The unique key is
+ *   (project, drawing, placement key): the key's own view part is a DXF handle,
+ *   which is stable within one file and meaningless across two.
+ * - **Provenance.** The originals a registration cited (cad-ingestion.md §2),
+ *   with the ingest that produced them.
+ *
+ * Append-only on the app lane, like every other piece of evidence.
+ */
+export const registerObjectSightings = pgTable(
+  "register_object_sightings",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
+    registerObjectId: uuid("register_object_id").notNull(),
+    drawingId: uuid("drawing_id").notNull(),
+    ingestId: uuid("ingest_id").notNull(),
+    /** Placement key (identity.md §3): view key + mark + quantized coordinates. */
+    placementKey: text("placement_key").notNull(),
+    viewKey: text("view_key").notNull(),
+    /** DXF handles cited as evidence — provenance, never identity. */
+    handles: jsonb("handles").$type<string[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("register_object_sightings_object_idx").on(t.registerObjectId),
+    unique("register_object_sightings_placement_uq").on(
+      t.projectId,
+      t.drawingId,
+      t.placementKey,
+    ),
+    foreignKey({
+      name: "register_object_sightings_project_tenant_fk",
+      columns: [t.projectId, t.tenantId],
+      foreignColumns: [projects.id, projects.tenantId],
+    }),
+    foreignKey({
+      name: "register_object_sightings_object_project_fk",
+      columns: [t.registerObjectId, t.projectId],
+      foreignColumns: [registerObjects.id, registerObjects.projectId],
+    }),
+    foreignKey({
+      name: "register_object_sightings_drawing_project_fk",
+      columns: [t.drawingId, t.projectId],
+      foreignColumns: [drawings.id, drawings.projectId],
+    }),
+    foreignKey({
+      name: "register_object_sightings_ingest_project_fk",
+      columns: [t.ingestId, t.projectId],
+      foreignColumns: [ingests.id, ingests.projectId],
+    }),
+  ],
+);
+
 /** The refused sighting's evidence payload: attempted identity + cited DXF handles. */
 export type RefusedSightingSubject = {
   identity: {

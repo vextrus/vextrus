@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, ne } from "drizzle-orm";
 import type { RefusedSightingSubject } from "../../db/schema/core";
 import { withAct } from "./acts";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
@@ -6,10 +6,10 @@ import type { Discipline, ElementType, LevelBasis, RefusalCause } from "./enums"
 import type { EntityGraph } from "./entitygraph";
 
 /**
- * Skeleton CRUD for the register spine (ticket 02). Every function crosses
- * the tenant seam; human writes ride `withAct` so the act row and the state
- * change commit together. Registration *logic* (the door, pairing, ordinals)
- * is ticket 05 — these are the typed primitives it will compose.
+ * The register spine: typed primitives crossing the tenant seam, and — at the
+ * bottom of this file — **the register's door** (ticket 07): the one place a
+ * sighting becomes an identity. Human writes ride `withAct` so the act row and
+ * the state change commit together.
  */
 
 export type Project = typeof schema.projects.$inferSelect;
@@ -18,6 +18,8 @@ export type Drawing = typeof schema.drawings.$inferSelect;
 export type DrawingRevision = typeof schema.drawingRevisions.$inferSelect;
 export type Ingest = typeof schema.ingests.$inferSelect;
 export type RegisterObject = typeof schema.registerObjects.$inferSelect;
+export type RegisterObjectSighting =
+  typeof schema.registerObjectSightings.$inferSelect;
 export type RefusedSighting = typeof schema.refusedSightings.$inferSelect;
 
 /** A seam lookup that found nothing says so by name — silence is condemned. */
@@ -466,7 +468,7 @@ export type RegisterObjectInput = {
 };
 
 /**
- * Tx-level primitive so ticket 05's registration door can compose it with
+ * Tx-level primitive so the registration door below can compose it with
  * refusal handling in one transaction. A duplicate identity surfaces as the
  * unique-constraint error from `register_objects_identity_uq` — the
  * double-count guard is the constraint, not this function. To catch that
@@ -550,5 +552,295 @@ export async function listRefusedSightings(
       .select()
       .from(schema.refusedSightings)
       .where(eq(schema.refusedSightings.projectId, projectId)),
+  );
+}
+
+/* ------------------------------- the door --------------------------------- */
+
+/**
+ * A sighting offered at the register's door: one placed instance, described
+ * only by content (identity.md §3 — content-derived keys, zero minted ids). The
+ * takeoff module's placement stage produces these; the door decides what they
+ * mean. Nothing here is a quantity.
+ */
+export type Sighting = {
+  /** Placement key (§3): view key + mark + coordinates quantized to 0.1 unit.
+   *  Idempotency and provenance — **never** part of the identity key. */
+  placementKey: string;
+  viewKey: string;
+  elementType: ElementType;
+  /** The drawing's own mark string. */
+  mark: string;
+  /** The dotless-uppercase compare form: two spellings, one family
+   *  (cad-ingestion.md §9). */
+  family: string;
+  /** Content signature of authored inputs ONLY, fixed-precision (§4).
+   *  Correctable attributes — height, grade, rebar spec — are excluded. */
+  signature: string;
+  levelId?: string;
+  levelBasis: LevelBasis;
+  /** The DXF handles this sighting cites (cad-ingestion.md §2). */
+  handles: string[];
+};
+
+/**
+ * The identity a sighting claims, plus the human-facing key form: `mark#i`
+ * within a mark family of several, the bare mark for a singleton (§4).
+ */
+export type ClaimedIdentity = {
+  sighting: Sighting;
+  mark: string;
+  ordinal: number;
+  key: string;
+};
+
+/**
+ * Ordinals, by identity.md §4 and nothing else:
+ *
+ * - A **mark family** is one (element class, level slot, dotless mark) — the
+ *   identity key's own axes minus the ordinal. Two classes sharing a mark
+ *   string are two families, and so are two levels.
+ * - Its members sort by a canonical **content signature of authored inputs
+ *   only**, tie-broken by the row's own id — here the placement key, the one
+ *   axis no correction can touch, since a placement mints no id at all.
+ * - The ordinal is that 1-based index. It is assigned once, at first
+ *   registration, and this function is deliberately the only place it is
+ *   derived: an ordinal re-derived from moved geometry migrates, which is the
+ *   exact defect the freeze exists to prevent.
+ * - A family of one keeps the bare mark as its key form; its ordinal is still
+ *   1, so a family that later grows gains an index without moving anybody.
+ *
+ * A family's members may be spelled two ways (`T.B` / `TB`); the family
+ * registers under the spelling of its first-sorted member, so one physical
+ * family is never two register families.
+ */
+export function familyIdentities(sightings: Sighting[]): ClaimedIdentity[] {
+  const families = new Map<string, Sighting[]>();
+  for (const sighting of sightings) {
+    const key = [
+      sighting.elementType,
+      sighting.levelBasis,
+      sighting.levelId ?? "",
+      sighting.family,
+    ].join("|");
+    families.set(key, [...(families.get(key) ?? []), sighting]);
+  }
+  const claims: ClaimedIdentity[] = [];
+  for (const members of families.values()) {
+    const sorted = [...members].sort(
+      (a, b) =>
+        a.signature.localeCompare(b.signature) ||
+        a.placementKey.localeCompare(b.placementKey),
+    );
+    const mark = sorted[0]!.mark;
+    for (const [i, sighting] of sorted.entries()) {
+      const ordinal = i + 1;
+      claims.push({
+        sighting,
+        mark,
+        ordinal,
+        key: sorted.length > 1 ? `${mark}#${ordinal}` : mark,
+      });
+    }
+  }
+  return claims.sort((a, b) =>
+    a.sighting.placementKey.localeCompare(b.sighting.placementKey),
+  );
+}
+
+export type RegistrationOutcome = {
+  /** Identities that landed on the register in this pass. */
+  registered: Array<{ claim: ClaimedIdentity; object: RegisterObject }>;
+  /** Placements already registered — a re-run is a no-op, never a refusal. */
+  unchanged: Array<{ claim: ClaimedIdentity; object: RegisterObject }>;
+  /** Second sightings of an identity already on the register: unpriceable
+   *  evidence in its own table, with no join from any bill (identity.md §2). */
+  refused: Array<{ claim: ClaimedIdentity; sighting: RefusedSighting }>;
+};
+
+/** PostgreSQL unique_violation, anywhere down the driver's cause chain. */
+function uniqueViolation(err: unknown): boolean {
+  for (let e: unknown = err; e !== undefined && e !== null; e = (e as { cause?: unknown }).cause) {
+    if ((e as { code?: string }).code === "23505") return true;
+  }
+  return false;
+}
+
+/**
+ * **The register's door** (identity.md §2, §4). Every placed instance of one
+ * drawing arrives here; each one either registers, is recognised as already
+ * registered, or is **refused as a second sighting of the same physical
+ * scope** — and a refusal lands in `refused_sightings`, never on the register
+ * with a status flag (one forgotten WHERE from over-measurement).
+ *
+ * Three laws are load-bearing in the order below:
+ *
+ * 1. **Fails closed on discipline.** An unconfirmed drawing is not walked at
+ *    all (§2) — the door refuses the whole pass by name rather than guess an
+ *    authority.
+ * 2. **A known placement is a no-op.** Placement keys are content-derived, so
+ *    re-running the same drawing offers the same keys; they are matched before
+ *    any identity is derived. This is what keeps a re-run from reading as nine
+ *    duplicate refusals — and what keeps a genuine second sighting readable.
+ * 3. **The constraint is the guard.** The identity insert runs on a savepoint
+ *    and the DUPLICATE_IDENTITY refusal is written from its unique-violation —
+ *    a pre-flight SELECT would leave a race between two workers, and the guard
+ *    must be the one thing no concurrency can step around.
+ *
+ * The whole pass is one transaction: either this drawing's registration and all
+ * its refusals are visible, or none of it is.
+ */
+export async function registerSightings(
+  ctx: TenantCtx,
+  input: {
+    projectId: string;
+    drawingId: string;
+    ingestId: string;
+    sightings: Sighting[];
+  },
+): Promise<RegistrationOutcome> {
+  const offered = new Set<string>();
+  for (const sighting of input.sightings) {
+    if (offered.has(sighting.placementKey)) {
+      throw new Error(
+        `registerSightings refused: placement ${sighting.placementKey} was offered twice in one pass — one placement is one sighting`,
+      );
+    }
+    offered.add(sighting.placementKey);
+  }
+
+  return forTenant(ctx, async (tx) => {
+    const [drawing] = await tx
+      .select()
+      .from(schema.drawings)
+      .where(
+        and(
+          eq(schema.drawings.id, input.drawingId),
+          eq(schema.drawings.projectId, input.projectId),
+        ),
+      );
+    const discipline = found(drawing, "drawing", input.drawingId).discipline;
+    if (discipline === null) {
+      throw new Error(
+        `registerSightings refused: drawing ${input.drawingId} has no confirmed discipline — an unconfirmed drawing is not walked at all (identity.md §2)`,
+      );
+    }
+
+    const known = new Map<string, string>();
+    if (input.sightings.length > 0) {
+      const rows = await tx
+        .select({
+          placementKey: schema.registerObjectSightings.placementKey,
+          registerObjectId: schema.registerObjectSightings.registerObjectId,
+        })
+        .from(schema.registerObjectSightings)
+        .where(
+          and(
+            eq(schema.registerObjectSightings.projectId, input.projectId),
+            eq(schema.registerObjectSightings.drawingId, input.drawingId),
+            inArray(schema.registerObjectSightings.placementKey, [...offered]),
+          ),
+        );
+      for (const row of rows) known.set(row.placementKey, row.registerObjectId);
+    }
+
+    const outcome: RegistrationOutcome = {
+      registered: [],
+      unchanged: [],
+      refused: [],
+    };
+    for (const claim of familyIdentities(input.sightings)) {
+      const { sighting } = claim;
+      const identity = {
+        projectId: input.projectId,
+        discipline,
+        levelId: sighting.levelId,
+        levelBasis: sighting.levelBasis,
+        elementType: sighting.elementType,
+        mark: claim.mark,
+        ordinal: claim.ordinal,
+      };
+
+      const knownId = known.get(sighting.placementKey);
+      if (knownId !== undefined) {
+        const [object] = await tx
+          .select()
+          .from(schema.registerObjects)
+          .where(eq(schema.registerObjects.id, knownId));
+        outcome.unchanged.push({
+          claim,
+          object: found(object, "register object", knownId),
+        });
+        continue;
+      }
+
+      try {
+        const object = await tx.transaction(async (sp) => {
+          const row = await insertRegisterObject(sp, ctx.tenantId, identity);
+          await sp.insert(schema.registerObjectSightings).values({
+            tenantId: ctx.tenantId,
+            projectId: input.projectId,
+            registerObjectId: row.id,
+            drawingId: input.drawingId,
+            ingestId: input.ingestId,
+            placementKey: sighting.placementKey,
+            viewKey: sighting.viewKey,
+            handles: sighting.handles,
+          });
+          return row;
+        });
+        outcome.registered.push({ claim, object });
+      } catch (err) {
+        if (!uniqueViolation(err)) throw err;
+        const [held] = await tx
+          .select()
+          .from(schema.registerObjects)
+          .where(
+            and(
+              eq(schema.registerObjects.projectId, input.projectId),
+              eq(schema.registerObjects.discipline, discipline),
+              identity.levelId === undefined
+                ? isNull(schema.registerObjects.levelId)
+                : eq(schema.registerObjects.levelId, identity.levelId),
+              eq(schema.registerObjects.levelBasis, identity.levelBasis),
+              eq(schema.registerObjects.elementType, identity.elementType),
+              eq(schema.registerObjects.mark, identity.mark),
+              eq(schema.registerObjects.ordinal, identity.ordinal),
+            ),
+          );
+        const sightingRow = await insertRefusedSighting(tx, ctx.tenantId, {
+          projectId: input.projectId,
+          cause: "DUPLICATE_IDENTITY",
+          ingestId: input.ingestId,
+          registerObjectId: held?.id,
+          subject: {
+            identity: {
+              discipline,
+              levelId: sighting.levelId ?? null,
+              levelBasis: sighting.levelBasis,
+              elementType: sighting.elementType,
+              mark: claim.mark,
+              ordinal: claim.ordinal,
+            },
+            handles: sighting.handles,
+          },
+          note: `placement ${sighting.placementKey} claims identity ${claim.key}, which is already registered — a second sighting of one physical scope is refused at the door and kept as unpriceable evidence`,
+        });
+        outcome.refused.push({ claim, sighting: sightingRow });
+      }
+    }
+    return outcome;
+  });
+}
+
+export async function listRegisterObjectSightings(
+  ctx: TenantCtx,
+  projectId: string,
+): Promise<RegisterObjectSighting[]> {
+  return forTenant(ctx, (tx) =>
+    tx
+      .select()
+      .from(schema.registerObjectSightings)
+      .where(eq(schema.registerObjectSightings.projectId, projectId)),
   );
 }
