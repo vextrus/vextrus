@@ -38,6 +38,14 @@ Two axes, deliberately one map because they collide at every step:
 - 2026-08-12 — Charting: destination widened to two axes (parity + legibility); cloud parity's
   bar is verify + `test:db` + a dev server that serves, self-proven by the provisioner;
   legibility converges on one `pnpm doctor` rather than scattered error text.
+- 2026-08-12 — [The cold machine](tickets/02-the-cold-machine.md) — the cold path **works**:
+  empty container to migrated in ~25s, and all three claimed legs pass on cloud hardware
+  (verify 41.5s, `test:db` 46 tests in 9.0s, `next dev` serving 200 on :3210). The
+  **native-Postgres branch ran for the first time anywhere and passed** — the sandbox had the
+  Docker binary but no daemon. Two silent faults found, neither a stopper: a session runs the
+  image's Node 22, not the installed Node 24 (engine pin violated by warning only, green on
+  both), and the re-run re-downloads Node every time. Both handed to
+  [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md).
 
 ## Not yet specified
 
@@ -48,11 +56,18 @@ Two axes, deliberately one map because they collide at every step:
   about it — re-measure, not relax, but the trigger is unstated.
 - Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per
   run — fine for dev, unexamined for anything that outlives one container, and unexamined for
-  what credential a session pushes with.
+  what credential a session pushes with. Sharpened by ticket 02: commits are ssh-signed
+  (`commit.gpgsign=true`, `gpg.ssh.program=/tmp/code-sign`) with `user.signingkey` pointing at
+  `/home/claude/.ssh/…`, a path that does not exist under `HOME=/root`.
 - Legibility past `pnpm doctor`: dev-server logs a session can read without owning a background
   shell, and error text at the failure sites themselves.
 - Provisioning wall-clock as a target rather than a consequence — including what sandbox egress
-  restrictions do to it.
+  restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
+  egress open throughout, so the restricted case is still unmeasured — and the re-run's Node
+  re-download means the two cases are not close.
+- What a session is owed when it inherits a machine whose provisioning failed. The cloud setup
+  field's transcript reaches no file, so the evidence a session would diagnose from does not
+  survive the boot that produced it.
 
 ## Out of scope
 
