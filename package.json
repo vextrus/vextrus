@@ -14,6 +14,7 @@
     "worker": "tsx src/server/worker-main.ts",
     "verify": "node scripts/verify.mjs",
     "checkup": "node scripts/checkup.mjs",
+    "parity": "bash scripts/parity.sh",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

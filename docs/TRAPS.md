@@ -62,9 +62,10 @@ with a dated, observed cost — never speculatively.
   Node 22 while `/usr/local/bin/node` is 24, and every pnpm call prints
   `WARN Unsupported engine: wanted {"node":">=24"}` — a warning, never a block. Verify is green
   on both, so nothing announces the drift. `node -v` before believing a Node-version symptom.
-- **A cold provision's output is gone by the time a session can look.** The cloud setup field's
-  transcript is written to no file on the machine. If a session inherits a half-provisioned
-  container, the reason is not recoverable — re-run `scripts/provision.sh` and read *that*.
+- **The cloud setup field's transcript reaches no file** — so a session inheriting a
+  half-provisioned container cannot read the run that produced it. `provision.sh` therefore keeps
+  its own: **`.data/provision.log`**, appended every run. Read that first. If it is absent the
+  provisioner never started, which is itself the finding; re-running it is the repair.
 
 ## Verification
 

@@ -40,8 +40,26 @@ on_exit() {
 }
 trap on_exit EXIT
 
+# The PATH a *session* will have, captured before this script exports Node 24
+# into its own shell. The parity check runs the legs on this, not ours: a check
+# inheriting the provisioner's PATH would pass while every session runs the
+# image's Node 22 (ticket 02, fault A).
+PARITY_SESSION_PATH="$PATH"
+export PARITY_SESSION_PATH
+
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO"
+
+# A cold run's output is gone by the time a session can look: the cloud setup
+# field's transcript is written to no file on the machine (docs/TRAPS.md). So
+# the script keeps its own. Append, never truncate — the failed run before the
+# one that fixed it is the interesting one.
+mkdir -p "$REPO/.data"
+PROVISION_LOG="$REPO/.data/provision.log"
+exec > >(tee -a "$PROVISION_LOG") 2>&1
+echo "provision: === $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
+echo "provision: logging to $PROVISION_LOG"
+
 echo "provision: repo at $REPO"
 echo "provision: user=$(id -un) node=$(command -v node || echo none) docker=$(command -v docker || echo none)"
 
@@ -202,6 +220,26 @@ export PATH="$HOME/.local/bin:$HOME/.cargo/bin:$PATH"
 phase="migrate"
 pnpm db:migrate
 
+# --- Earn the "ok" ------------------------------------------------------------
+# This script used to print "ok" while its exit status reflected only
+# db:migrate. A provisioner that says ok without checking is how a session
+# begins work on a broken machine and then blames the code.
+#
+# ERR/EXIT reporting is suspended for this call: parity.sh reports its own
+# failing leg by name, and the generic "FAILED in phase" line would bury it.
+phase="parity"
+set +e
+trap - ERR
+bash "$REPO/scripts/parity.sh"
+parity_status=$?
+set -e
+if [ "$parity_status" -ne 0 ]; then
+  echo >&2
+  echo "provision: NOT ok — the machine provisioned but does not pass the parity check." >&2
+  echo "provision: re-running this script is the repair; the log is at $PROVISION_LOG" >&2
+  exit "$parity_status"
+fi
+
 done_ok=1
 echo
-echo "provision: ok — pnpm verify | pnpm test:db | pnpm dev (:3210)"
+echo "provision: ok — checkup | verify | test:db | dev (:3210) all proven, not claimed"

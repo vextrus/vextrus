@@ -54,6 +54,16 @@ Two axes, deliberately one map because they collide at every step:
   Storage root and system Python cut, git identity deferred to the secrets ticket. TRAPS: cut 1,
   trimmed 3, kept the three whose value is a cause or a signature. verify green **43.5s**.
 
+- 2026-08-12 — [The provisioner earns its "ok"](tickets/04-the-provisioner-earns-its-ok.md) —
+  `scripts/parity.sh` (`pnpm parity`), separate and callable, run by `provision.sh` as its last
+  act: **checkup → verify → test:db → a `next dev` boot probed for 200 and killed**, fail-fast,
+  no leg skippable. The legs run on the **session's PATH**, captured before the node phase — the
+  provisioner reports Node 24 while parity reports the Node 22 a session actually gets, which is
+  the blind spot ticket 02 warned would make this theatre. Re-run **9s → 71s** (parity 61s).
+  `provision.sh` now tees to `.data/provision.log`, so a failed cold run leaves evidence. All
+  four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
+  open.
+
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
@@ -76,9 +86,10 @@ Two axes, deliberately one map because they collide at every step:
   restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
   egress open throughout, so the restricted case is still unmeasured — and the re-run's Node
   re-download means the two cases are not close.
-- What a session is owed when it inherits a machine whose provisioning failed. The cloud setup
-  field's transcript reaches no file, so the evidence a session would diagnose from does not
-  survive the boot that produced it.
+- Whether a **cold** container passes the parity check now that `provision.sh` gates on it.
+  Ticket 04 wired and proved every leg, but only on this already-provisioned machine; the cold
+  path with the gate in place has never run, and the map ranks disposability first precisely
+  because that is the path that validates the rest.
 
 ## Out of scope
 
