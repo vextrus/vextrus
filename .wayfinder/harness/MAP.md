@@ -166,6 +166,23 @@ Two axes, deliberately one map because they collide at every step:
   [ticket 12](tickets/12-two-kinds-of-container.md). Raw captures:
   [09-cold-proof.md](tickets/09-cold-proof.md).
 
+- 2026-08-12 — [A migration meets rows](tickets/10-a-migration-meets-rows.md) — kept, as
+  **`pnpm db:replay`**, and its first honest run found that **`0010` cannot be applied to a
+  database with rows**: `ADD COLUMN "semantic" text NOT NULL`, no default, no backfill, fine
+  against the empty table it has met on all twelve runs this repo has ever done, aborting against
+  24 sightings. Not repaired — a landed migration is never edited and no database at `0009`
+  with rows exists — but the next one cannot land unnoticed. The ticket's specified drill was
+  killed three times over by measurement: **`test:db` leaves zero rows** (133 written, all
+  deleted by the fixtures' own `afterAll`), the **head suite cannot run at N−1** (`0011` is the
+  constraint `revision-delta.dbspec` needs), and **there is no tree at N−1** (twelve migrations,
+  six commits, schema and RLS always paired). So the unit is the **commit**: baseline = the
+  previous migration-bearing commit, populated by *its* `test:db` in a git worktree, its deleted
+  rows restored by an `AFTER DELETE` archive and put back in foreign-key order — no fixture
+  edited, nothing to keep in step, which is why it is not the rejected seed corpus. Exit code
+  mechanical, row delta as output, the checkup split again. Last step is `db:drift`, not head's
+  `test:db`: that measured fixture isolation and failed on it. Trigger: `CLAUDE.md`, pre-commit.
+  verify green **39.2s**. [Captures](tickets/10-replay-proof.md).
+
 ## Not yet specified
 
 <!-- Three patches graduated to tickets 13/14/15 on 2026-08-12; the map is charted to its
@@ -178,6 +195,15 @@ Two axes, deliberately one map because they collide at every step:
   the *arrival* half of this to [ticket 12](tickets/12-two-kinds-of-container.md); what stays here
   is the part neither covers — whether the **compose path shares the fault**, and what a session
   should do when the machine decays *mid-session* rather than before it.
+
+- **A dbspec assumes it owns the database.** `tenancy.dbspec`'s cleanup is
+  `delete from users where email like '%@dbspec.local'` — a reach across every suite, which holds
+  only because the database starts empty and no other suite leaves a membership behind. Ticket 10
+  found it by handing the suite a database that legitimately held other rows, and routed around it
+  (`db:drift` as the drill's last step) rather than editing a fixture inside a ticket whose
+  guardrail forbade it. Whether test isolation is this effort's business at all is the first
+  question — the destination is parity and legibility, and this may belong to whichever effort
+  owns the test lane.
 
 ## Out of scope
 
