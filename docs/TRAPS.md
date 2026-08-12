@@ -56,12 +56,17 @@ with a dated, observed cost — never speculatively.
   on PATH and no `/var/run/docker.sock` at all. Cloud Docker availability is not a constant
   across images — `provision.sh` and `pnpm checkup` both probe it every run and neither
   remembers the answer.
-- **The image's Node can outrank the one you installed.** The container puts `/opt/node22/bin`
-  ahead of `/usr/local/bin` on PATH, and a session's shell is neither a login shell nor an
-  interactive one, so it reads neither `/etc/profile.d` nor `.bashrc`. A session therefore runs
-  Node 22 while `/usr/local/bin/node` is 24, and every pnpm call prints
-  `WARN Unsupported engine: wanted {"node":">=24"}` — a warning, never a block. Verify is green
-  on both, so nothing announces the drift. `node -v` before believing a Node-version symptom.
+- **The image's Node can outrank the one you installed — now corrected, not merely known.**
+  The container puts `/opt/node22/bin` ahead of `/usr/local/bin`, and a session's shell is
+  neither a login shell nor an interactive one, so it reads neither `/etc/profile.d` nor
+  `.bashrc`: a session ran Node 22 while `/usr/local/bin/node` was 24, with only pnpm's
+  `WARN Unsupported engine` to say so. `provision.sh` now walks the session's PATH and points
+  any older `node`/`npm`/`npx`/`corepack` ahead of ours at ours, moving the displaced binary to
+  `<name>.vextrus-displaced` — that suffix is the record of what the image shipped, and
+  restores by hand. The pin has teeth on both sides now: `pnpm verify` exits 1 below `engines`
+  before stage one, and `pnpm checkup`'s node line is BROKEN, so this drift can no longer be
+  silent. The residue worth remembering is the *cause* — PATH order is set by the image and no
+  file the repo writes is read by a bare `sh -c`.
 - **The cloud setup field's transcript reaches no file** — so a session inheriting a
   half-provisioned container cannot read the run that produced it. `provision.sh` therefore keeps
   its own: **`.data/provision.log`**, appended every run. Read that first. If it is absent the

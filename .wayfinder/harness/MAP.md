@@ -114,6 +114,21 @@ Two axes, deliberately one map because they collide at every step:
   `Intl.Collator` with a pinned locale rejected — it closes one axis and leaves ICU version and
   build open. Nothing renumbered: `register_objects` was empty, and the suite passed unmodified.
   verify green **36.6s**.
+- 2026-08-12 — [The provisioner knows what it installed](tickets/08-the-provisioner-knows-what-it-installed.md)
+  — **correct, then detect, then enforce.** The repo wins the PATH fight by *shadowing*: walk the
+  session's PATH, point any older `node`/`npm`/`npx`/`corepack` ahead of ours at ours, displaced
+  binary moved to `<name>.vextrus-displaced`, hard-fail on a shadow it cannot apply. Walked, not
+  hardcoded — `/opt/node22` is a fact about one image. "Provisioned" is a **probe of the install
+  directory, never a marker**; the treatments moved out of the install branch, so a machine with
+  Node 24 unpacked but unshadowed is now repairable by a re-run. The pin gets teeth: `verify`
+  exits 1 below `engines` before stage one, `checkup`'s node line NOTE → BROKEN. Proven on a
+  **cold empty container at `174ce4c`** — parity ok 52s, ~71s total, profile-free shell resolves
+  v24, **zero `Unsupported engine`** anywhere ([capture](tickets/08-cold-proof.md)). Egress-blocked
+  re-run exit 0 in 52s with no download — but blocked by shim, not packet filter. verify **27.9s**
+  (43.5s on Node 22), **33.1s** after merging `main`. Ticket 07's fold-in shipped too: checkup
+  gains an `environment` line under a new **`INFO`** mark — timestamp, platform, node, and the
+  Postgres path *measured by provision.sh's own predicate* rather than inferred from `version()`.
+  INFO cannot gate, because the verdict counts BROKEN only.
 
 ## Not yet specified
 
@@ -139,10 +154,21 @@ Two axes, deliberately one map because they collide at every step:
   background shell, and error text at the failure sites themselves — starting with
   `storageRoot()`, which ticket 03 ruled should own its own exists-and-writable check rather
   than hand it to checkup.
-- Provisioning wall-clock as a target rather than a consequence — including what sandbox egress
-  restrictions do to it. Ticket 02 supplies the first numbers (~25s cold, 8.7s re-run) but with
-  egress open throughout, so the restricted case is still unmeasured — and the re-run's Node
-  re-download means the two cases are not close.
+- Provisioning wall-clock as a target rather than a consequence. Now measured end to end with the
+  parity gate in place: **~71s cold** (of which parity is 52s), **52s re-run with egress blocked
+  and no download** (ticket 08). The re-download is gone, so the two cases are finally close, and
+  what remains unstated is the *target* — and whether 52s of parity on every re-run is the right
+  price for "re-running is the repair".
+- A **packet-level** egress proof. Ticket 08's block was `curl`/`wget` shims, because the
+  permission classifier declined `iptables`; that proves the provisioner makes no outbound call,
+  not that nothing on the machine could. Sharpened by what it would take to block egress in a
+  container whose own agent proxy sits on loopback.
+- **A natively-started Postgres does not survive the container's process tree restarting.** The
+  cold container of ticket 08 was green through provisioning and 46 `test:db` tests, then had no
+  listener on 5544 six minutes later. `checkup` caught it and named the repair, so nothing is
+  silent — but "re-run provision.sh" is a 52s parity gate to restart a database, and the compose
+  path may not share the fault. What a session should do when the machine decays *after*
+  provisioning is unspecified.
 - The loop's caps as measured numbers rather than inherited ones. `docs/specs/loop.md` marks
   `MAX_TURNS = 150` and the 30-minute wall fuse "re-derive, don't trust" — carried from a legacy
   environment whose verify was ~100s against our ~43s. Re-deriving needs a real campaign, and a

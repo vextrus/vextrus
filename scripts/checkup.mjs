@@ -54,6 +54,15 @@ const startedAt = Date.now();
 const OK = "ok";
 const NOTE = "note";
 const BROKEN = "BROKEN";
+/**
+ * A line that *describes* rather than judges (ticket 07, folded into 08). A
+ * container result is only citable if it carries what varied — which Postgres
+ * path was taken, whether a Docker daemon existed, when the run happened — and
+ * none of those is a fitness question: Postgres from apt and Postgres from
+ * compose are both fit. Structurally incapable of gating, because the verdict
+ * counts BROKEN only. That is ticket 03's ruling kept intact, not bent.
+ */
+const INFO = "info";
 
 const lines = [];
 function report(mark, label, detail) {
@@ -131,6 +140,8 @@ function target(url) {
 }
 
 let dbReachable = false;
+/** The server's own account of itself, for the fingerprint line at the end. */
+let pgOrigin = null;
 
 const missing = Object.entries(DB_URLS)
   .filter(([, url]) => !url)
@@ -206,9 +217,21 @@ if (missing.length > 0) {
                    d.datctype   AS ctype,
                    (SELECT coalesce(string_agg(extname, ', ' ORDER BY extname), '')
                       FROM pg_extension
-                     WHERE extname <> 'plpgsql') AS extra_extensions
+                     WHERE extname <> 'plpgsql') AS extra_extensions,
+                   -- Descriptive, not asserted: the packager's blurb names who
+                   -- built this server, and the data directory is where it
+                   -- actually lives. Both go to the fingerprint, neither is
+                   -- compared against anything.
+                   version() AS origin,
+                   current_setting('data_directory', true) AS data_dir
               FROM pg_database d
              WHERE d.datname = current_database()`;
+          // `PostgreSQL 16.13 (Ubuntu 16.13-0ubuntu…) on x86_64…` -> the
+          // parenthesised build, which is the part that differs between paths.
+          pgOrigin = {
+            build: shape.origin?.match(/\(([^)]+)\)/)?.[1] ?? shape.origin?.split(" on ")[0] ?? null,
+            dataDir: shape.data_dir ?? null,
+          };
 
           // Major only. The patch comes from whatever apt or the image ships
           // and is not ours to pin; the major is what migrations are written
@@ -348,11 +371,16 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 // fetches its own, so the system version is a red herring on a healthy machine
 // (provision.sh, and cad/pyproject.toml's requires-python >=3.13 vs a 3.11 host).
 
-// Node. Notable, not broken: ticket 02 measured all three legs green on 22, so
-// failing here would redden a machine that demonstrably works. The finding is
-// the *divergence* — the image's Node can outrank the one you installed
-// (docs/TRAPS.md); a bare version string hides exactly that. Ticket 08 owns
-// the cure, and this line is promoted to gating once PATH ordering is fixed.
+// Node. GATING as of ticket 08: the provisioner now shadows any older Node the
+// image put ahead of ours, so a session below the pin means that shadow did not
+// take — a machine that is not the one provisioning claimed to deliver. It was
+// a note only while nothing could correct it (ticket 02 measured all three legs
+// green on 22); a note nobody can act on is how the drift lasted a session.
+//
+// Below the pin is BROKEN. *Divergence* — other node binaries on PATH at other
+// versions — stays a note: after shadowing they all resolve to ours, and a
+// machine whose running Node is correct must not go red for what else is on
+// disk (docs/TRAPS.md).
 {
   const want = pkg.engines?.node ?? "";
   const min = Number(want.match(/^>=\s*(\d+)/)?.[1]);
@@ -368,15 +396,18 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 
   if (satisfied === null) {
     report(NOTE, "node", `v${running} — cannot tell against engines "${want}"`);
-  } else if (satisfied && others.length === 0) {
+  } else if (!satisfied) {
+    report(
+      BROKEN,
+      "node",
+      `running v${running} but engines wants ${want}` +
+        (others.length ? ` — ${others.join(", ")}` : "") +
+        " · run scripts/provision.sh",
+    );
+  } else if (others.length === 0) {
     report(OK, "node", `v${running} (engines ${want})`);
   } else {
-    report(
-      NOTE,
-      "node",
-      `running v${running}${satisfied ? "" : ` but engines wants ${want}`}` +
-        (others.length ? ` — ${others.join(", ")}` : ""),
-    );
+    report(NOTE, "node", `running v${running} — ${others.join(", ")}`);
   }
 }
 
@@ -409,16 +440,54 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
 // A Docker binary is not a Docker daemon (docs/TRAPS.md): `docker info` is the
 // probe that tells the truth. Notable, never gating — the native-Postgres path
 // is a supported branch, so no daemon is not the same as no database.
+const dockerProbe = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
 {
-  const r = run("docker", ["info", "--format", "{{.ServerVersion}}"]);
   report(
-    r.ok ? OK : NOTE,
+    dockerProbe.ok ? OK : NOTE,
     "docker",
-    r.ok
-      ? `daemon ${r.out}`
-      : r.timedOut
+    dockerProbe.ok
+      ? `daemon ${dockerProbe.out}`
+      : dockerProbe.timedOut
         ? "binary present, daemon did not answer within budget"
         : "no daemon reachable — native-Postgres path",
+  );
+}
+
+// ── the fingerprint ─────────────────────────────────────────────────────────
+
+// What a container result must carry to be citable after the container is gone
+// (ticket 07, folded into 08): which Postgres path ran, where that server came
+// from, and when. `.data/` is gitignored and the machine is disposable, so a
+// result quoted into a ticket is the only durable record — and a number without
+// its environment is not a measurement.
+//
+// The path is *measured*, never inferred from the version blurb: it is decided
+// by the same predicate `provision.sh` uses — does a daemon answer, and does
+// compose actually hold a running postgres. A guess here would be the kind of
+// silent default this repo bans.
+{
+  let path_;
+  if (!dockerProbe.ok) {
+    path_ = "native (no docker daemon)";
+  } else {
+    const ps = run("docker", ["compose", "ps", "--status", "running", "--format", "{{.Service}}"]);
+    path_ = ps.ok && /(^|\n)postgres(\n|$)/.test(ps.out)
+      ? "compose"
+      : "native (daemon present, no compose postgres)";
+  }
+
+  report(
+    INFO,
+    "environment",
+    [
+      new Date().toISOString().replace(/\.\d+Z$/, "Z"),
+      `${process.platform} ${process.arch}`,
+      `node ${process.version}`,
+      dbReachable
+        ? `postgres via ${path_}${pgOrigin?.build ? ` · ${pgOrigin.build}` : ""}` +
+          `${pgOrigin?.dataDir ? ` · ${pgOrigin.dataDir}` : ""}`
+        : `postgres unreachable · would be ${path_}`,
+    ].join(" · "),
   );
 }
 
