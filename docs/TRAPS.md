@@ -9,8 +9,22 @@ with a dated, observed cost — never speculatively.
 - **Windows reserves TCP port ranges dynamically** (Hyper-V/WSL), and the reservations move
   after reboots. 2026-08-12, founding day: port 5433 was inside the reserved 5433–5532 block
   ("access a socket in a way forbidden by its access permissions"), which is why Postgres is
-  on **5544**. Diagnose: `netsh int ipv4 show excludedportrange protocol=tcp`. Move the port;
-  don't fight the OS. "Failed readiness" says nothing about ports — read the log for `EACCES`.
+  on **5544**. Diagnose: `netsh int ipv4 show excludedportrange protocol=tcp`. "Failed
+  readiness" says nothing about ports — read the log for `EACCES`.
+  **The durable cure, after the reservation moved onto 5544 too** (2026-08-12, a reboot mid
+  ticket 05; compose reported "ports are not available … forbidden by its access permissions"):
+  claim the port as an *administered* exclusion, which WinNAT may not take. Elevated
+  PowerShell, and `net stop winnat` first or the add fails:
+
+  ```powershell
+  net stop winnat
+  netsh int ipv4 add excludedportrange protocol=tcp startport=5544 numberofports=1 store=persistent
+  net start winnat
+  ```
+
+  It then reads `5544  5544  *` in the exclusion list — the `*` is what survives reboots.
+  Moving the port instead is the old advice: it works, and you redo it the next time the block
+  moves.
 - **`bash` from PowerShell can be WSL, not Git Bash** — a second toolchain that limps far, then
   dies with exit 127 on any Windows CLI. Launch scripts with the explicit Git Bash path;
   `Start-Process` bypasses aliases.
