@@ -1,5 +1,6 @@
 import type { Entity, EntityGraph } from "@/core/entitygraph";
 import type { ElementType, LevelBasis, RefusalCause } from "@/core/enums";
+import { compareCanonical } from "@/core/order";
 import type { GridAxis, GridBackbone } from "./grid";
 import {
   boxOf,
@@ -589,7 +590,7 @@ function placeInView(
     say(mark.handle, "INSTANCE_MARK", `names the ${elementType} placed at ${candidate.handle}`);
   }
 
-  instances.sort((a, b) => a.placementKey.localeCompare(b.placementKey));
-  dispositions.sort((a, b) => a.handle.localeCompare(b.handle));
+  instances.sort((a, b) => compareCanonical(a.placementKey, b.placementKey));
+  dispositions.sort((a, b) => compareCanonical(a.handle, b.handle));
   return { viewId: view.id, viewKey, instances, dispositions, deferral: null };
 }

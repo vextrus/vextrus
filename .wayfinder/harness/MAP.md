@@ -64,6 +64,56 @@ Two axes, deliberately one map because they collide at every step:
   four legs proven to fire. **Not yet run cold on a fresh container** — the one criterion left
   open.
 
+- 2026-08-12 — [Two Postgres paths](tickets/05-two-postgres-paths.md) — **both survive**; the pin
+  failed its precondition (three sandbox observations: present, binary-no-daemon,
+  binary-no-daemon). The exerciser worry *inverted* — native runs every cloud session, compose
+  every local one. Equivalence is **five properties** gated by a new `pg profile` line in
+  `pnpm checkup`: major 16, UTF8, `C.UTF-8` collate/ctype, no extensions beyond `plpgsql`, plus
+  the roles line already there. The one real divergence was **locale** — native `C.UTF-8` vs the
+  image's `en_US.utf8` — now **pinned to `C.UTF-8` on both** (`POSTGRES_INITDB_ARGS`; native
+  `CREATE DATABASE ... TEMPLATE template0`), costing one `docker compose down -v` locally.
+  Collation turned out **inert today** (ordinals sort in JS; no SQL orders by text), which is why
+  it is pinned rather than watched. A `.dbspec.ts` test was rejected: checkup is about the
+  machine, tests are about the tree. verify green **51.2s**.
+- 2026-08-12 — [What a cloud session owns](tickets/06-what-a-cloud-session-owns.md) — **ADR-0010**:
+  the dispatcher owns branch, ticket, claim and merge; the session owns the work and the evidence.
+  The prior lost both halves. *Merge is a human act on your machine* was refuted by `main`'s own
+  history — PR #1 squash-landed through the button — and rescued by arithmetic instead: a squash of
+  a branch containing `main`'s tip yields a tree byte-identical to the one verify ran on, so
+  fetch → **merge** → `pnpm verify` → push → SHA-stamped evidence comment, then the human clicks.
+  *The claim is pushed as its own commit* failed on visibility — a claim on a session branch is
+  invisible on `main` (this session proved it, `ce001b9`), so the **dispatcher** picks the ticket
+  and claims. The loop differs by unit, not rule: the arc directory is the campaign's alone. Not
+  mechanically enforceable — "require up to date" is a sub-option of required status checks, and
+  there is no CI; CI is the named seam that would take the weight. **Not yet exercised with two
+  concurrent sessions**; deferral and its three watch-fors are named in the resolution. Its own
+  merge hit watch-for (1) immediately: ticket 07 landed on `main` mid-session and both entries
+  collided here. Resolved by keeping both.
+- 2026-08-12 — [What a disposable machine makes possible](tickets/07-what-a-disposable-machine-makes-possible.md)
+  — ranked by **staleness × invoker, severity breaking ties**; with no CI anywhere, a per-commit
+  capability has no invoker and cannot be charted. Three candidates **collapsed into one act**
+  (cold provisioning = migrate-from-empty = clean clone). Two promoted:
+  [the gate runs cold](tickets/09-the-gate-runs-cold.md) first because it is stale *today* and
+  everything else runs inside it, then [a migration meets rows](tickets/10-a-migration-meets-rows.md)
+  — every migration this repo has run has met an **empty** database, and one that mangles register
+  rows breaks identity stability *quietly*. Declined: the new-contributor path (a docs check),
+  Linux-native behaviour (no invoker; already free on every cloud session — the gap is merge
+  discipline), the loop (capacity, and no arc exists), drop-and-recover (it *is* the cold path),
+  a seed corpus (rejected for `test:db`'s existing fixtures). Citability: the reproducer is a repo
+  script, the result carries what varied, the Resolution is the archive — `.data/` is gitignored,
+  so the log dies with the container. An environment fingerprint gives rule 2 a mechanism, folded
+  into [ticket 08](tickets/08-the-provisioner-knows-what-it-installed.md); checkup now describes as
+  well as judges, and descriptive lines never touch the exit code.
+- 2026-08-12 — [The locale in the sort](tickets/11-the-locale-in-the-sort.md) — **code units
+  behind one comparator** (`compareCanonical`, `src/core/order.ts`) at **all thirteen** sites,
+  plus an absolute eslint ban on bare `localeCompare` proven to fail closed in
+  `boundaries.spec.ts`. Forced by a reproduced flip: a mark family spelled `C1`/`c1` freezes
+  `c1#1, C1#2` under ICU and `C1#1, c1#2` under code units — ordinals *and* the registered
+  spelling. The ticket's headline axis was wrong: `LANG` only moves non-ASCII, while **case**
+  moves plain ASCII, so the live axis is how Node was built (full/small/no ICU), not `LANG`.
+  `Intl.Collator` with a pinned locale rejected — it closes one axis and leaves ICU version and
+  build open. Nothing renumbered: `register_objects` was empty, and the suite passed unmodified.
+  verify green **36.6s**.
 - 2026-08-12 — [The provisioner knows what it installed](tickets/08-the-provisioner-knows-what-it-installed.md)
   — **correct, then detect, then enforce.** The repo wins the PATH fight by *shadowing*: walk the
   session's PATH, point any older `node`/`npm`/`npx`/`corepack` ahead of ours at ours, displaced
@@ -75,13 +125,22 @@ Two axes, deliberately one map because they collide at every step:
   **cold empty container at `174ce4c`** — parity ok 52s, ~71s total, profile-free shell resolves
   v24, **zero `Unsupported engine`** anywhere ([capture](tickets/08-cold-proof.md)). Egress-blocked
   re-run exit 0 in 52s with no download — but blocked by shim, not packet filter. verify **27.9s**
-  (43.5s on Node 22).
+  (43.5s on Node 22), **33.1s** after merging `main`. Ticket 07's fold-in shipped too: checkup
+  gains an `environment` line under a new **`INFO`** mark — timestamp, platform, node, and the
+  Postgres path *measured by provision.sh's own predicate* rather than inferred from `version()`.
+  INFO cannot gate, because the verdict counts BROKEN only.
 
 ## Not yet specified
 
 - Whether CI exists at all yet, and what it runs — ADR-0007 refers `test:db` and Playwright to a
   "CI" that does not exist (`.github/workflows` is absent). Sharpened by the possibility that the
-  cloud sandbox *is* that lane rather than a thing beside it.
+  cloud sandbox *is* that lane rather than a thing beside it. Sharpened again by ticket 07: the
+  **Linux-native check is already written** — `pnpm parity`, which every cloud session runs — so
+  what CI supplies is not a script but a *trigger*, and the absence of any invoker is what
+  disqualified every per-commit capability from being charted. And by ticket 06: CI is the named
+  seam that would make the merge gate mechanical — until it exists, "verify ran on this head" is a
+  human-read claim and "branch up to date" is unenforceable, since GitHub offers that setting only
+  as a sub-option of required status checks. Two tickets now converge on one trigger.
 - When the build stage stops being cheap (it grows with every route), what the contract does
   about it — re-measure, not relax, but the trigger is unstated.
 - Secrets and git identity in a sandbox. `provision.sh` regenerates `BETTER_AUTH_SECRET` per
@@ -110,6 +169,12 @@ Two axes, deliberately one map because they collide at every step:
   silent — but "re-run provision.sh" is a 52s parity gate to restart a database, and the compose
   path may not share the fault. What a session should do when the machine decays *after*
   provisioning is unspecified.
+- The loop's caps as measured numbers rather than inherited ones. `docs/specs/loop.md` marks
+  `MAX_TURNS = 150` and the 30-minute wall fuse "re-derive, don't trust" — carried from a legacy
+  environment whose verify was ~100s against our ~43s. Re-deriving needs a real campaign, and a
+  campaign seizes a precious machine (the loop's preflight demands a clean tree, nothing on :3210,
+  and a pre-push guard). A disposable container removes that objection for free — but there are
+  **no arcs yet**, so this cannot be ticketed until one exists.
 
 ## Out of scope
 

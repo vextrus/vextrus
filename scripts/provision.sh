@@ -273,10 +273,17 @@ else
   # Owner role + database only — matching compose.yaml's POSTGRES_USER/DB.
   # db:migrate creates vextrus_app / vextrus_auth itself (ADR-0002); creating
   # them here would put schema authority in a second place.
+  #
+  # The locale is stated rather than inherited. pg_createcluster takes whatever
+  # the host's locale is at install time, and compose's image initdb's under
+  # en_US.utf8 — so the two paths would sort text differently unless both are
+  # pinned. TEMPLATE template0 is what makes LC_COLLATE/LC_CTYPE settable at
+  # all: template1 imposes its own. `pnpm checkup` gates on the result.
   cat > /tmp/vx-bootstrap.sql <<'SQL'
 SELECT 'CREATE ROLE vextrus LOGIN SUPERUSER PASSWORD ''vextrus_dev_password'''
  WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vextrus') \gexec
-SELECT 'CREATE DATABASE vextrus OWNER vextrus'
+SELECT 'CREATE DATABASE vextrus OWNER vextrus TEMPLATE template0 '
+       'ENCODING ''UTF8'' LC_COLLATE ''C.UTF-8'' LC_CTYPE ''C.UTF-8'''
  WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'vextrus') \gexec
 SQL
   chmod 644 /tmp/vx-bootstrap.sql

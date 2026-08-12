@@ -43,9 +43,29 @@ the machine reports success while being materially not the machine that was aske
   without asking the network — a marker with the installed version in it, or probing the
   install path directly rather than PATH.
 
+## Added by [What a disposable machine makes possible](07-what-a-disposable-machine-makes-possible.md) — 2026-08-12
+
+That ticket ruled that a result from a discarded container is only citable if it **carries what
+varied**, and chose a mechanism over a discipline: an **environment fingerprint**, homed in
+`pnpm checkup` rather than in a new block at the tail of `provision.sh` (which would print Node
+twice from two code paths that can disagree). It lands here because this ticket already owns
+installed-vs-ambient, already touches checkup's node line, and already requires a fresh-container
+proof run.
+
+Checkup already reports database, roles, drift, and the session's Node against the engines pin.
+Missing are the facts that make a container result quotable: **which Postgres path was taken and
+its version/origin, whether a Docker daemon existed, and the run's date.**
+
+The constraint that keeps [ticket 03](03-pnpm-doctor.md)'s ruling intact: checkup now **describes**
+as well as **judges**, and **descriptive lines never affect the exit code**. "Postgres came from
+apt, not compose" is not a fitness question — both are fit.
+
 ## Exit criteria
 
 - [x] The ruling in `## Resolution`, covering all three axes above.
+- [x] `pnpm checkup`'s output is sufficient to cite a container result: it names the Postgres path
+      and version/origin, whether a Docker daemon existed, and the date — as descriptive lines that
+      cannot change the exit code.
 - [x] A re-run on a provisioned machine with **egress blocked** succeeds — the standing proof
       that "re-running is the repair" no longer depends on the network. *(Blocked by shim, not
       by packet filter — see the caveat in the resolution.)*
@@ -103,6 +123,27 @@ under `if we just installed`.
 - `checkup`'s node line goes **NOTE → BROKEN** below the pin. Divergence (other node binaries at
   other versions) stays a note, and after shadowing it falls silent on its own — every `node` on
   PATH resolves to the same install, which is exactly what the cold container measured.
+
+### 4. The environment fingerprint (the scope [ticket 07](07-what-a-disposable-machine-makes-possible.md) folded in here)
+
+`pnpm checkup` gains one `environment` line and a fourth mark, **`INFO`** — a line that
+*describes* instead of judging. It carries the run's UTC timestamp, platform/arch, the session's
+Node, and the Postgres path with the server's own account of itself:
+
+```
+[info]  environment  2026-08-12T12:11:00Z · linux x64 · node v24.19.0 · postgres via native
+                     (no docker daemon) · Ubuntu 16.13-0ubuntu0.24.04.1 · /var/lib/postgresql/16/main
+```
+
+Ticket 03's ruling is kept intact rather than bent: `INFO` is **structurally incapable of
+gating**, because the verdict counts `BROKEN` only. "Postgres came from apt, not compose" is not
+a fitness question — both are fit.
+
+The path is **measured, not inferred from the version blurb**: it uses the same predicate
+`provision.sh` decides with — does a daemon answer, and does compose actually hold a running
+`postgres`. Reading "Ubuntu" out of `version()` and concluding "native" would have been a guess,
+and this repo's rule is that a guess refuses or defers with a named reason. The blurb and the
+data directory are reported *beside* the path as description, never as its evidence.
 
 ### The measurements that forced it
 

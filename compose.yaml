@@ -10,6 +10,16 @@ services:
       POSTGRES_USER: vextrus
       POSTGRES_PASSWORD: vextrus_dev_password
       POSTGRES_DB: vextrus
+      # The image otherwise initdb's under LANG=en_US.utf8, while the native
+      # path provision.sh takes when no Docker daemon answers gets the host's
+      # locale — measured as C.UTF-8 on the cloud image. Two paths, two sort
+      # orders. C.UTF-8 on both: byte order is stable across libc upgrades,
+      # where glibc's en_US collation changed at 2.28 and silently corrupted
+      # text indexes in the wild.
+      #
+      # initdb args apply to a *fresh* data directory only: changing this needs
+      # `docker compose down -v`. `pnpm checkup` gates on the result.
+      POSTGRES_INITDB_ARGS: --locale=C.UTF-8
     volumes:
       - vx-pgdata:/var/lib/postgresql/data
 

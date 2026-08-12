@@ -1,5 +1,6 @@
 import type { Entity, EntityGraph } from "@/core/entitygraph";
 import type { RefusalCause } from "@/core/enums";
+import { compareCanonical } from "@/core/order";
 import { mayYieldInstances, type ViewPartition } from "./views";
 
 /**
@@ -201,7 +202,7 @@ function axesOf(bubbles: Bubble[], family: AxisFamily, normal: Axis): GridAxis[]
     position: median(group.map((b) => b.at[normal === "x" ? 0 : 1])),
     handles: [...new Set(group.flatMap((b) => b.handles))].sort(),
   }));
-  return axes.sort((a, b) => a.position - b.position || a.label.localeCompare(b.label));
+  return axes.sort((a, b) => a.position - b.position || compareCanonical(a.label, b.label));
 }
 
 /** The smallest gap between consecutive parallel axes, over both families

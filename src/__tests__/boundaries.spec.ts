@@ -49,3 +49,42 @@ describe("module boundaries", () => {
     expect(errors.length).toBeGreaterThan(0);
   });
 });
+
+/**
+ * The comparator rule fails closed for the same reason: identity is derived
+ * from sorted strings, so a lint that stops firing lets a locale-dependent
+ * order back onto the frozen-ordinal path without anyone noticing
+ * (.wayfinder/harness ticket 11).
+ */
+async function comparatorErrors(filePath: string, code: string) {
+  const [result] = await eslint.lintText(code, { filePath });
+  return (result?.messages ?? []).filter((m) => m.ruleId === "no-restricted-syntax");
+}
+
+describe("the canonical comparator", () => {
+  it("flags localeCompare in core", async () => {
+    const errors = await comparatorErrors(
+      "src/core/some-file.ts",
+      "export const cmp = (a: string, b: string) => a.localeCompare(b);\n",
+    );
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("flags localeCompare in a module", async () => {
+    const errors = await comparatorErrors(
+      "src/modules/takeoff/some-file.ts",
+      "export const s = (xs: string[]) => [...xs].sort((a, b) => a.localeCompare(b));\n",
+    );
+    expect(errors.length).toBeGreaterThan(0);
+  });
+
+  it("allows compareCanonical and a bare sort", async () => {
+    const errors = await comparatorErrors(
+      "src/modules/takeoff/some-file.ts",
+      "import { compareCanonical } from '@/core/order';\n" +
+        "export const s = (xs: string[]) => [...xs].sort(compareCanonical);\n" +
+        "export const t = (xs: string[]) => [...xs].sort();\n",
+    );
+    expect(errors).toHaveLength(0);
+  });
+});
