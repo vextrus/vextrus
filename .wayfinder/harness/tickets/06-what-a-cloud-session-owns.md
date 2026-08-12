@@ -2,7 +2,7 @@
 
 wayfinder:grilling
 Status: open
-Claimed by:
+Claimed by: cloud session — claude/cloud-session-ownership-nnk2sy
 Blocked by:
 
 ## Objective
