@@ -43,7 +43,7 @@ BIM, module counts, or agent counts.
 ## The feedback loop
 
 ```
-pnpm verify        # tsc --noEmit -> eslint -> vitest -> cad (ruff+pytest); exit code is the contract
+pnpm verify        # tsc -> eslint -> vitest -> cad (ruff+pytest) -> next build; exit code is the contract
 ```
 
 Run it, read the exit code, fix, repeat. Playwright e2e is outside this lane.

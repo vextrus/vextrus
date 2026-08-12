@@ -60,6 +60,19 @@ with a dated, observed cost — never speculatively.
 - **Stack-dependent tests stay out of the verify lane** (`pnpm test:db`, Playwright). A live-
   service test inside verify makes green depend on daemons and poisons the contract.
 
+## Next.js and the build
+
+- **`NODE_ENV=development` in the environment breaks `next build`.** Next sets `NODE_ENV` per
+  command; forcing it makes the production prerender load React's *development* bundles, and
+  the server renderer ends up with a null dispatcher. 2026-08-12, a cloud sandbox whose env
+  vars set it: `TypeError: Cannot read properties of null (reading 'useContext')` on
+  `/_global-error` (Node 24) and `reading 'length'` on `/` (Node 22) — same fault, different
+  frame. The tell is a storm of `unique "key" prop` warnings naming `<html>`/`<head>`/`<meta>`
+  just before the throw: only dev React emits those, so seeing them during a *build* is the
+  diagnosis. `pnpm verify` stayed green throughout — it did not build then; since the ADR-0007
+  amendment of the same day it does, and this fault now fails the build stage. Cure: unset `NODE_ENV`
+  everywhere; never set it to force devDependency installation, which is pnpm's default anyway.
+
 ## cad/
 
 - The pipeline is a CLI — there is no service to go stale. If artifacts look wrong, check

@@ -4,13 +4,18 @@
  * with no caching anywhere — the exit code is the whole contract.
  *
  * Stages that need a live service (Postgres, browser) are deliberately NOT
- * here: `pnpm test:db` and Playwright run on demand and in CI.
+ * here: `pnpm test:db` and Playwright run on demand and in CI. `next build`
+ * needs no daemon, so it is a stage (ADR-0007 amendment, 2026-08-12).
  */
 import { spawnSync } from "node:child_process";
-import { existsSync } from "node:fs";
+import { existsSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
+
+// The build stage owns its own output directory: never `.next`, so a running
+// `next dev` is untouched, and safe to delete so every build is cold.
+const verifyDistDir = ".next-verify";
 
 const stages = [
   { name: "typecheck", cmd: "pnpm", args: ["exec", "tsc", "--noEmit"], cwd: root },
@@ -26,8 +31,21 @@ if (existsSync(path.join(cadDir, "pyproject.toml"))) {
   );
 }
 
+// Last: the only stage that compiles and prerenders the whole app, so the cheap
+// stages report first. It catches what the others structurally cannot — a route
+// that type-checks and tests green but throws during static generation.
+stages.push({
+  name: "build",
+  cmd: "pnpm",
+  args: ["exec", "next", "build"],
+  cwd: root,
+  env: { NEXT_DIST_DIR: verifyDistDir },
+  before: () => rmSync(path.join(root, verifyDistDir), { recursive: true, force: true }),
+});
+
 const t0 = Date.now();
 for (const stage of stages) {
+  stage.before?.();
   const started = Date.now();
   // One command string (all args are static): avoids DEP0190 under the
   // Windows shell:true that .cmd shims require.
@@ -35,6 +53,7 @@ for (const stage of stages) {
     cwd: stage.cwd,
     stdio: "inherit",
     shell: true,
+    env: { ...process.env, ...stage.env },
   });
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   if (result.status !== 0) {

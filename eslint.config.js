@@ -28,6 +28,7 @@ export default tseslint.config(
     ignores: [
       "node_modules/**",
       ".next/**",
+      ".next-verify/**",
       "cad/**",
       "db/migrations/**",
       "e2e/**",

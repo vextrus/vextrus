@@ -62,3 +62,33 @@ measurable performance loss"):
 
 Re-measure `/context` in a fresh session after any harness change and record it here; run
 `claude doctor` periodically to rightsize skills and CLAUDE.md. An unmeasured trim is a guess.
+
+## Amendment — 2026-08-12: `next build` joins the contract
+
+A cloud session found `pnpm build` failing at static prerender on a tree where `pnpm verify` was
+green (`NODE_ENV=development` in the sandbox pulling React's dev bundles into the production
+prerender). No stage could see that class of failure, and finding it cost a human round-trip.
+`next build` needs no daemon — it prerenders with no database reachable — so it does not breach
+the fail-closed rule that keeps stack-dependent stages out of the lane.
+
+**`pnpm verify` is now five stages:** typecheck → lint → vitest → cad → **build**, build last so
+the cheap stages report first. Measured on this tree at 4e48871, Node v24.12.0:
+
+| | before | after |
+|---|---|---|
+| verify | 6.7s (typecheck 2.6 · lint 1.2 · test 2.2 · cad 0.7) | **15.2s** (+ build 8.4) |
+
+Still inside the <60s founding target, with the margin left to spend on real tests. Build is the
+stage that grows with every route; when it dominates, the ruling is re-measured, not relaxed.
+
+Two properties the stage has to keep:
+
+- **Cold, always.** It builds into `.next-verify` (`distDir` via `NEXT_DIST_DIR`), deleted before
+  each run — no caching, per the founding rule, and 2.6s cheaper than the warm/cold ambiguity is
+  worth. The separate directory also means verify never fights a running `next dev` for `.next`.
+- **Proven to fire.** A deliberately broken prerender (`JSON.parse("{")` in `/login`, reverted)
+  passed all four original stages and failed the build stage with exit 1.
+
+It is the first stage sensitive to the *ambient environment* rather than the tree alone — which
+is precisely the point, since that is how the bug entered. `NODE_ENV` is not set by the check;
+Next chooses its own mode per command.
