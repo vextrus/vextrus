@@ -114,6 +114,38 @@ converts to model space through the drawing scale alone:
 — ≈ 35 mm at 1:50, ≈ 70 mm at 1:100, ≈ 140 mm at 1:200. A DPI table would have hidden this; it is
 a scale law, and it means the scan lane's competence is decided when the drawing is plotted.
 
+### F1c — The extent error is biased toward over-measurement
+
+Signed extent error over all detected segments at ≥200 dpi, clean and scan (n = 365):
+
+| statistic | value |
+|---|---|
+| overshoot (+) | **240 of 365 — 66 %** |
+| undershoot (−) | 125 of 365 — 34 % |
+| median | **+7.4 mm** |
+| p05 / p95 | −48.0 mm / +32.8 mm |
+| mean | +0.3 mm |
+
+**The mean is the misleading number here.** It sits near zero only because a handful of very large
+undershoots — thin lines fragmenting under degradation, down to −2 220 mm — offset a systematic
+positive bias in the bulk. Two thirds of all recovered lines are *longer* than the truth, and the
+median line overshoots by 7.4 mm.
+
+The mechanism is the same junction effect as F1: an edge-based detector run over a stroke of
+non-zero width tends to carry the line into the corner blob where two strokes meet, so the
+recovered span reaches past the true endpoint more often than it stops short.
+
+This is the worst possible direction. `quantity-contract.md` §4 makes over-measurement a **hard
+block with no qualification door** — a disclosure lets a reader know to add, and nothing lets a
+reader know to subtract. A vectorizer whose extent error is 66 % positive is not a tool that needs
+a wider tolerance band; it is a tool that must not originate a dimension at all.
+
+It also settles, with a number, a question ticket 03 left open: 03 rejected the idea of an
+inner-edge-biased vectorizer whose error distribution is "reliably one-sided-under" — which would
+have made raw `INTERPRETED` numbers publishable as legal under-measurements with no human — on the
+grounds that it was an unfalsifiable promise about unseen scans. The measured bias runs the
+**opposite way** from the one that argument would have needed.
+
 ### F2 — The dimension floor is ~2.4 m at 1:100, and scales with the drawing
 
 Worst-case extent p95 among classes reliably detected at ≥200 dpi is **71.9 mm** (0.35 mm class —

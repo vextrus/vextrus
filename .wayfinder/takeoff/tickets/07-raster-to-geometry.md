@@ -77,10 +77,14 @@ DPI-vs-accuracy study on engineering drawings (Al-Douri et al. 2011) found two o
 vectorizers *peaked at 300 dpi and declined at 400* — higher resolution resolves more paper grain.
 Scanning hotter is not merely insufficient, it is not reliably even monotone.
 
-*Independent of the tolerance arithmetic*, `quantity-contract.md` §4 closes this anyway: extent
-error is symmetric — a detector overshoots a junction as readily as it trims one — and
-over-measurement is a **hard block with no qualification door**. A raster-originated dimension can
-never be made publishable by disclosure, because no disclosure lets a reader know to subtract.
+*Independent of the tolerance arithmetic*, `quantity-contract.md` §4 closes this anyway, and the
+signed distribution is worse than a symmetric one: **66 % of recovered extents overshoot** (240 of
+365 at ≥200 dpi, median **+7.4 mm**), because an edge detector carries a line into the corner blob
+where two strokes meet. The mean sits near zero only because thin-line fragmentation contributes a
+few very large undershoots. Over-measurement is a **hard block with no qualification door**, so a
+raster-originated dimension can never be made publishable by disclosure — no disclosure lets a
+reader know to subtract. A vectorizer biased two-to-one into the forbidden direction does not need
+a wider band; it must not originate a dimension at all.
 
 ### R2 — A raster page cannot compute its own coverage denominator
 
@@ -187,14 +191,38 @@ comparability against that literature — but **decisions need the three-term de
 the line is* from *where it stops*, and R1 lives entirely in that separation. A VRI-only harness
 would have hidden the finding.
 
-### What this hands to other tickets
+### Reconciliation with 02 and 03
 
-- **03 (`INTERPRETED` basis)** — its question 5 is answered from the other side. §5's +0 % rule
-  applies to `INTERPRETED` unchanged; what makes such lines publishable is that they never originate
-  the number, only the location. 03 still rules rank, roll-ups, corroboration and disclosure.
-- **02 (source key)** — question 3 answered conditionally; see R4's cross-architecture caveat.
+Both closed on `main` in parallel sessions while this ticket was worked, and both are **consistent
+with these rulings** — reconciled here rather than left to a reader to notice.
+
+- **03 (`INTERPRETED` basis)** reached R1's conclusion from the other side and got there first:
+  an `INTERPRETED` line reaches a bill **only as `AGREED`**, and uncorroborated interpreted
+  geometry is a declared exclusion, not a line. R1 is the *geometric* reason that gate is the right
+  one — the numbers were never publishable on their own.
+- **03 explicitly asked this ticket for the signed distribution**, having rejected a hypothetical
+  inner-edge-biased vectorizer that was "reliably one-sided-under". **Measured: it runs the
+  opposite way — 66 % overshoot, median +7.4 mm.** 03's rejection stands and is now evidenced
+  rather than precautionary.
+- **03 also makes the vectorizer id + version + DPI triple a mandatory publishable attribute.**
+  R4 pins the stack and version, and R3 already requires the effective dpi to be stored and
+  computed rather than judged, so the triple is satisfiable. This ticket adds no new obligation.
+- **02 (source key)** minted `RASTER_TRACE` with its `asserted by` column reading **"us"** — our
+  own vectorizer is the atom, as against `PDF_OBJECT`'s "pdfium's decomposition". R4's classical,
+  pinned, deterministic stack is what makes that atom well-defined.
+- **02 scoped keys to `(file bytes, extractor identity)`, ruling a vectorizer upgrade a declared
+  re-ingest.** That disposes of *version* drift. It does **not** dispose of R4's caveat, which
+  sharpens rather than dissolves: two machines running the *same* extractor identity on different
+  CPU architectures or SIMD dispatch paths would mint different keys **inside one identity**, which
+  is the case 02's scoping does not cover and no re-ingest declares. Cheap to measure; measure it
+  before the raster lane runs on heterogeneous hardware.
+
+### What this hands forward
+
 - **19 (member-type registry)** — promoted to critical path for the raster lane. Under R1 the
   schedule is not one dimension source among several on a scan; it is the **only** one.
+- **09 (torture corpus)** — F3's vanishing line class is a fixture: a page whose thin layer is
+  below the floor must produce a named refusal, never a sparse bill.
 
 ### Named assumption
 

@@ -28,11 +28,15 @@ extent error at 6–8× the pixel quantum.
    `"3600"` attach to *that* wall rather than the one beside it? A mis-binding is not a wrong
    number, it is a number attached to the wrong object — worse, and invisible.
 3. **Disagreement shape.** Annotation says 3600, vectorized extent says 3540 (inside 07's measured
-   error). Which wins, and what is filed? `identity.md` §7 has `AGREED | CONFLICTED_RESOLVED |
-   UNCORROBORATED` for *facts*, and ticket 03 is already asking whether confirming geometry is the
-   same kind of act as confirming a fact. This is the concrete case that tests it. Note the
-   asymmetry: if annotation always wins, the geometry is only ever a *corroborator*, which may be
-   the whole answer.
+   error). Which wins, and what is filed? **Ticket 03 has since ruled the general case** —
+   agreement corroborates, a wrong *value* suspends, and *"that is not a column"* repudiates into
+   a table with no join from any bill. This ticket applies that ruling to the one case 03 did not
+   face: the two readings are not a machine and a human, they are **two machine readings of the
+   same sheet** — an OCR'd string and a traced extent. Does a value disagreement between two
+   machine readings suspend, the way a machine-versus-human one does, or is suspension only
+   meaningful where a human decision is pending? Note the asymmetry that may make this moot: under
+   07's R1 geometry can only ever *corroborate* a dimension, so annotation always wins on value,
+   and the question reduces to what a disagreement *records* rather than which number survives.
 4. **The disagreement that is not an error.** A dimension string may legitimately differ from the
    drawn geometry — drawings are not always drawn to scale, and a "NTS" detail is deliberately
    not. Does a large disagreement indicate a bad scan, a mis-binding, or an honest NTS drawing,
