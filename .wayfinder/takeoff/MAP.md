@@ -133,6 +133,20 @@ done (`measurement-rules.md` §8).
   loses two rungs, not one. Rejected pypdfium2-alone and pdfplumber. HABS/HAER corrected out of
   this lane — it is raster, ticket 07's material. **This ruling and 02 landed the same day and
   disagree about who decomposes a PDF page** — 24 settles it.
+- **[Raster to geometry — the scan lane](tickets/07-raster-to-geometry.md) (2026-08-13).** The scan
+  lane **originates a location, never a dimension**: measured extent error is flat in DPI and set by
+  the plotted line weight (~0.7 paper mm), putting a ±3% dimension floor at ~23× the scale
+  denominator — ~2.4 m at 1:100, above every member-scale dimension we measure. The signed error is
+  **biased 66% into over-measurement** (median +7.4 mm), the direction §4 hard-blocks — which
+  independently evidences 03's rejection of a "reliably one-sided-under" vectorizer. A raster page
+  also cannot compute its own coverage denominator (thin line classes hit recall 0.000 while heavy
+  classes on the same image hit 1.000), so the denominator comes from the schedule or a human, or
+  the page refuses. A computed quality gate refuses below 200 dpi *effective*. Vectorizer is
+  classical and bit-deterministic (OpenCV LSD, Apache-2.0 — the ticket's "patent" premise was wrong,
+  it was an AGPL conflict, resolved in 4.5.4). Bangla routes to a human: PaddleOCR ships no Bengali
+  model and the best open figure on scanned Bengali documents is CER 0.59. Rejected: demand better
+  scans (extent error is flat in DPI, and published work shows accuracy can *fall* from 300→400 dpi)
+  and per-line confidence scores (the missing class carries no score at all). Opens 25 and 26.
 - **Deployment, ruled in charting.** A deployed environment sufficient for bar (c): real URL,
   real auth, real tenancy, invite-only. No billing, no signup funnel, no SLA — those are
   surfaces for customers who do not exist yet (legacy fault F8 in miniature).
@@ -198,7 +212,20 @@ done (`measurement-rules.md` §8).
 - **Bangladeshi drawings on the PDF lane.** Ticket 06 measured US/EU/AU sheets only; no BD
   drawing has been through this lane. Whether BD practice plots SHX (text as outlines) or
   TrueType, and whether Bangla labels survive at all, is a real gap — but it is a *corpus*
-  problem before it is a question, and 08's private lane may be where it graduates.
+  problem before it is a question, and 08's private lane may be where it graduates. **07 sharpens
+  the stakes without closing it**: Bangla OCR is refused on measured grounds there, so if BD
+  practice also outlines its text, the PDF lane loses the same channel for a different reason.
+- **Curved geometry on the scan lane.** Ticket 07 found that **no permissively-licensed tool emits
+  a bounded arc with endpoints** — `EdgeDrawing::detectEllipses` returns conics, `HoughCircles`
+  returns full circles, and GREC ran an arc-segmentation contest for a decade precisely because
+  this is unsolved. Whether that matters is genuinely unclear: under 07's ruling raster originates
+  no dimension, so an arc it cannot measure anyway may only need to be *located*. The sharp
+  question — what a raster arc owes the register when it can be seen but not measured — waits on
+  13 ruling what a rail owes the spine.
+- **Text/graphics separation.** 07 named it the biggest hole in the raster pipeline (dimension
+  strings, hatching and title-block text all reach the line detector as spurious segments) and
+  found no permissive implementation — a build, not a dependency. It is not yet a *decision*, so
+  it is not a ticket; it graduates if the build turns out to need a ruling on what it may discard.
 - **The estimate seam.** What exactly `estimate/` will consume from a signed bill. Out of scope
   to *build*, but the seam's shape should be visible before this map closes so we do not paint
   it into a corner.
