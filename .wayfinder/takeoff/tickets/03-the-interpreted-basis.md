@@ -51,9 +51,13 @@ could be argued into.
 **1. Rank — second-weakest, below `ENTERED`, above `DEFAULTED`.** What forced it: read against
 §1's own justification, the ladder is not ordered by effort but by **recourse**, and each rung
 names its check — re-measure, re-read, re-run a pinned rule id, compare the artifact, challenge a
-named human. `INTERPRETED` has none: no human owns it, and a vectorizer is not guaranteed to
-reproduce its own output, so it fails the very property that makes `DERIVED` checkable. It beats
-`DEFAULTED` on one count, that something looked at the drawing. *Rejected:* slotting it just
+named human. `INTERPRETED` has none, and the reason survived a correction: ticket 02 landed
+mid-session ruling that a vectorizer **must** be deterministic within a pinned extractor
+identity, so an interpreted number *is* reproducible. Reproducibility is not recourse — re-running
+the vectorizer re-derives the same guess and confirms nothing, where `DERIVED` re-runs a named
+rule over an input that is itself independently checkable. Short of a human looking there is no
+second reading to compare against. It beats `DEFAULTED` on one count, that something looked at
+the drawing. *Rejected:* slotting it just
 under `MEASURED` as "geometry through a noisier ruler" — that imports the confidence axis into
 the basis axis, the reflex the §1 guardrail exists to prevent, and its concrete consequence is
 that weakest-wins would rank a scan-derived number **above** a QS-typed one, pointing challenge
@@ -123,8 +127,11 @@ distribution regardless — keep the bias as engineering, never as a licence to 
 
 ### Downstream
 
-- **Ticket 02 (the source key)** asked whether a raster source key must survive re-vectorization.
-  §1's recourse argument now depends on it *not* being guaranteed to; 02 rules the consequence.
+- **Ticket 02 (the source key)** closed in parallel with this one and the two agree. It mints
+  `RASTER_TRACE` as a scheme distinct from `PDF_OBJECT` *because* — in its own words — "under
+  ticket 03 a raster citation is what makes a line `INTERPRETED`", so the basis rule reads the
+  scheme directly rather than through a second lookup that goes stale. Its determinism ruling
+  corrected §1's justification here (see above) without moving the rank.
 - **Ticket 07 (raster to geometry)** owes the measured error distribution, and now also the
   vectorizer id/version/DPI triple that §3 makes a mandatory publishable attribute.
 - **Ticket 09 (torture corpus)** gains fixtures this ruling makes assertable: an uncorroborated
