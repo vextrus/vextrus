@@ -29,9 +29,9 @@ The whole map at low resolution, loaded once per session:
 
 <domain; skills every session should consult; standing preferences for this effort>
 
-## Decisions so far
+## Decisions
 
-- [<closed ticket name>](tickets/NN-<slug>.md) — <one-line gist of the answer>
+<pointer to decisions/ — one file per closed ticket, named for it. Never a list here.>
 
 ## Not yet specified
 
@@ -42,7 +42,7 @@ The whole map at low resolution, loaded once per session:
 <!-- work ruled beyond the destination; closed, never graduates -->
 ```
 
-The map is an **index**, not a store: a decision lives in exactly one place — its ticket's `## Resolution` — and the map only gists and links it.
+The map is an **index**, not a store: a decision lives in exactly one place — its ticket's `## Resolution` — and the index only gists and links it. That index is `decisions/<the ticket's own filename>`, **one file per closed ticket, never a list in `MAP.md`**: a list is a file every closing session appends to, and N parallel sessions conflict on it N−1 times (`.wayfinder/TRACKER.md`). Charting-time rulings, which belong to no ticket, go in `decisions/00-charting.md` — charting is one session's act and never runs concurrently.
 
 ## Ticket types
 
@@ -59,7 +59,7 @@ The map is _deliberately_ incomplete: don't chart what you can't yet see. **Not 
 
 ## Out of scope
 
-The destination fixes the scope; work beyond it is **out of scope**, not fog. When an existing ticket turns out to sit past the destination, **close it** and leave one line in Out of scope (gist + why, linking the closed ticket). It stays out of Decisions so far, which records the route actually walked.
+The destination fixes the scope; work beyond it is **out of scope**, not fog. When an existing ticket turns out to sit past the destination, **close it** and leave one line in Out of scope (gist + why, linking the closed ticket). It stays out of `decisions/`, which records the route actually walked.
 
 ## Invocation
 
@@ -69,7 +69,7 @@ Two modes. Either way, **never resolve more than one ticket per session** — re
 
 1. **Name the destination** — a `/grilling` pass; the destination fixes the scope, so it's settled first.
 2. **Map the frontier** — grill again, **breadth-first**: fan out across the space, surfacing open decisions and first takeable steps. If this surfaces no fog, you don't need a map — stop and ask.
-3. **Create the map**: Destination and Notes filled, Decisions-so-far empty, fog sketched into Not yet specified.
+3. **Create the map**: Destination and Notes filled, fog sketched into Not yet specified. Any ruling charting itself made goes in `decisions/00-charting.md`.
 4. **Create the tickets you can specify now**; wire `Blocked by:` edges in a second pass.
 5. **Fire the research subagents** for each research ticket, in parallel.
 6. Stop — charting is one session's work; it hand-resolves nothing.
@@ -79,7 +79,7 @@ Two modes. Either way, **never resolve more than one ticket per session** — re
 1. Load the **map** — the low-res view, not every ticket body.
 2. Choose the ticket (the user's, or the first frontier ticket). **Claim it** — set `Claimed by:` before any work.
 3. Resolve it — zoom into related/closed tickets on demand; invoke the skills the Notes name. If in doubt, `/grilling`.
-4. Record: append `## Resolution` (the ruling, the measurement that forced it, the alternative put and rejected), set `Status: closed`, clear the claim, append one line to Decisions so far.
+4. Record: append `## Resolution` (the ruling, the measurement that forced it, the alternative put and rejected), set `Status: closed`, clear the claim, write the gist to `decisions/<this ticket's filename>`. **Don't touch `MAP.md`** unless the ruling changes the destination, the notes or the fog — a closing session that edits the map is the conflict this layout removed.
 5. Add newly-surfaced tickets; graduate fog the answer made specifiable; rule mis-scoped tickets out of scope; update or delete tickets the decision invalidated.
 
 Other sessions may be working the map concurrently — expect concurrent edits; the claim line is what keeps you off each other's tickets.

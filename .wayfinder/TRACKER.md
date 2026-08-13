@@ -8,9 +8,11 @@ the same git history as the code the decisions are about.
 ```
 .wayfinder/
   <effort-slug>/
-    MAP.md              Destination · Notes · Decisions so far · Not yet specified · Out of scope
+    MAP.md              Destination · Notes · Decisions · Not yet specified · Out of scope
     tickets/
       NN-<slug>.md      decision tickets (charted by /wayfinder)
+    decisions/
+      NN-<slug>.md      one per closed ticket, named for it; the map's index, sharded
     arcs/
       <arc-id>/
         NN-<slug>.md    build tickets (written by /to-tickets, one arc at a time)
@@ -30,7 +32,7 @@ and the loop (`docs/specs/loop.md`) executes arc tickets headless.
 | **Claiming** | `Claimed by:` line, set **before** any work. |
 | **Open / closed** | `Status:` line. |
 | **The frontier** | Open, unclaimed, every blocker closed. `grep -L "Status: closed" .wayfinder/<effort>/tickets/*.md` |
-| **Resolution** | `## Resolution` appended; `Status: closed`; one line added to the map's *Decisions so far*. |
+| **Resolution** | `## Resolution` appended; `Status: closed`; a gist written to `decisions/<the ticket's own filename>`. Never edit `MAP.md` to close a ticket. |
 
 ## Rules
 
@@ -41,6 +43,12 @@ and the loop (`docs/specs/loop.md`) executes arc tickets headless.
   session.
 - A resolution states the ruling, the measurement that forced it, and the alternative that was
   put and rejected.
+- **Nothing a closing session writes may be a file another closing session also writes.** An
+  append-only list shared by N parallel sessions conflicts N−1 times, mechanically, forever: in
+  the first parallel wave six of seven merges conflicted and every one was `MAP.md`'s decision
+  list, nothing else (`docs/specs/cloud-campaign.md` §1). One record, one file, named for
+  something already allocated. This binds every index a ticket contributes to — the torture
+  corpus index next.
 
 ## Who claims (ADR-0010)
 
