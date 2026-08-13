@@ -23,8 +23,13 @@ summed, plus **refusals by cause** and **stage failures** — a stage that *thre
 drawing is the single highest-value line in the report.
 
 A file the lane does not read is a **named refusal**, never a skipped line and never a zero:
-`FORMAT_NOT_IMPLEMENTED` (DWG/PDF — their lanes are not built), `NOT_A_DRAWING` (a workbook, see
-below), `SYMLINK_NOT_FOLLOWED`, `UNRECOGNISED_EXTENSION`, `EXTRACTOR_REFUSED`.
+`FORMAT_NOT_IMPLEMENTED` (DWG and PDF — tickets 05/06/07 rule those lanes, none is built yet, and
+the refusal names which), `NOT_A_DRAWING` (a workbook, see below), `SYMLINK_NOT_FOLLOWED`,
+`UNRECOGNISED_EXTENSION`, `EXTRACTOR_REFUSED`.
+
+Until the DWG lane lands, a DWG set refuses in full. Converting the set to DXF locally is an
+operator's interim step and makes it corpus today; it is never the *product's* answer, which
+ticket 05 rejected explicitly. This lane is also where ticket 05's 60-day ODA evaluation runs.
 
 ## The three mechanical properties
 

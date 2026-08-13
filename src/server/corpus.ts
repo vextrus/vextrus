@@ -290,8 +290,18 @@ export type CorpusReport = {
  *  never counted as zero entities. */
 const EXTRACTABLE = new Set([".dxf"]);
 const AWAITING_A_LANE = new Map([
-  [".dwg", "DWG"],
-  [".pdf", "PDF"],
+  [
+    ".dwg",
+    "DWG ingestion is not built — the extractor reads DXF. Ticket 05 rules the lane (LibreDWG, " +
+      "two passes, audited not trusted; ADR-0012). Converting locally to DXF makes this file " +
+      "corpus in the meantime, which is an operator's interim step and never the product's answer.",
+  ],
+  [
+    ".pdf",
+    "PDF ingestion is not built — the extractor reads DXF. The vector lane (ticket 06, two entity " +
+      "types of ten) and the scan lane (ticket 07, a location never a dimension) are ruled and " +
+      "unbuilt; a scan in particular cannot be converted into corpus by hand.",
+  ],
 ]);
 const WORKBOOKS = new Set([".xlsx", ".xlsm", ".xls", ".csv"]);
 
@@ -460,7 +470,7 @@ export async function census(root: string, opts: CensusOptions = {}): Promise<Co
         file: candidate.rel,
         status: "refused",
         cause: "FORMAT_NOT_IMPLEMENTED",
-        message: `${awaiting} ingestion is not implemented — the extractor reads DXF. Converted to DXF, this file becomes corpus.`,
+        message: awaiting,
       });
       continue;
     }
