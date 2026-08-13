@@ -82,19 +82,9 @@ catches the **missing sheet** (ingestion saw nothing, so it can report nothing);
 `NOT_IN_PROJECT_SCOPE` and `NOT_IN_THIS_BILL` are **human-only** (a machine can rarely
 establish absence); the machine's default is `NOT_ESTABLISHED`; ingestion-fidelity rows split
 `INGESTION_TRUNCATED` (a cap you raise) from `ENTITY_TYPE_UNHANDLED` (code nobody wrote) —
-opposite remedies, and both **ingestion's own**, read off the artifact's fidelity counters: a
-rail cannot see them, so it can never dress *code nobody wrote* as *a cap you raise* (amended by
-`.wayfinder/takeoff/tickets/13`). A presence recogniser runs strictly one-way: it can say *seen*,
-never *absent*. **The valve is a missing channel, not a guard.** The scope register is a query,
-never a written table: its denominator is the classes ingestion sighted × the kinds those classes
-bear, its numerator the published lines, and its cause a `CASE` over lines, machine deferral
-records, fidelity counters and human scope acts. **Nothing writes `NOT_ESTABLISHED` — it is the
-fall-through arm**, and a residue cannot be forged. A rail contributes to absence by *not
-offering* and attaching a named reason; its deferral type carries no cause field. Human-only
-causes are human-only because the only path that sets them is the act seam, which already refuses
-a non-human actor. Rows are recomputed per ingestion — the query holds no state to go stale;
-human acts persist and re-resolve; a contradicted act suspends pending re-affirmation and enters
-§8's Part A queue. Bill boundary and measurement boundary print separately —
+opposite remedies. A presence recogniser runs strictly one-way: it can say *seen*, never
+*absent*. Rows are recomputed per ingestion; human acts persist and re-resolve; a contradicted
+act suspends pending re-affirmation. Bill boundary and measurement boundary print separately —
 merging them tells a contractor the unmeasured scope is excluded from the *works*, a worse lie.
 
 ## 3. Publishability, per line
@@ -138,18 +128,6 @@ Where the system cannot establish that an element belongs to the class and drawi
 measuring under, it refuses to emit at all. (Legacy exemplar: a phantom pile cap read off the
 wrong plan invented money inside a class that read net short.) Prevention sits upstream of the
 signature — an unaffirmed scale *declares*; an unauthorised sighting *never emits*.
-
-**A hard block has two reaches, discriminated by what the defect impugns** (amended by
-`.wayfinder/takeoff/tickets/13`, which reconciles this table with §6). Impugning **the number** —
-a missing, unresolvable or unpinned publishable attribute — suppresses the *quantity*: the row
-survives with no quantity, a named deferral and a queue item, because *no line is the most
-expensive defect* (§6). Impugning **the existence of the scope** — the over-measurement class
-above: outside the pinned manifest, repudiated, a duplicate, an unaffirmed calibration, a
-negative or netting offer — severs the *object* from bill reach entirely, into the table with no
-join from any bill (`identity.md` §2, §7); a row here would itself assert the scope exists. The
-cell severance leaves reports as ordinary §2 residue with no claim attached — which is not the
-banned declared exclusion, because a disclosure lets a reader know to **add**, and severance
-leaves nothing to subtract.
 
 **Corroboration is the publishability gate for `INTERPRETED`.** An interpreted line reaches a
 bill only as `AGREED` (`identity.md` §7); uncorroborated interpreted geometry is not a line at
