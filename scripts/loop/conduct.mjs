@@ -20,6 +20,8 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileS
 import net from "node:net";
 import path from "node:path";
 
+import { CONTEXT_LINE, overLine, parseWorkerOutput } from "./usage.mjs";
+
 const root = path.resolve(import.meta.dirname, "../..");
 const args = process.argv.slice(2);
 const ticketDir = args.find((a) => !a.startsWith("--"));
@@ -114,7 +116,7 @@ if (!baseline.ok) {
   console.error("conduct: baseline pnpm verify is red — the loop only ever starts from green.");
   process.exit(1);
 }
-log({ event: "start", runId, ticketDir, arc, maxTickets, caps: { MAX_TURNS, WALL_CLOCK_MS } });
+log({ event: "start", runId, ticketDir, arc, maxTickets, caps: { MAX_TURNS, WALL_CLOCK_MS, CONTEXT_LINE } });
 
 // ---- the loop -----------------------------------------------------------------
 const promptTemplate = readFileSync(path.join(import.meta.dirname, "PROMPT.md"), "utf8");
@@ -144,8 +146,12 @@ try {
 
     log({ event: "spawn", ticket });
     const t0 = Date.now();
+    // stream-json, not json: the result object's `usage` is cumulative across the session and its
+    // `iterations` array is partial, so neither is a context size (scripts/loop/usage.mjs measures
+    // this). The stream carries one usage per message, which is the only way to see the peak — and
+    // the peak is what the boundary review's flag pile is made of.
     const worker = spawnSync(
-      `claude -p --output-format json --max-turns ${MAX_TURNS} --permission-mode bypassPermissions`,
+      `claude -p --output-format stream-json --verbose --max-turns ${MAX_TURNS} --permission-mode bypassPermissions`,
       {
         cwd: root,
         shell: true,
@@ -157,14 +163,19 @@ try {
         env: { ...process.env, CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "0" },
       },
     );
-    let meta = {};
-    try {
-      const parsed = JSON.parse(worker.stdout);
-      meta = { turns: parsed.num_turns, costUsd: parsed.total_cost_usd, workerResult: parsed.subtype ?? parsed.type };
-    } catch {
-      meta = { workerResult: worker.status === null ? "wall-clock-kill" : `exit ${worker.status}` };
-    }
-    meta.wallMs = Date.now() - t0;
+    const parsed = parseWorkerOutput(worker.stdout);
+    const meta = {
+      turns: parsed.turns,
+      costUsd: parsed.costUsd,
+      workerResult: parsed.workerResult ?? (worker.status === null ? "wall-clock-kill" : `exit ${worker.status}`),
+      // The instrumentation the flag pile is made of. ctxPeak is null when the worker reported no
+      // per-message usage — null, not zero, so "unmeasured" never reads as "well under the line".
+      ctxPeak: parsed.ctxPeak,
+      ctxWindow: parsed.ctxWindow,
+      ctxCalls: parsed.ctxSeries.length,
+      overContextLine: overLine(parsed.ctxPeak),
+      wallMs: Date.now() - t0,
+    };
 
     // ---- gates: the conductor believes evidence, not claims -------------------
     const ticketText = readFileSync(ticketAbs, "utf8");

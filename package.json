@@ -28,6 +28,7 @@
     "db:replay": "node scripts/db-replay.mjs",
     "test:db": "vitest run -c vitest.db.config.ts",
     "loop": "node scripts/loop/conduct.mjs",
+    "flags": "node scripts/loop/flags.mjs",
     "promote": "node scripts/wayfinder/promote.mjs",
     "reland": "node scripts/reland.mjs"
   },

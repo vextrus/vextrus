@@ -85,6 +85,17 @@ with a dated, observed cost — never speculatively.
   `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0` — that loses subprocess isolation, so scope it to the
   command, never export it.
 
+- **A headless session's `usage` object is not a context size, and it looks exactly like one.**
+  2026-08-13, measured on the Windows workstation at `c0cd8f1` with `claude -p` on a two-turn
+  prompt: `num_turns` was 2, `usage.iterations.length` was **1**, the top-level read
+  `cache_read=23,391` while the sum over `iterations` was `14,065`, and the session's real peak —
+  from the message stream — was **14,148**. The top level is *cumulative across the whole session*
+  and grows without bound; `iterations` is a *partial* list. Log either as "context" and you get a
+  number that means nothing, in the direction that hides a problem (cumulative reads high, so
+  everything looks over the line; `iterations` reads low, so nothing does). Peak context needs
+  `--output-format stream-json --verbose` and one `usage` per message
+  (`scripts/loop/usage.mjs`).
+
 ## Verification
 
 - **A pnpm built-in silently beats a package script of the same name.** 2026-08-12, ticket 03:

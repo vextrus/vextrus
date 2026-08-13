@@ -68,6 +68,33 @@ that *cannot* push, so `main` may move far underneath it. The end-of-campaign me
 the riskiest merge in the system — the one most likely to be genuinely red. Short campaigns, and
 no other work landed during one.
 
+## The context line — 150,000 tokens, and what records it
+
+`.wayfinder/TRACKER.md` already states the number for interactive sessions ("Past 150K mid-ticket:
+write state into the ticket, `/clear`, resume fresh"), and the loop uses that one rather than
+minting a second: a harness with two context lines has none.
+
+Every iteration logs `ctxPeak`, `ctxWindow`, `ctxCalls` and `overContextLine`
+(`scripts/loop/usage.mjs`). `node scripts/loop/flags.mjs [.loop/<run>]` renders the pile the
+boundary review substitutes into `REVIEW.md`'s `{FLAGS}`.
+
+**This did not exist before 2026-08-13.** The section below has always called the flag pile the
+review's mandatory first read, and nothing computed it — the placeholder rendered as a blank
+space, which cannot distinguish "no session crossed" from "nobody measured". The three sessions in
+`.loop/2026-08-12T05-24-16` are permanently in the second category and the pile now says so
+instead of reporting them clean.
+
+The peak comes from the worker's message stream, not from its result object: the result's `usage`
+is **cumulative across the session** and its `iterations` array is **partial**, so neither is a
+context size (`docs/TRAPS.md`, and `usage.mjs`'s header carries the measurement). That is why the
+worker runs under `--output-format stream-json --verbose`.
+
+**The line is provisional in the way `MAX_TURNS` is provisional**: nothing here has ever connected
+context to output quality, so 150,000 is a threshold inherited from a working rule, not a measured
+cliff. `.wayfinder/harness/inbox/what-fills-a-cloud-session.md` §3 either establishes that
+relationship or rules that it cannot be established — and this instrumentation is what gives it
+data to work from.
+
 ## The boundary review
 
 After an arc completes, run one judge session with `scripts/loop/REVIEW.md` (arc name, start
