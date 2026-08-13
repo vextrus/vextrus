@@ -47,7 +47,8 @@ silently resolved.
 Every derived row key is **content-derived with zero minted ids** — no UUIDs, no DB sequences,
 no timestamps — so an identical re-derivation reproduces the identical key multiset:
 
-- **View key** = view class + caption anchor handle (row ids re-mint on every partition
+- **View key** = view class + caption anchor **source key** (`cad-ingestion.md` §2 — a
+  `scheme:key` token; an unprefixed one reads as `DXF_HANDLE`) (row ids re-mint on every partition
   rebuild; the key, not the row id, rides in downstream keys).
 - **Placement key** = view key + mark + world coordinates **quantized to 0.1 drawing unit**.
 - **Instance row key** = placement key + level *surrogate id* (typed so a bare label string
@@ -74,7 +75,7 @@ arbitrary representative — measured in the legacy as an 82.6%-phantom-money cl
 ## 5. Semantic vs identity — the carry law
 
 Every derived row also carries an order-normalized **semantic** (canonical JSON of its content
-*including its cited evidence handles*). The semantic is the **invalidator, never the key**:
+*including its cited evidence source keys*). The semantic is the **invalidator, never the key**:
 unchanged semantic → human dispositions carry forward across a rebuild; changed semantic → the
 row re-presents for disposition. Lineage is inside the semantic deliberately — a row whose
 numbers are unchanged but whose cited evidence moved must re-present, or a stale lineage rides
