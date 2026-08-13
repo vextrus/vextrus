@@ -119,6 +119,15 @@ if (process.platform === "linux" && spawnSync("bwrap", ["--version"], { encoding
   console.error("conduct: CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md). Run scripts/provision.sh.");
   process.exit(1);
 }
+// socat is the scrub's second dependency since CLI ~2.1.231, and its absence is worse than
+// bubblewrap's: the worker STARTS, then every Bash call fails with "Sandbox is required but
+// failed to initialize … socat not installed" — so it burns its turns, fails every gate, and
+// the run blames the ticket. Measured on a cloud container at ef91b76 (docs/TRAPS.md).
+if (process.platform === "linux" && spawnSync("socat", ["-V"], { encoding: "utf8" }).status !== 0) {
+  console.error("conduct: socat is missing, so every worker would start but fail each Bash call under");
+  console.error("conduct: CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md). Run scripts/provision.sh.");
+  process.exit(1);
+}
 if (existsSync(activeMarker)) {
   console.error(`conduct: another run is active (${activeMarker}). Remove it only if you are sure it is stale.`);
   process.exit(1);

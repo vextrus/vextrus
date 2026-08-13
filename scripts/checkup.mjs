@@ -390,6 +390,22 @@ if (process.platform === "linux") {
   );
 }
 
+// socat joined bubblewrap as a scrub dependency at CLI ~2.1.231: a nested
+// session STARTS without it, but its every Bash call fails with "Sandbox is
+// required but failed to initialize … socat not installed" — a worker that
+// runs and can do nothing (docs/TRAPS.md). Same posture as bubblewrap: not
+// gating, reported so the precondition is stated; provision.sh installs it.
+if (process.platform === "linux") {
+  const r = run("socat", ["-V"]);
+  report(
+    r.ok ? OK : NOTE,
+    "socat",
+    r.ok
+      ? `${r.out.split("\n").find((l) => l.startsWith("socat version")) ?? r.out.split("\n")[0]} — nested \`claude\` Bash can initialize its sandbox`
+      : "not found — a nested `claude` starts but every Bash call fails under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1; run scripts/provision.sh",
+  );
+}
+
 // System Python is deliberately NOT reported: uv owns cad/'s interpreter and
 // fetches its own, so the system version is a red herring on a healthy machine
 // (provision.sh, and cad/pyproject.toml's requires-python >=3.13 vs a 3.11 host).
