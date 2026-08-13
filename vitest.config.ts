@@ -8,8 +8,9 @@ export default defineConfig({
     // a stack-dependent test in the verify lane is a named legacy trap.
     // `scripts/**` joins the lane with promote.mjs (2026-08-13): it allocates ticket numbers and
     // rewrites `Blocked by:` edges, so a defect in it corrupts the graph the whole tracker reads.
-    // The harness scripts were untested until then — frontier.mjs still is, and that is a named
-    // gap, not a decision (docs/specs/cloud-campaign.md §8).
+    // The harness scripts were untested until then; reland.mjs and frontier.mjs followed. The
+    // frontier tests drive the CLI rather than an extracted function on purpose — its exit codes
+    // (0/1/3/4) are half its contract and conduct.mjs branches on them.
     include: ["src/**/*.spec.{ts,tsx}", "db/**/*.spec.ts", "scripts/**/*.spec.mjs"],
     // A net against a hung test, not an assertion about speed — no test here
     // measures latency, and the ones that do state their own bound.
