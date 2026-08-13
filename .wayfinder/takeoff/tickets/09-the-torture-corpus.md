@@ -44,6 +44,13 @@ are real.
   (`formulas.md` §1 — must refuse, not fall back to a box).
 - An opening exactly *at* the deduction threshold — §2 deducts only if **strictly greater**.
 - A level ordinal with no row in the multiplier scheme — must **throw**, never ×1.
+- **An MTEXT drawing note carrying a raw newline** — measured in **The DWG lane** (ADR-0012): an
+  ordinary consultant disclaimer note, written through unescaped by `dwg2dxf`, invalidates the
+  entire DXF from that byte on while the converter exits 0. The fixture asserts
+  `dwg_dxf_unparseable` on the sheet, never silence.
+- **A DWG whose census and DXF disagree per type** — ADR-0012's audited lane must refuse the
+  affected class by name. The pinned sanity number is `example_2018`-shaped: *n* recovered **plus
+  the named losses**, so that a silent recovery of *n* fails the assertion.
 
 ## Guardrails
 
@@ -203,6 +210,26 @@ meta-test goes red until case 10 carries a real expectation. It is the only enfo
 
 *Rejected:* ruled-only entries.
 
+**Clarified after the fact, and it is a correction to the ruling as first stated.** The two DWG
+candidates ticket 05 added to this list mid-session arrive with their expectations *already
+fixed by ADR-0012* while the DWG lane has no code at all — a state the ruling as first written
+could not express, because it ran expectation and implementation together on one axis. They are
+**orthogonal** and the index carries both:
+
+- **expectation** — `ruled` (a closed ticket or a cited clause fixes what the case asserts) or
+  `undecided` (naming the ticket that owes it). This is the axis the expiry clause acts on.
+- **implementation** — `asserted` (a test exists in every lane the entry declares) or `pending`
+  (naming the rail that will write it).
+
+`undecided` is therefore **never** a statement about whether code exists. A case may be
+`ruled` + `pending` — the expectation is settled and nobody has built the subject yet — and that
+is the ordinary state of every case a rail is about to fill. It is the pair that makes the census
+honest: an entry that is `ruled` + `pending` says *we know what this must do and it is not
+watched yet*, which is a different and more actionable silence than *we have not decided*.
+
+Consequence for the budget: a `pending` entry costs no runtime, so the census may enumerate the
+whole known defect set long before the corpus's wall time approaches ruling 8's 20s.
+
 *Accepted cost, stated:* the meta-test reads `.wayfinder/*/tickets/*.md` for `Status:` lines,
 coupling the test suite to the tracker. Normally refusable; earned here only because the tracker
 is in-repo, greppable and plain-text **by explicit design** (`.wayfinder/TRACKER.md`: "no
@@ -212,8 +239,9 @@ ticket-close, enforced by nothing.
 
 ### 7. The list: all fifteen in, four added, two properties, one out
 
-**All 15 candidates admitted, none out** — every one is law-cited or census-cited. Triaged
-against what the suite asserts **today**:
+**All candidates admitted, none out** — every one is law-cited or census-cited. The list was 15
+when this ticket was taken; ticket 05 appended two more (16, 17) while the session ran, and both
+clear the criterion on ADR-0012. Triaged against what the suite asserts **today**:
 
 | # | defect | status |
 |---|---|---|
@@ -232,6 +260,8 @@ against what the suite asserts **today**:
 | 13 | pile-cap plan area disagreeing with its shoelace >0.5% | **undecided** → member algebra |
 | 14 | opening exactly *at* the deduction threshold | **undecided** → ticket 13 / face rail |
 | 15 | level ordinal with no multiplier row must throw | **undecided** → ticket 20 |
+| 16 | MTEXT note with a raw newline; `dwg2dxf` writes it through unescaped, invalidating the DXF from that byte on while exiting 0 | **ruled, unimplemented** — added to this ticket's candidate list by ticket 05 mid-session; ADR-0012 fixes the expectation (`dwg_dxf_unparseable` on the sheet, never silence). No DWG lane code exists yet |
+| 17 | DWG whose `dwgread` census and `dwg2dxf` DXF disagree per type | **ruled, unimplemented** — ADR-0012's audited lane refuses the affected class by name; the pinned sanity number is `example_2018`-shaped, *n* recovered **plus the named losses**, so a silent recovery of *n* fails |
 
 **Four added**, each because the map's destination names something the list has no fixture for:
 
@@ -350,3 +380,14 @@ so the other six `undecided` entries stand.
 That is ruling 6 working by hand on its first day, which is the argument for building it: the
 correction was available only because someone re-read a triage table against the tracker. The
 meta-test is what makes that automatic instead of lucky.
+
+**Ticket 05 then landed too, and appended two candidates to this ticket's own list while it was
+being resolved** — the MTEXT raw-newline case and the census/DXF per-type disagreement, both
+fixed by ADR-0012. They are admitted as 16 and 17. They also forced the correction recorded
+under ruling 6: expectation and implementation are two axes, not one, and the ruling as first
+written could not express `ruled` + `pending`. Both DWG cases sit there now.
+
+Three of this map's tickets closed during one grilling session. That is the concurrency
+`.wayfinder/TRACKER.md` anticipates, and it is worth naming as evidence for ruling 6 rather than
+as an incident: a corpus whose completeness is tracked in anyone's head does not survive a map
+being worked by several sessions at once.
