@@ -6,9 +6,16 @@ its measured censuses. The pipeline is `cad/` — a pure CLI, drawing in → Ent
 
 ## 1. Pipeline and licenses
 
-DWG → DXF via **LibreDWG `dwg2dxf`** in an isolated subprocess (GPL: subprocess only, never
-linked, license text shipped). ODA File Converter is **dev-only, banned from every production
-artifact**. DXF → EntityGraph via **ezdxf** (MIT). PDFs via pypdfium2 (permissive);
+DWG → DXF via **LibreDWG** in an isolated subprocess (GPL: subprocess only, never linked, license
+text shipped), built `--enable-release`. **The lane is two passes and the converter is audited,
+never trusted** (ADR-0012): `dwgread -O JSON` gives the object census, `dwg2dxf` gives the
+geometry, and the two reconcile per entity type. `dwg2dxf` exits 0 on an empty DXF and on an
+unparseable one — measured, 139/139 — so **its exit code is not a success signal**. Any per-type
+shortfall, and any `UNKNOWN_ENT` in the census, refuses that class on that sheet by name; a DXF
+the parser rejects refuses the sheet as `dwg_dxf_unparseable`. ODA File Converter is **banned from
+every production artifact**, and its former dev-only permission is withdrawn — it may run only
+inside a bounded, dated evaluation of ODA membership. DXF → EntityGraph via **ezdxf** (MIT).
+PDFs via pypdfium2 (permissive);
 **AGPL PDF libraries (PyMuPDF/fitz, mutool) are banned in shipped code** — a license test
 asserts no shipped module imports them. Stateless, temp-dir per invocation, loud failures,
 generous timeouts.
@@ -132,5 +139,9 @@ a schedule has no Nos column; counts come from placement.
 
 Keep a **sanity number**: after any converter change, the entity count on a pinned reference
 drawing must read an exact known value — a lower count means you are grading stale pipeline
-code. Fixtures: synthetic drawings including a **revision pair** (the identity-stability test
+code. **Pinned (ADR-0012, LibreDWG 0.13.3 `--enable-release`):** `example_2018.dwg` reads **207
+recovered + 4 named losses** (2 `WIPEOUT`, 1 `ACAD_TABLE`, 1 `ARC_DIMENSION`) against an
+AutoCAD-authored twin of **211**. A silent 207 fails this assertion exactly as a silent 211 does —
+the losses are part of the number. Re-take it whenever the pinned converter version moves.
+Fixtures: synthetic drawings including a **revision pair** (the identity-stability test
 bed). Competitor-derived drawings never enter this repo.
