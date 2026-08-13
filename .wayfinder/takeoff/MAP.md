@@ -104,16 +104,74 @@ done (`measurement-rules.md` §8).
 - **Scale/architecture, ruled in charting.** The JSON artifact stays the immutable, hashable
   **evidence of record**; a **derived, rebuildable Postgres entity index** serves queries and
   the viewer. The CLI stays pure — ADR-0001 untouched.
+- **[The DWG lane — which converter ships](tickets/05-the-dwg-lane.md)** — LibreDWG stays at $0
+  and the lane becomes **two passes, audited not trusted** (ADR-0012, superseding ADR-0001's
+  converter clause): `dwgread -O JSON` census reconciled per type against the `dwg2dxf` DXF, every
+  shortfall a named refusal. Measured on 139 corpus DWGs against 34 AutoCAD-authored twins:
+  **139/139 exit 0** including 16 empty-or-unreadable outputs, **−2.41%** entity recovery on 31
+  modern pairs — and **every loss visible in the census**, which is what made the free converter
+  shippable. ODA is licensable at **$7,500/$4,500 yr** but unmeasured, so it is priced with a named
+  purchase trigger, not bought; ODA File Converter's dev-only permission is *withdrawn*. Rejected:
+  buying ODA now, shipping the `--enable-debug` build, refusing DWG wholesale.
+- **[The source key](tickets/02-the-source-key.md) — ruled 2026-08-13.** `h` generalises to one
+  opaque `scheme:key` token over a closed vocabulary split by *minting extractor* —
+  `DXF_HANDLE` · `PDF_OBJECT` · `RASTER_TRACE` — riding per key (the hybrid page mints two).
+  The atom is the EntityGraph original entity, defined by the extractor alone; PDF keys are a
+  digest of page index + type + resolved page-space geometry quantized to 0.001 pt, with Form
+  XObjects taking §3's INSERT law verbatim. Keys are scoped to `(file bytes, extractor
+  identity)` — no cross-file, no cross-version survival; a vectorizer upgrade is a declared
+  re-ingest and §5 re-presents the rows. Collisions **collapse and are counted per type**, never
+  disambiguated by an ordinal, because content-derivation's real warrant is **self-authentication**
+  (ticket 17's verifier can recompute a digest; it cannot check a counter). Storage is a prefix
+  with no data migration — unprefixed reads as `DXF_HANDLE`, since evidence is append-only by
+  grant. Amendment landed in `cad-ingestion.md` §2–§3 and `identity.md` §3/§5.
 - **[Vector PDF to EntityGraph](tickets/06-vector-pdf-to-entitygraph.md) (2026-08-13).** The lane
   is admitted at **two entity types of ten** — LWPOLYLINE + TEXT, the other eight named absences.
   Extractor is **pikepdf** (measured: PDFium cannot name an object's layer); pypdfium2 stays for
   rendering. Measured on real sheets: text is often outlined (0 chars on 3 of 3 CAD plots), OCGs
-  are usually flattened away (0 of 5), `/Measure` never appears (0 of 14), and content-stream
-  order renumbers a quarter of an untouched drawing across a revision. Rejected pypdfium2-alone
-  and pdfplumber. HABS/HAER corrected out of this lane — it is raster, ticket 07's material.
+  are usually flattened away (0 of 5), `/Measure` never appears (0 of 14), and the scale ladder
+  loses two rungs, not one. Rejected pypdfium2-alone and pdfplumber. HABS/HAER corrected out of
+  this lane — it is raster, ticket 07's material. **This ruling and 02 landed the same day and
+  disagree about who decomposes a PDF page** — 24 settles it.
 - **Deployment, ruled in charting.** A deployed environment sufficient for bar (c): real URL,
   real auth, real tenancy, invite-only. No billing, no signup funnel, no SLA — those are
   surfaces for customers who do not exist yet (legacy fault F8 in miniature).
+
+- **[The work-item catalogue](tickets/01-the-work-item-catalogue.md) (2026-08-13).** The
+  enumeration is `work_item_catalogue` — **platform-owned, code-derived, at quantity-kind
+  grain, primary-keyed on the kind value** (the codebase's first non-tenant table). The **whole
+  catalogue is every project's denominator**, narrowed only by an attributed act (§6 bans a
+  coverage percentage, so over-breadth costs reading length while under-breadth hides the
+  money). `RATE_MODIFIER` is a **pricing role in `book/`**, never a kind — it names no trade,
+  and a modifier inherits rather than originates. `book/` joins on `kind` with unit as the
+  dimension veto: no re-key. Safe only because **scope rows key `(class × kind)`** — at class
+  grain a beam's unmeasured formwork hides behind its concrete line. Amends
+  `measurement-rules.md` §4 and `quantity-contract.md` §2/§6/§7. Rejected: SoR-item grain
+  (needs editions to be coherent — it *is* `book/`) and per-tenant copy-down (§8's precondition
+  is human authorship, which is absent, and a tenant-scoped key breaks the national book's
+  join).
+- **[The INTERPRETED basis](tickets/03-the-interpreted-basis.md) (2026-08-13).** `INTERPRETED`
+  ranks **second-weakest, below `ENTERED`** — the ladder orders by *recourse*, and a scan-derived
+  number has none: it is reproducible (02 requires determinism) but re-running a vectorizer
+  re-derives the same guess and checks nothing. It names the **source medium, not the
+  agent** (a QS tracing a scan also produces `INTERPRETED`) and is **never relabelled
+  `MEASURED`**. §3's actor trigger narrows to human judgement, machine provenance (vectorizer
+  id + version + DPI) taking its place. Confirming geometry: agreement corroborates, a wrong
+  *value* suspends, *"that is not a column"* **repudiates** into `identity.md` §2's no-join
+  table. The certificate discloses **by sheet, never by line or count**, doubling as the RICS AI
+  disclosure. `+0%` binds unchanged (§5 already bars basis difference as an excuse); the raster
+  path is a **distinct engine** for validation, and **corroboration is the publishability
+  gate** — uncorroborated interpreted geometry is a declared exclusion, never a line. Rejected:
+  ranking it just under `MEASURED`, relaxing the band, and a conservative-bias vectorizer as a
+  licence to skip the human.
+- **[The drawing-set revision — what a campaign pins](tickets/04-the-drawing-set-revision.md)
+  (2026-08-13).** A campaign pins a **content-addressed, immutable set** of `(drawing, revision)`
+  pairs — the manifest *is* `quantity-contract.md` §8's citation list, so the two cannot diverge.
+  A new set revision never moves an in-flight pin: the campaign **advances by an authored re-pin**
+  (fork rejected — it reopens the double-count door; refuse rejected — it makes the delta
+  unreachable). Pairing lifts from drawing-scoped to set-scoped, so a **re-sheeted member keeps
+  its ordinal**. Partial re-issue re-presents nothing: the *semantic* governs the row, the
+  *manifest* governs the boundary. Amendment landed as `identity.md` §9.
 
 ## Not yet specified
 

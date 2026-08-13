@@ -105,11 +105,25 @@ a bar of 833/s.
    `measurement-rules.md` §3 hard-blocks. So the invariant restates as *no operator that does not
    paint may become an entity, and no entity may be synthesized from a construct the file does
    not contain*. What it can no longer do is separate a block-internal label from a drawn one;
-   the plotter destroyed that. Separately: across the committed r1→r2 revision pair, **25 of 90
-   unchanged geometries land at a different content-stream index** — a three-column edit
-   renumbers a quarter of the untouched drawing. Content-stream position is not a lawful
-   provenance key; ticket 02's content-derived-digest proposal is supported by measurement, and
-   its explicit bar on an ordinal counter is vindicated.
+   the plotter destroyed that. Separately, on ordinals: across the committed r1→r2 revision pair,
+   **90 of 100 painted paths match by geometry while only 65 keep their content-stream index** —
+   a three-column edit renumbers a quarter of the untouched drawing.
+
+**Two notes added after this ticket closed, when ticket 02 landed on `main` the same day:**
+
+- **The ordinal measurement above is weaker evidence than first written here.** 02 scoped source
+  keys to `(file bytes, extractor identity)` and *does not* claim cross-file survival — pairing
+  across revisions stays `identity.md` §4's job. Within one file, same bytes through same code,
+  an ordinal re-derives identically, and 02's ruling 7 says so explicitly: the real warrant for a
+  content digest is **self-authentication**, not counter re-minting. What the measurement does
+  show, and it is worth keeping: a geometry digest would have carried 90 of 100 across a revision
+  where an ordinal carried 65. That is a fact for §4's pairing, not a load-bearing argument for
+  02's construction.
+- **02 and this ticket disagree about who decomposes a PDF page.** 02 ruled `PDF_OBJECT` is
+  minted by **pdfium** and landed that in `cad-ingestion.md` §2's table, whose `asserted by`
+  column reads "pdfium's decomposition"; this ticket ruled the extractor is **pikepdf**, under
+  which the answer is "us". Neither session could see the other. **Not resolved here** — a
+  merge is the wrong place to overturn a landed amendment. Opened as ticket 24.
 
 **The alternative put and rejected: pypdfium2 alone, keeping ADR §1 untouched.** It is the
 cheaper answer and it is already the ADR's choice, so the bar for changing it was high. Rejected

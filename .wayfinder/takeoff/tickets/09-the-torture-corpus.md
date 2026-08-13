@@ -44,6 +44,13 @@ are real.
   (`formulas.md` §1 — must refuse, not fall back to a box).
 - An opening exactly *at* the deduction threshold — §2 deducts only if **strictly greater**.
 - A level ordinal with no row in the multiplier scheme — must **throw**, never ×1.
+- **An MTEXT drawing note carrying a raw newline** — measured in **The DWG lane** (ADR-0012): an
+  ordinary consultant disclaimer note, written through unescaped by `dwg2dxf`, invalidates the
+  entire DXF from that byte on while the converter exits 0. The fixture asserts
+  `dwg_dxf_unparseable` on the sheet, never silence.
+- **A DWG whose census and DXF disagree per type** — ADR-0012's audited lane must refuse the
+  affected class by name. The pinned sanity number is `example_2018`-shaped: *n* recovered **plus
+  the named losses**, so that a silent recovery of *n* fails the assertion.
 
 ## Guardrails
 
