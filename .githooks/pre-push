@@ -67,12 +67,28 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
         echo "pre-push: note — no merge-base with origin/main, so the ticket-number guard did not run." >&2
         continue
       fi
-      minted=$(git diff --name-only --diff-filter=A "$base" "$_local_sha" -- '.wayfinder/*/tickets/*.md' |
+      #    --no-renames: with rename detection on, a promotion can be reported as R rather than A,
+      #    and then the guard never looks at it at all. Classification has to be deterministic.
+      minted=$(git diff --no-renames --name-only --diff-filter=A "$base" "$_local_sha" -- '.wayfinder/*/tickets/*.md' |
         while read -r f; do
           case "${f##*/}" in
             [0-9]*-*.md)
               # Charting a new map is exempt: the effort had no tickets at the base.
-              if git rev-parse --quiet --verify "$base:${f%/*}" >/dev/null 2>&1; then echo "$f"; fi
+              git rev-parse --quiet --verify "$base:${f%/*}" >/dev/null 2>&1 || continue
+              # A PROMOTION is exempt: this slug was sitting in inbox/ at the merge base, so the
+              # number came from scripts/wayfinder/promote.mjs reading every existing number —
+              # which is the sanctioned path, and refusing it would make the override the normal
+              # way to work, which is how a guard stops being one. Found the first time the
+              # dispatcher promoted a ticket for real, 2026-08-13.
+              #
+              # Tested at the base rather than as a deletion in the range: the inbox ticket lands
+              # on main first and is promoted afterwards, so the deletion view depends on how far
+              # back the branch reaches, and this does not. Nobody mints `18-foo.md` by hand while
+              # `inbox/foo.md` happens to be sitting on main.
+              _name="${f##*/}"
+              _effort="${f%/tickets/*}"
+              git rev-parse --quiet --verify "$base:$_effort/inbox/${_name#*-}" >/dev/null 2>&1 && continue
+              echo "$f"
               ;;
           esac
         done)
