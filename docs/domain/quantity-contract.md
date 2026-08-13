@@ -51,12 +51,19 @@ overcharge class, which no quantity tolerance can catch.
    this number accounts for everything this description names.
 2. **For absence: the scope register.** A per-line column cannot annotate a row that does not
    exist (legacy: pile-cap rebar was −100% with no line and no deferral). The scope register is
-   derived from **what ingestion saw**; every element class present in a drawing that produced
-   no line becomes a declared exclusion. Consequence: **surfacing ingestion truncation is
-   mandatory** — the artifact's fidelity counters exist for this.
+   derived from **what ingestion saw**, keyed **`(element class × quantity kind)`** (amended by
+   `.wayfinder/takeoff/tickets/01`); every (class × kind) cell that produced no line becomes a
+   declared exclusion. Class grain alone hides the missing *rule* — a beam that produced a
+   concrete line is not absent, so its unmeasured formwork goes silent, and one kind covers
+   twelve PWD member-type sub-items. `(class × kind)` is also §8's dip-sample draw unit.
+   Consequence: **surfacing ingestion truncation is mandatory** — the artifact's fidelity
+   counters exist for this.
 
-The scope register attaches a **cause** to an absence the rate book already knows about (the
-book is the enumeration; see `bd-authority.md`). Causes have per-member originator legality:
+The scope register attaches a **cause** to an absence the **work-item catalogue** already knows
+about (the catalogue is the enumeration — the spine-owned, rate-free half of the book's job;
+amended by `.wayfinder/takeoff/tickets/01`). The two sources divide the work: the catalogue
+catches the **missing sheet** (ingestion saw nothing, so it can report nothing); the
+`(class × kind)` rows catch the **missing rule**. Causes have per-member originator legality:
 `NOT_IN_PROJECT_SCOPE` and `NOT_IN_THIS_BILL` are **human-only** (a machine can rarely
 establish absence); the machine's default is `NOT_ESTABLISHED`; ingestion-fidelity rows split
 `INGESTION_TRUNCATED` (a cap you raise) from `ENTITY_TYPE_UNHANDLED` (code nobody wrote) —
@@ -124,7 +131,11 @@ a mandatory dip-sample stratum.
 ## 6. Declaring the boundary
 
 - **One coverage statement, computed at publish**, from the scope register. The **Certificate
-  of Measured Coverage is that statement** — a query over book × scope register, never prose. A
+  of Measured Coverage is that statement** — a query over **work-item catalogue × scope
+  register**, never prose (amended by `.wayfinder/takeoff/tickets/01`). The whole catalogue is
+  in every project's denominator; narrowing is an **attributed act** (`NOT_IN_PROJECT_SCOPE`,
+  human-only), never a project pin — a pin that filters the denominator is a silent exclusion
+  with no actor, and §8's absence census has nothing to census. A
   bill without its certificate is not a bill and cannot be emitted; they bind into **one
   server-generated PDF** (a browser print cannot guarantee the certificate travels).
 - The certificate rides in **every export channel** and is **never carried by colour alone** —
@@ -148,7 +159,8 @@ into `confirm-all` at volume, and the money is in *absence*, which disposing row
 Two gates, deliberately separate because one conflated gate is how `incomplete: 0` printed over
 a bill 54% short:
 
-1. **Coverage/boundary** — founded outside the register (the book + scope register). No
+1. **Coverage/boundary** — founded outside the register (the work-item catalogue + scope
+   register). No
    sampling rate finds the row that is not there; this gate is enumerated, in full.
 2. **Reliability** — the named surveyor's written decision, informed by the dip sample.
 
