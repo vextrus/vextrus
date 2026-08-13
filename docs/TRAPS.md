@@ -92,6 +92,32 @@ with a dated, observed cost — never speculatively.
   isolation the repo turned on deliberately, and the setting is enforced only on children, so
   nobody but a spawner can ever notice it is gone.
 
+- **`socat` is the scrub's second dependency since CLI ~2.1.231, and its absence looks like a
+  worker that runs but refuses to work.** 2026-08-13, cloud container at `ef91b76`, CLI 2.1.231:
+  with bubblewrap 0.9.0 installed and socat absent, the nested `claude -p` session *starts*
+  (exit 0, full stream, hooks fire, Write/Edit execute) but **every Bash call** inside it fails
+  with *"Sandbox is required but failed to initialize: Sandbox dependencies not available: socat
+  not installed. Restart to retry."* — and `dangerouslyDisableSandbox: true` is refused the same
+  way under the scrub hardening. Bubblewrap alone sufficed when ticket 18 measured it; the CLI
+  moved. It presents as a sandbox crash or a permissions fault in the worker; it is a missing
+  package. Diagnose with `command -v socat`; `scripts/provision.sh` installs it beside
+  bubblewrap, `pnpm checkup` reports it, and `conduct.mjs` refuses by name before spawning —
+  a worker that starts and cannot Bash burns its turns and fails every gate blaming the ticket.
+
+- **Inside a scrubbed worker's Bash, the repo root grows dotfiles that are `/dev/null` in
+  disguise — and `next build` dies on them.** 2026-08-13, the first conducted worker (run
+  `2026-08-13T17-52-09`, container at `449b7c7`): Tailwind v4's content scanner hit EACCES on
+  `.gitconfig`, `.bashrc`, `.idea`, … at the repo root and panicked `next build` — reproduced
+  by the worker on a pristine `globals.css`, so it presents as a CSS/build fault in whatever
+  was just edited. The files are zero-byte character devices (`crw-rw-rw- 1, 3` — the
+  `/dev/null` device) that exist **only inside the nested session's bubblewrap namespace**: the
+  scrub masks home-relative dotfiles, and with the workspace as cwd they surface at the repo
+  root. From a top-level session the paths do not exist (measured: `stat` says "No such file"
+  outside, "character special file" inside the same second), so the fault cannot be reproduced
+  where a human would look — and `rm` from inside is refused (it lands in `permission_denials`).
+  The standing fix is the worker's: name each one in `.gitignore`, which Tailwind's scanner
+  respects; a broad dotfile glob would hide real future files.
+
 - **A scratch clone with a symlinked `node_modules` cannot complete `next build`.** 2026-08-13,
   on a cloud container at `6c6e001`. Cloning the repo and symlinking `node_modules` back to the
   main checkout — the obvious way to stand up a second worktree without a second install — makes
@@ -125,6 +151,14 @@ with a dated, observed cost — never speculatively.
   on an empty-stdout worker instead of blaming the ticket. Related: an untrusted workspace
   ignores the *project* allow list ("Ignoring 12 permissions.allow entries"), which is why the
   worker's allow surface lives on the spawn line, not in `.claude/settings.json`.
+  **Confirmed on a cloud container at `ef91b76`, CLI 2.1.231 (2026-08-13), with one movement:**
+  the ENV_SCRUB forcing now catches *every* mode — `dontAsk` and `bypassPermissions` alike run
+  as `default` (the init event says so), so the uid-0 refusal is unreachable wherever the scrub
+  is set and the exit-1/empty-stdout shape cannot reproduce there. The surface a worker actually
+  has is exactly what the flags carry: `--allowedTools` entries execute (unscoped, so any path —
+  workspace trust does not bound them), settings/`--disallowedTools` denies are *pruned from the
+  schema* (they never appear in `permission_denials`; the worker sees "no such tool"), and only
+  a schema-present, un-allowed, ask-default tool lands in `permission_denials` by name.
 
 - **A nested `claude` writes into its parent's transcript, where it reads as a context collapse
   that never happened.** It inherits `CLAUDE_CODE_SESSION_ID`, so its records land in a file

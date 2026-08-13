@@ -1,7 +1,7 @@
 # The design system — what a quantity surveyor's instrument looks like
 
 wayfinder:prototype
-Status: open
+Status: closed
 Blocked by:
 Claimed by:
 
@@ -44,3 +44,23 @@ cheap artifact, not by arguing. This is the ticket the CEO's brief asked for pro
 ## Blocks
 
 Tickets 14, 15 and 16 are all downstream of this.
+
+## Build note
+
+Prototyped two directions at `src/app/prototype/design-system/` (`?variant=A|B`, floating +
+keyboard switcher, real content: MEASURED/DERIVED/INTERPRETED lines, an unpriced row, a
+`NOT_IN_PROJECT_SCOPE` exclusion, the interpreted-sheet disclosure, a crore-grouped subtotal, one
+Bangla panel). **A — "Drafting Table" wins**: canvas+worklist as a persistent 58/42 split (never
+a thumbnail, disposition stays primary), paper-toned surface for 8h next to a printed drawing; B's
+dark "Instrument Console" read closer to the mechanical legacy surface this ticket exists to kill.
+Ruled and folded into real code: density via `--spacing-row`/`--font-size-data` tokens
+(`globals.css` `@theme`), components owned — no library, Tailwind alone (genesis F6's
+one-declaration-site logic applied to tokens), colour never alone (`status-badge.tsx` pairs a
+glyph with every basis/coverage colour), Bangla gets its own `--line-height-bangla`, and
+`formatTaka` (`src/core/format.ts`, lakh/crore grouping, unit-tested) for 14–16 to reuse — never
+`toLocaleString`, never compact `L`/`Cr`. Deviation from `/prototype`'s SKILL.md step 6: the full
+variant set could not be pushed to a separate throwaway branch (CLAUDE.md forbids branch creation
+this session), so both variants stay in this branch's tree/history as the primary source instead.
+Unrelated fix folded in: the repo root had several zero-byte device-node "dotfiles" (`.gitconfig`,
+`.idea`, …) that made Tailwind's content scanner panic `next build` with EACCES on any CSS import,
+pre-existing and reproduced on a pristine `globals.css`; now named explicitly in `.gitignore`.

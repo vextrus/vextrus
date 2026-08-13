@@ -413,12 +413,20 @@ pnpm install --frozen-lockfile
 # crash. Not fatal — nothing in `pnpm verify` spawns a nested session, and a
 # machine without apt is not thereby unfit for work. `pnpm checkup` reports the
 # result either way, which is the part that makes an absence legible.
+#
+# socat joined bubblewrap at CLI ~2.1.231: without it a nested session starts
+# but every Bash call inside it fails with "Sandbox is required but failed to
+# initialize … socat not installed" — even dangerouslyDisableSandbox is refused
+# under the scrub hardening. Measured on a cloud container at ef91b76,
+# 2026-08-13 (docs/TRAPS.md). Same ruling: provision, never weaken.
 phase="sandbox"
-if [ "$(uname -s)" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
+if [ "$(uname -s)" = "Linux" ] && { ! command -v bwrap >/dev/null 2>&1 || ! command -v socat >/dev/null 2>&1; }; then
   $SUDO apt-get update -qq || true
-  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq bubblewrap || true
+  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq bubblewrap socat || true
   command -v bwrap >/dev/null 2>&1 ||
     echo "provision: WARNING — bubblewrap not installed; nested 'claude' will abort under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md)"
+  command -v socat >/dev/null 2>&1 ||
+    echo "provision: WARNING — socat not installed; a nested 'claude' starts but every Bash call in it fails under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md)"
 fi
 
 # uv owns cad/'s Python: pyproject requires >=3.13 and cloud system Python is

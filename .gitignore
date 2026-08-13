@@ -31,3 +31,21 @@ __pycache__/
 
 # uploaded drawings and their EntityGraph artifacts (VEXTRUS_STORAGE_ROOT)
 .data/
+
+# Stray sandbox artifacts at repo root: zero-byte character-device nodes
+# (stat: "character special file"), not real dotfiles — some cloud
+# containers materialise these instead of the home-relative files they mask.
+# Tailwind v4's content scanner walks the working tree respecting
+# .gitignore and EACCES's on each in turn (`next build`, ticket 10 Build
+# note), so every one observed on this container is named here explicitly
+# rather than a broad dotfile glob that could hide a real future file.
+/.bash_profile
+/.bashrc
+/.gitconfig
+/.idea
+/.mcp.json
+/.profile
+/.ripgreprc
+/.vscode
+/.zprofile
+/.zshrc

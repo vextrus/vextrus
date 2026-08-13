@@ -58,3 +58,25 @@ job is spawning sessions — the exact action the classifier refused.
 - [ ] A stated rule for what an unattended session does when it is blocked and cannot ask.
 - [ ] `docs/TRAPS.md` carries it — a classifier block reads like a permissions misconfiguration
       and is not one.
+
+## Progress — 2026-08-13, container session (decision 1 measured; ticket stays open)
+
+Decision 1's measurement exists. On a cloud container (`2026-08-13T17:42:19Z · linux x64 ·
+node v24.19.0 · claude/worker-spawn-container-confirm-qrvqlo@ef91b76`, CLI 2.1.231, uid 0):
+**no classifier refusal interrupted any nested worker** — six hand-run probe sessions and the
+first real conducted worker (run `2026-08-13T17-52-09`, 93 turns), zero "Blocked by classifier"
+events in any stream.
+
+One correction to the question as asked: the worker's actual mode is not `dontAsk`. CLI 2.1.231
+forces every nested mode to `default` wherever `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` is set (the
+spawn-line ticket carries the measurement), so what was measured is the classifier's standing
+under *forced-default with explicit `--allowedTools`* — which is the mode every worker actually
+runs in. Every refusal ticket 18 recorded hit the top-level session, which the runner starts in
+`auto`; none has ever hit a nested worker. The real worker did meet two refusals, and they were
+*permission* denials, recorded by name in the run log's `permissionDenials` — a shape a
+conductor can read, unlike a classifier block, which remains unobserved in a nested session.
+
+The first acceptance box stays unticked deliberately: what was measured is absence over seven
+sessions, not presence of a suppression mechanism — and the mode measured is forced-default,
+not the literal `dontAsk` the box was written against. The stated rule for
+blocked-and-cannot-ask (decision 2) and the TRAPS entry remain owed.
