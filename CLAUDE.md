@@ -90,8 +90,8 @@ on; `checkup`'s environment line carries both.
    wrong: unfinished and said so beats a guess reported as done.
 6. **A session's last act:** `pnpm land` — fetch, merge `origin/main` (never rebase: it
    invalidates the verify that justified the commits), verify that exact tree, push. CI runs
-   the whole gate on the pushed head, which is better evidence than your own testimony
-   (ADR-0010). **You never merge the PR** — the click is the human's, and it is the gate.
+   the whole gate on the pushed head — better evidence than your testimony (ADR-0010).
+   **You never merge your own PR:** landing is not the author's act.
 
 <!-- BEGIN:nextjs-agent-rules -->
 
