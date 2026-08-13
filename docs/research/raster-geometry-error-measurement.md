@@ -196,3 +196,25 @@ Stated so nobody reads more into the table than it holds:
   the findings is robust; the exact millimetres are not portable to a specific real device.
 - **One scale** — everything was rendered at 1:100. F1b's paper-space law predicts the behaviour
   at other scales and the prediction is untested.
+- **Paper grain and halftone** — and this one matters for reading the DPI axis. `raster-vectorization.md`
+  §4b cites a 2011 study in which two of three commercial vectorizers *declined* from 300 to
+  400 dpi, because higher resolution resolves more paper texture and scanner noise. Our sweep is
+  monotone (or flat) in DPI on every class except thin lines at 600 dpi fax, where fragmentation
+  explodes to 43 pieces — because the synthetic degradation models blur, noise and JPEG but has
+  no paper grain to resolve. **The absence of a peak in this table is an artifact of the
+  degradation model, not evidence against non-monotonicity.** A sweep on real scans must look
+  for the peak.
+
+## Relation to the Vector Recovery Index
+
+`raster-vectorization.md` §4a records that a metric already exists for this task — Liu & Dori's
+**Vector Recovery Index**, `VRI = 0.5·Dv + 0.5·(1−Fv)` over detection and false-detection rates —
+and advises reusing it rather than inventing one. Worth stating plainly why this harness reports
+three terms instead:
+
+VRI is a **single scalar mixing detection with false detection**. It has no term that separates
+*where the line is* from *where the line stops*, and F1/F1b — the finding that decides what the
+scan lane may originate — lives entirely in that separation. Under VRI, a run with small position
+error and large extent error scores the same as its opposite. The recommendation stands for
+**comparability** against the GREC literature, and VRI should be reported alongside; but the
+decomposition is what carries a decision, and a VRI-only harness would have hidden the finding.
