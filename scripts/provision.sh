@@ -399,6 +399,28 @@ fi
 corepack prepare pnpm@9.15.1 --activate
 pnpm install --frozen-lockfile
 
+# --- bubblewrap: the precondition of a setting the repo already made ----------
+# `.claude/settings.json` sets CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1, and on Linux
+# that scrub is implemented with bubblewrap. Without the binary every nested
+# `claude` aborts at startup — 0.6s, empty stdout, and a page of minified CLI
+# source that reads like a crash in the tool rather than a missing package
+# (docs/TRAPS.md). ADR-0013 documented that and left it; measured on a cloud
+# container at 6c6e001, `apt-get install -y bubblewrap` is all it ever needed,
+# and the same nested session then succeeds under the scrub.
+#
+# So the dependency is provisioned rather than the setting weakened: the repo
+# keeps its subprocess isolation, and a spawner stops discovering it as a fake
+# crash. Not fatal — nothing in `pnpm verify` spawns a nested session, and a
+# machine without apt is not thereby unfit for work. `pnpm checkup` reports the
+# result either way, which is the part that makes an absence legible.
+phase="sandbox"
+if [ "$(uname -s)" = "Linux" ] && ! command -v bwrap >/dev/null 2>&1; then
+  $SUDO apt-get update -qq || true
+  $SUDO env DEBIAN_FRONTEND=noninteractive apt-get install -y -qq bubblewrap || true
+  command -v bwrap >/dev/null 2>&1 ||
+    echo "provision: WARNING — bubblewrap not installed; nested 'claude' will abort under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md)"
+fi
+
 # uv owns cad/'s Python: pyproject requires >=3.13 and cloud system Python is
 # 3.11, so uv fetches its own interpreter. `pytest` is therefore NOT importable
 # from system python3 by hand — verify.mjs shells `uv run`, which is correct.

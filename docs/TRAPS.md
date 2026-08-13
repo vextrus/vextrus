@@ -81,9 +81,26 @@ with a dated, observed cost — never speculatively.
   *"bubblewrap is required for subprocess env scrubbing and isolation"* and a page of minified
   CLI source above it that looks like a crash in the tool. The repo sets the variable in
   `.claude/settings.json` and the Windows workstation has the binary; a cloud container does
-  not. Diagnose with `command -v bwrap`. For a one-off nested run, prefix
-  `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0` — that loses subprocess isolation, so scope it to the
-  command, never export it.
+  not. Diagnose with `command -v bwrap`.
+
+  **Ruled 2026-08-13 (ticket 18): the dependency is provisioned, not the setting weakened.**
+  `scripts/provision.sh` installs bubblewrap on Linux and `pnpm checkup` reports it, so the
+  absence is a stated line rather than a fake crash; `conduct.mjs` refuses by name before it
+  spawns anything. Measured on a cloud container at `6c6e001`: `apt-get install -y bubblewrap` is
+  all it ever needed, and the identical nested session then succeeds **under the scrub**. Do not
+  reach for `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0` — it buys the spawn by silently discarding the
+  isolation the repo turned on deliberately, and the setting is enforced only on children, so
+  nobody but a spawner can ever notice it is gone.
+
+- **A scratch clone with a symlinked `node_modules` cannot complete `next build`.** 2026-08-13,
+  on a cloud container at `6c6e001`. Cloning the repo and symlinking `node_modules` back to the
+  main checkout — the obvious way to stand up a second worktree without a second install — makes
+  Turbopack panic: it refuses to resolve modules outside its computed project root, and the two
+  paths share no ancestor short of `/`. `typecheck`, `lint`, `test` and the cad stages all pass,
+  so it presents as a build-stage fault in the code under test. It is not: it reproduces on a
+  stashed, untouched tree, and `next build --webpack` compiles the same tree cleanly.
+  `turbopack.root` has no correct value for this layout. Copy `node_modules`, or run a real
+  `pnpm install` in the clone.
 
 - **A headless session's `usage` object is not a context size, and it looks exactly like one.**
   2026-08-13, measured on the Windows workstation at `c0cd8f1` with `claude -p` on a two-turn

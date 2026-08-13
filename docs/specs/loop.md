@@ -89,11 +89,20 @@ is **cumulative across the session** and its `iterations` array is **partial**, 
 context size (`docs/TRAPS.md`, and `usage.mjs`'s header carries the measurement). That is why the
 worker runs under `--output-format stream-json --verbose`.
 
-**The line is provisional in the way `MAX_TURNS` is provisional**: nothing here has ever connected
-context to output quality, so 150,000 is a threshold inherited from a working rule, not a measured
-cliff. `.wayfinder/harness/inbox/what-fills-a-cloud-session.md` §3 either establishes that
-relationship or rules that it cannot be established — and this instrumentation is what gives it
-data to work from.
+**The line is a review trigger, not a measured cliff, and now says so on evidence.** Ticket 18
+asked whether context can be connected to output quality here and ruled that **it cannot** —
+not for want of samples but structurally: `.loop/` is gitignored and dies with its container, so
+the population is n=0 by design, and even with data, peak context and ticket difficulty are
+confounded badly enough that an observational correlation would measure difficulty and be read as
+degradation (`docs/research/what-fills-a-cloud-session.md` §4).
+
+What is measured, on a cloud container at `6c6e001`: the window is **1,000,000 tokens**,
+autocompaction fires at **80% of it** (`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=80`, i.e. 800,000), and a
+full working session on a real ticket peaked at **126,664** — 12.7% of the window, and under this
+line. So 150,000 is 15% of the window and will fire rarely; keep it as *"this session did
+unusually much, read it closely"*, never as a failure threshold, and re-derive it from
+`ctxPeak`/`ctxWindow` once ≥10 cloud closes exist — which needs
+`.wayfinder/harness/inbox/the-loop-log-does-not-survive-the-container.md` ruled first.
 
 ## The boundary review
 
@@ -107,10 +116,29 @@ defects.
 ## Provisional numbers — re-derive, don't trust
 
 `MAX_TURNS = 150` and the 30-minute wall fuse are carried from legacy measurements of a
-*heavier* environment (their verify was ~100s; ours is ~4s). After the first campaign of
-~10+ honest closes, derive the real caps from `.loop/*/log.jsonl` (p95 × 2) and update
-`conduct.mjs` and this spec with the measured numbers. An unmeasured cap is a guess wearing
-a constant's clothes.
+*heavier* environment (their verify was ~100s). The "~4s" this paragraph used to claim for
+ours was never measured on a machine the loop runs on. Measured figures, each with its
+machine:
+
+| machine | `pnpm verify` |
+|---|---|
+| cloud container, `6c6e001`, linux x64 / node v24.19.0 | **43.9s** (n=3: 43.5 / 47.6 / 40.5) |
+| dispatcher's workstation, `main@00c6ce3` | ~16.1s |
+
+`next build` is 54% of the container's run. **There is no cold/warm figure to quote:**
+`verify.mjs` deletes `.next-verify` before every build so each one is cold, and `tsc` runs
+`--noEmit` with no buildinfo, so the run-to-run spread (7.1s) is larger than any cache effect —
+the cold run was the second fastest of the three.
+
+At 44s a run, a worker that runs verify twenty times spends fifteen minutes of a thirty-minute
+wall fuse inside verify alone, which is the measured argument for `cloud-campaign.md`'s proposed
+raise to 60 minutes.
+
+After the first campaign of ~10+ honest closes, derive the real caps from `.loop/*/log.jsonl`
+(p95 × 2) and update `conduct.mjs` and this spec with the measured numbers. An unmeasured cap is
+a guess wearing a constant's clothes — **and note that `.loop/` does not survive a container, so
+that derivation has no source today**
+(`.wayfinder/harness/inbox/the-loop-log-does-not-survive-the-container.md`).
 
 ## What is deliberately absent
 

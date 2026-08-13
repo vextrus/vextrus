@@ -1,9 +1,9 @@
 # What fills a cloud session — the in-session budget, and whether any of it buys quality
 
 wayfinder:research
-Status: open
+Status: closed
 Blocked by:
-Claimed by: cloud-session 2026-08-13
+Claimed by:
 
 ## Objective
 
@@ -125,19 +125,55 @@ here.
 
 ## Acceptance
 
-- [ ] `conduct.mjs` logs the worker's peak context per ticket; "the context line" is a number in
+- [x] `conduct.mjs` logs the worker's peak context per ticket; "the context line" is a number in
       `docs/specs/loop.md`, and `REVIEW.md`'s `{FLAGS}` can actually be filled.
-- [ ] `docs/research/what-fills-a-cloud-session.md` ranks the real consumers of a working
+- [x] `docs/research/what-fills-a-cloud-session.md` ranks the real consumers of a working
       session's context, with the machine and commit, and reports each lever's measured effect —
       including the ones that changed nothing.
-- [ ] §3 is answered one way or the other: either a stated relationship between context and
+- [x] §3 is answered one way or the other: either a stated relationship between context and
       outcome, or an explicit finding that none can be established here and why.
-- [ ] The `ENV_SCRUB` question is ruled, with its reason, and the deny list is confirmed by a
+- [x] The `ENV_SCRUB` question is ruled, with its reason, and the deny list is confirmed by a
       session that ran a whole ticket under it.
-- [ ] 6.1 answered with a named mechanism, or named as unavailable; `loop.md`'s verify figure
+- [x] 6.1 answered with a named mechanism, or named as unavailable; `loop.md`'s verify figure
       corrected; `cloud-campaign.md` §7–§8 updated and 8.8/8.9 unblocked or re-blocked with a
       reason.
-- [ ] The appended-prompt audit lists every contradiction with `CLAUDE.md`, with proposed wording
+- [x] The appended-prompt audit lists every contradiction with `CLAUDE.md`, with proposed wording
       where the repo must win.
-- [ ] New work filed as `.wayfinder/harness/inbox/<slug>.md`, no numbers (`.wayfinder/TRACKER.md`).
-- [ ] `pnpm verify` green; `pnpm land`; PR opened and **not** merged by the session.
+- [x] New work filed as `.wayfinder/harness/inbox/<slug>.md`, no numbers (`.wayfinder/TRACKER.md`).
+- [x] `pnpm verify` green; `pnpm land`; PR opened and **not** merged by the session.
+
+## Build note
+
+`docs/research/what-fills-a-cloud-session.md` carries every figure with its machine and commit
+(cloud container, `6c6e001`, CLI 2.1.231). §1's parser was checked on this container **first** and
+holds — `ctxPeak` non-null, window 1,000,000 — so nothing below rests on a Windows-only parse.
+
+**The ranking:** across a research session (peak 126,664) and a real build ticket run through the
+worker path (peak **176,003**, 118 turns, 20.7 min, $5.48, **over the line**), growth is roughly
+half the model's own generation — invisible, the transcript stores every `thinking` block with
+zero characters — a third to a half tool return dominated by a long tail of ~1,000-character
+`Bash` results, and a rounding error of everything the harness controls. The repo's two nominal
+levers were **never once reached**: `BASH_MAX_OUTPUT_LENGTH` 50,000 would need cutting 4–7×
+before it clipped anything, and `pnpm verify` is under 1,000 tokens on every path — a **red run
+prints less than a green one**, because verify fails fast. Delegation is the one lever that
+works: **4.1×** measured. §3 is ruled **unanswerable here**, structurally: `.loop/` is gitignored
+and dies with its container (n=0 by design), and context and difficulty are confounded — the one
+flagged session in repo history crossed the line for reasons that had nothing to do with the flag.
+
+**`ENV_SCRUB` ruled: keep the setting, provision the dependency.** `apt-get install -y
+bubblewrap` was all it ever needed; the identical nested session then succeeds *under* the scrub.
+`provision.sh` installs it, `checkup` reports it, and `conduct.mjs`'s silent per-spawn `=0` is
+gone in favour of a preflight that refuses by name. **6.1 answered and it is a refusal:**
+`create_session` exists, is unreachable three ways, and the container holds **no durable
+credential** (OAuth arrives as a file descriptor), so an in-container conductor is structurally
+impossible and the CI one is unfunded — 8.8/8.9 re-blocked on a repository action, not a
+measurement. **6.3: 43.9s**, not `loop.md`'s ~4s, with no cold/warm distinction to quote.
+
+The deny list held across a whole ticket. What did not hold was a control the repo does not
+configure: an auto-mode **permission classifier** refused three actions mid-ticket and needed a
+human to clear — the unattended-refusal failure §4 exists to catch, through a door nobody watched.
+
+**Next ticket should know:** six items in `inbox/`, and two are load-bearing for conductor v2 —
+the loop log does not survive a container (so 6.2 and 6.4 have no source), and the worker spawn
+line does not run on a cloud container at all (root + untrusted workspace). Proposed `CLAUDE.md`
+wording for the nine appended-prompt conflicts is in §9 and is **not applied here**.

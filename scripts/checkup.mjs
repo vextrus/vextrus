@@ -370,6 +370,26 @@ const pkg = JSON.parse(readFileSync(path.join(root, "package.json"), "utf8"));
   );
 }
 
+// bubblewrap is NOT gating — nothing in `pnpm verify` spawns a nested session,
+// so a machine without it is still fit for work. It is reported because of how
+// it fails when it does matter: `.claude/settings.json` sets
+// CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1, and on Linux the scrub is bubblewrap, so
+// a missing binary aborts every nested `claude` in 0.6s with empty stdout and a
+// page of minified CLI source above it (docs/TRAPS.md). A conductor reads that
+// as a broken worker rather than an unprovisioned machine. One line here turns
+// an invisible precondition into a stated one; provision.sh installs it.
+// Linux only: the scrub has no bubblewrap implementation elsewhere.
+if (process.platform === "linux") {
+  const r = run("bwrap", ["--version"]);
+  report(
+    r.ok ? OK : NOTE,
+    "bubblewrap",
+    r.ok
+      ? `${r.out} — nested \`claude\` can run under the repo's env scrub`
+      : "not found — nested `claude` aborts under CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1; run scripts/provision.sh",
+  );
+}
+
 // System Python is deliberately NOT reported: uv owns cad/'s interpreter and
 // fetches its own, so the system version is a red herring on a healthy machine
 // (provision.sh, and cad/pyproject.toml's requires-python >=3.13 vs a 3.11 host).
