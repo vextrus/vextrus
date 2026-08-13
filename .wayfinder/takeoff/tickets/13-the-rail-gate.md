@@ -3,7 +3,7 @@
 wayfinder:grilling
 Status: open
 Blocked by: 01-the-work-item-catalogue.md
-Claimed by:
+Claimed by: claude/the-rail-gate
 
 ## Objective
 

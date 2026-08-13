@@ -3,7 +3,7 @@
 wayfinder:grilling
 Status: open
 Blocked by:
-Claimed by:
+Claimed by: claude/the-entity-index
 
 ## Objective
 
