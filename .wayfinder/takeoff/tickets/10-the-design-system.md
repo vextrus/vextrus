@@ -1,7 +1,7 @@
 # The design system — what a quantity surveyor's instrument looks like
 
 wayfinder:prototype
-Status: closed
+Status: open
 Blocked by:
 Claimed by:
 
@@ -44,37 +44,3 @@ cheap artifact, not by arguing. This is the ticket the CEO's brief asked for pro
 ## Blocks
 
 Tickets 14, 15 and 16 are all downstream of this.
-
-## Build note
-
-Three directions prototyped on one throwaway route — `src/app/prototype/design-system/`
-(`?variant=A|B|C`, `?lang=en|bn`, `?mono=0|1`; `pnpm dev` →
-http://localhost:3210/prototype/design-system). Judged on real domain content, never lorem
-ipsum: a `DERIVED` line published **unpriced**, an `INTERPRETED` `PARTIAL_DECLARED` line with its
-omissions enumerated, a row that keeps its place with **no quantity**, four declared exclusions
-with named causes (`NOT_IN_PROJECT_SCOPE` human-attributed, `NOT_ESTABLISHED`,
-`INGESTION_TRUNCATED`, `ENTITY_TYPE_UNHANDLED` machine), the interpreted-sheet disclosure, a
-crore-grouped measured-scope subtotal with no grand total, and a queue holding the acts the
-domain law already requires (discipline confirmation that fails closed, scale per family, a
-georeference deferral with a named reason, a per-sheet transcription, the `@unregistered:` one-hop
-carry, the adversary's 12-columns-9-marks discrepancy).
-
-**A "Drafting Table" wins**, with C's two best ideas folded in. B "Instrument Console" lost on
-evidence: its floating docks occlude the drawing they float over (visible in its own render), and
-a dark CAD register speaks in the chip-and-counter dashboard voice ticket 14 exists to kill. From
-C "The Docket": **absence is the headline** — the count of `(class × kind)` cells with no line and
-no cause sits above the worklist, since a queue of rows can never show it — and the **act log is
-visible while you work**. Both are binding on ticket 14.
-
-The full ruling — register, density scale, stack (components owned, Tailwind alone, headless-only
-primitives permitted later, never a styled kit), colour-never-alone, canvas as a first-class
-partner, and the bilingual type scale — is **`docs/adr/0015-the-design-system.md`**; tickets 14,
-15 and 16 cite it rather than this note. Folded into real code: the `@theme` token layer in
-`src/app/globals.css`, and `src/core/format.ts` (`formatTaka`/`formatQuantity`, lakh/crore,
-decimal strings, no compact `L`/`Cr` function exists at all) with `src/core/__tests__/format.spec.ts`.
-`?mono=1` renders any variant in greyscale and is retained as the standing test for
-`quantity-contract.md` §6's colour-alone rule.
-
-Deviation from `/prototype` SKILL.md step 6, named in the ADR: the losing variants could not be
-pushed to a throwaway branch (CLAUDE.md forbids this session creating or switching branches), so
-all three stay in this branch's tree and history as the primary source.
