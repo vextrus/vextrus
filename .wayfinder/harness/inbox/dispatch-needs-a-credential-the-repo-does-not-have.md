@@ -1,7 +1,7 @@
 # Dispatch needs a credential the repo does not have
 
 wayfinder:grilling
-Status: open
+Status: closed
 Blocked by:
 Claimed by:
 
@@ -56,7 +56,20 @@ a repository action.
 
 ## Acceptance
 
-- [ ] Funded or not funded, stated, with the credential named and scoped if funded.
-- [ ] `cloud-campaign.md` 8.8 and 8.9 re-blocked on this ticket by name, or unblocked.
-- [ ] The in-container conductor is recorded as ruled out on credential lifetime, so the next
+- [x] Funded or not funded, stated, with the credential named and scoped if funded.
+- [x] `cloud-campaign.md` 8.8 and 8.9 re-blocked on this ticket by name, or unblocked.
+- [x] The in-container conductor is recorded as ruled out on credential lifetime, so the next
       session does not re-open it.
+
+## Resolution
+
+Ruled by the dispatcher, 2026-08-13: **not funded.** No API key will be bought and no Anthropic
+secret of any kind will be installed in the repository — the GitHub Actions conductor is dead,
+not deferred. The conductor runs where a subscription credential already lives: the dispatcher's
+own persistent Linux host (docs/research/the-dispatch-primitive.md).
+
+The question this ticket thought it was asking dissolved on research: the programmatic path to a
+cloud session is the Routine API, whose per-routine bearer token is held by the dispatcher's
+host, never by the repository. 1) Not funded, stated. 2) cloud-campaign 8.8/8.9 re-pointed at
+docs/specs/execution.md. 3) The in-container conductor stays ruled out on credential lifetime
+(#33 §7) — recorded there, in the primitive doc, and here.
