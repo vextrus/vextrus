@@ -43,6 +43,9 @@ fails on any drawing**, which is testable and is the governing sentence turned i
   model's decision.
 - Schema changes ride `pnpm db:generate` → migration → `pnpm db:migrate`; every tenant table
   gets the `db/rls.ts` block (ADR-0004). `pnpm db:replay` before committing a migration.
+- **Every rail ticket owes the corpus.** Ticket 09 frames it; no rail is done until it has added
+  its cases to the index and expired every `undecided` entry its ruling settles. The meta-test
+  goes red on an `undecided` entry whose blocking ticket has closed — that is the enforcement.
 - One ticket per session; `/clear` at the boundary (`.wayfinder/TRACKER.md`). The dispatcher
   claims, never the session (ADR-0010).
 
@@ -104,6 +107,16 @@ done (`measurement-rules.md` §8).
 - **Scale/architecture, ruled in charting.** The JSON artifact stays the immutable, hashable
   **evidence of record**; a **derived, rebuildable Postgres entity index** serves queries and
   the viewer. The CLI stays pure — ADR-0001 untouched.
+- **[The torture corpus — the gate](tickets/09-the-torture-corpus.md) (2026-08-13).** The corpus
+  is a **framed census**, framed now and filled by the rails. Each case declares a seam terminus
+  and a boundary terminus that ratchets outward; assertions stay ordinary pytest/vitest tests
+  bound by a committed index; fixtures are micro per case with composites frozen by exception;
+  the index enumerates **undecided** defects too, and an `undecided` entry expires when its
+  ticket closes. All 15 candidates admitted, 4 added (wrong-selection, topology's refusal, absent
+  scale, malformed face outline), lakh/crore misgrouping ruled out. One lane inside `verify`,
+  20s budget reported not enforced. Rejected: seam-only assertions, a manifest DSL, a corpus lane
+  outside the contract, and a failing time guard. **Found in passing: the DXF byte-pin is
+  currently false** — committed fixtures are CRLF, Linux regenerates LF, and nothing asserts it.
 - **Deployment, ruled in charting.** A deployed environment sufficient for bar (c): real URL,
   real auth, real tenancy, invite-only. No billing, no signup funnel, no SLA — those are
   surfaces for customers who do not exist yet (legacy fault F8 in miniature).
@@ -128,6 +141,11 @@ done (`measurement-rules.md` §8).
 - **Learned convention profiles.** `cad-ingestion.md` §10's resolver is pure with an ablation
   law. Whether a *tenant* accumulates profiles across projects — and what that means for the
   ablation law — is a real question we cannot phrase before 19 rules how schedules are read.
+- **The notation parsers' shape.** `cad-ingestion.md` §6 rules only where they *live* — beside
+  their consumer in the app, never in `cad/` — not what shape they take. Corpus cases 4 and 5
+  (`%%C`/Ø-lookalikes/`@125m`/`@ 61/2"`, feet-inch on a metric sheet, `1ST TO TOP FLOOR`,
+  `7th-Roof`) are unblocked but have no parser to assert against. Graduates after 19 rules how
+  schedules are read, since the registry is the parsers' consumer.
 - **Multi-user concurrency on one campaign.** Two QSs disposing the same queue. Acts are
   append-only so the substrate is sound, but the contention model is unexplored.
 - **The estimate seam.** What exactly `estimate/` will consume from a signed bill. Out of scope
