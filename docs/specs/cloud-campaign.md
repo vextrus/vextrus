@@ -396,6 +396,11 @@ Before dispatching the next wave (ten frontier tickets, all `MAP.md` writers):
 
 Then, for the AFK campaign:
 
+- **8.11** ~~`frontier.mjs` is untested — the fail-closed query the whole tracker rests on.~~
+  **Closed:** 22 CLI-level tests, driving the script rather than an extracted core because its exit
+  codes are half its contract. Both fail-closed paths and the claim check were mutation-tested —
+  each mutation turned exactly its own assertions red and nothing else, and `frontier.mjs` was
+  restored byte-identical. A pure core can be extracted later, guarded by these.
 - **8.8** Conductor v2 per §6 — claims by CAS, per-ticket PR, G1–G4, quarantine, fuses.
   **Blocked on 6.1, and deliberately not started.** Every other item here was buildable because its
   mechanism was known; the conductor's dispatch call is not, and writing one against a guessed API
