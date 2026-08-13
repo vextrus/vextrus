@@ -111,6 +111,17 @@ forward invisibly.
   **competing observation** with its own basis and a declared precedence. Agreeing readings
   corroborate (and bump the edition); disagreeing ones **suspend the fact pending
   re-affirmation** — this shape recurs everywhere (attributes, scope rows, note readings).
+- **Repudiation — the one disagreement suspension cannot hold.** Confirming machine-vectorized
+  geometry (basis `INTERPRETED`) admits two disagreements, not one. *That measurement is wrong*
+  is two readings of a number and suspends, above, unchanged. *That is not a column* — it is a
+  hatch, a leader, a scanning artefact — denies the object, and suspension parks an **attribute**
+  while leaving the register object standing: a suspended phantom still occupies a row, which is
+  the pile-cap exemplar (`quantity-contract.md` §4) reproduced, and a phantom is over-measurement
+  — a hard block, never a disclosure. A repudiated object therefore moves to the **separate table
+  with no join from any bill** that §2 already chose for a second sighting, for the same stated
+  reason: a status flag on the register is one forgotten `WHERE` from over-measurement.
+  Repudiation is **human-only**, consistent with §2's one-way presence recogniser — it is an act,
+  never a recogniser's verdict.
 - A deferral carries: actor, timestamp, a **closed cause enum shared with the machine's own
   refusals** (one taxonomy, two originators), a scope reference, and a note that is never
   itself the exclusion.
