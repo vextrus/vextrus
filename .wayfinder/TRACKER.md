@@ -67,9 +67,10 @@ place a second dispatch would look, so claiming is not a session's job:
 
 - **The dispatcher picks the ticket and sets `Claimed by:` on `main` at dispatch**, in the same
   breath as creating the branch. A session is never handed "take the next frontier ticket".
-- **A session never writes or clears a claim.** Finding a claim it did not expect, it stops and
-  reports: an unexpected claim means a stale container or a dispatch mistake, and neither is a
-  session's to adjudicate.
+- **A session never sets a claim, and never touches another's.** The one claim edit a session
+  makes is clearing *its own* in the same edit that closes the ticket — a closed ticket keeps
+  no claim. Finding a claim it did not expect, it stops and reports: an unexpected claim means
+  a stale container or a dispatch mistake, and neither is a session's to adjudicate.
 - **Only the dispatcher breaks a stale claim** — they are the only party who knows whether that
   container is still alive.
 - **The loop is the exception, by unit not by rule.** Its dispatch unit is the *arc directory*,
