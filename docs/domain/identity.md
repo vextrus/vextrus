@@ -138,6 +138,11 @@ forward invisibly.
   **voiding whole** (partial invalidation is cancelling-errors at governance altitude). Signing
   is its own permission; credential captured write-once; structured verdict
   (`RELIABLE | RELIABLE_WITH_QUALIFICATIONS | NOT_RELIABLE`) with mandatory prose.
+- **A scale family is in the signed rule set** (`measurement-rules.md` §5), and its void scope is
+  **derived, never listed**: a signature covers lines, a line pins `calibration_id`, a calibration
+  names its family, so a recalibration voids exactly the signatures whose covered lines cite the
+  superseded calibration. The same construction as §9's manifest, for the same reason — a second
+  list diverges from the first, and a derived scope cannot.
 - **A project record** pins config (book edition, rule set, multiplier scheme) as a
   **precondition of campaign creation**; facts (level stack, attributes) stay authorable from
   inside a campaign as *readings*. A campaign = a measurement effort against a pinned drawing

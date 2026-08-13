@@ -60,6 +60,15 @@ export type ActType = (typeof actTypes)[number];
  * not own the kind). Scope causes: NOT_IN_PROJECT_SCOPE / NOT_IN_THIS_BILL are
  * human-only; NOT_ESTABLISHED is the machine default; INGESTION_TRUNCATED
  * (a cap you raise) splits from ENTITY_TYPE_UNHANDLED (code nobody wrote).
+ *
+ * The two scale causes (measurement-rules.md §5, ruled by takeoff ticket 12)
+ * are machine-originated and split for the same reason: opposite remedies.
+ * SCALE_NOT_AFFIRMED clears with **one** QS act on the family — the ~6–8-act
+ * economy the scale group exists for. SCALE_ANISOTROPIC clears with no act at
+ * all: X and Y disagree beyond tolerance, so the sheet itself must be
+ * re-supplied or rectified, and a two-point act on either axis would only
+ * affirm one half of a contradiction. Collapsing them into NOT_ESTABLISHED
+ * would route a one-click fix and an un-fixable view into one queue bucket.
  */
 export const refusalCauses = [
   "DUPLICATE_IDENTITY",
@@ -69,6 +78,8 @@ export const refusalCauses = [
   "NOT_IN_THIS_BILL",
   "INGESTION_TRUNCATED",
   "ENTITY_TYPE_UNHANDLED",
+  "SCALE_NOT_AFFIRMED",
+  "SCALE_ANISOTROPIC",
 ] as const;
 export type RefusalCause = (typeof refusalCauses)[number];
 

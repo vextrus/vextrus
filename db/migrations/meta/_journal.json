@@ -85,6 +85,13 @@
       "when": 1786514664274,
       "tag": "0011_sighting-per-ingest",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1786650682277,
+      "tag": "0012_scale-refusal-causes",
+      "breakpoints": true
     }
   ]
 }

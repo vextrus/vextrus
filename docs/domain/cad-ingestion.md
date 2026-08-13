@@ -198,6 +198,14 @@ text anchored inside a circle — a template whose bubbles live on layer `PILE` 
 identically. A view without lawful bubble evidence georeferences as deferred with a named
 reason. Machine proposes; disposition is human.
 
+**On a lane with no CIRCLE, the fit proposes and never records** (the PDF lane, §5 of
+`measurement-rules.md`). A circle in a PDF is four Beziers, so this predicate has no input there;
+an arc-fit may **order the human's queue** and may never enter the artifact, position an axis, or
+multiply into a stored dimension — §3 bars derived paint from the extractor, and a fit is derived
+paint we invented rather than paint the file carries. What is admissible is the human's
+affirmation that these texts are bubbles: an act, with the axis positions taken from the original
+TEXT anchors. Outlined text leaves no anchors either, and the view then states no grid at all.
+
 ## 9. Instance placement
 
 Placement constants are **content-scaled shares of the minimum grid spacing, never absolute**:

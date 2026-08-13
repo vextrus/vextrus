@@ -1,0 +1,4 @@
+ALTER TABLE "refused_sightings" DROP CONSTRAINT "refused_sightings_cause_ck";--> statement-breakpoint
+ALTER TABLE "refused_sightings" ADD CONSTRAINT "refused_sightings_cause_ck" CHECK ("cause" in ('DUPLICATE_IDENTITY', 'DISCIPLINE_NOT_AUTHORITATIVE', 'NOT_ESTABLISHED', 'NOT_IN_PROJECT_SCOPE', 'NOT_IN_THIS_BILL', 'INGESTION_TRUNCATED', 'ENTITY_TYPE_UNHANDLED', 'SCALE_NOT_AFFIRMED', 'SCALE_ANISOTROPIC'));--> statement-breakpoint
+COMMENT ON CONSTRAINT "refused_sightings_cause_ck" ON "refused_sightings" IS
+  'measurement-rules.md §5 (takeoff ticket 12): the shared refusal taxonomy widens by two machine-originated scale causes. SCALE_NOT_AFFIRMED — no affirmative membership witness reaches this view, so it measures nothing; cleared by one QS act on the scale family. SCALE_ANISOTROPIC — the view''s X and Y scales disagree beyond ±1%, which no act on either axis can repair. The widening only admits values; every row written before it stays valid.';

@@ -82,7 +82,10 @@ catches the **missing sheet** (ingestion saw nothing, so it can report nothing);
 `NOT_IN_PROJECT_SCOPE` and `NOT_IN_THIS_BILL` are **human-only** (a machine can rarely
 establish absence); the machine's default is `NOT_ESTABLISHED`; ingestion-fidelity rows split
 `INGESTION_TRUNCATED` (a cap you raise) from `ENTITY_TYPE_UNHANDLED` (code nobody wrote) —
-opposite remedies. A presence recogniser runs strictly one-way: it can say *seen*, never
+opposite remedies. **Scale causes are machine-originated and split on the same test**:
+`SCALE_NOT_AFFIRMED` (no affirmative membership witness reaches the view; one QS act on the
+family clears it) against `SCALE_ANISOTROPIC` (X and Y disagree beyond ±1%, which no act on
+either axis repairs) — `measurement-rules.md` §5. A presence recogniser runs strictly one-way: it can say *seen*, never
 *absent*. Rows are recomputed per ingestion; human acts persist and re-resolve; a contradicted
 act suspends pending re-affirmation. Bill boundary and measurement boundary print separately —
 merging them tells a contractor the unmeasured scope is excluded from the *works*, a worse lie.
