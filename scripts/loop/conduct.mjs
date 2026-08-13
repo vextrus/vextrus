@@ -17,10 +17,11 @@
  */
 import { execSync, spawnSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
+import { effortLogFile } from "./evidence.mjs";
 import { CONTEXT_LINE, overLine, parseWorkerOutput } from "./usage.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
@@ -139,7 +140,17 @@ if (!baseline.ok) {
   console.error("conduct: baseline pnpm verify is red — the loop only ever starts from green.");
   process.exit(1);
 }
-log({ event: "start", runId, ticketDir, arc, maxTickets, caps: { MAX_TURNS, WALL_CLOCK_MS, CONTEXT_LINE } });
+log({
+  event: "start",
+  runId,
+  ticketDir,
+  arc,
+  maxTickets,
+  caps: { MAX_TURNS, WALL_CLOCK_MS, CONTEXT_LINE },
+  // A number with no environment is not a measurement (CLAUDE.md). Every row below inherits
+  // this line's machine and commit when the log is read later, on a machine that no longer is.
+  machine: `${process.platform} ${process.arch} · node ${process.version} · ${sh("git rev-parse --short HEAD")}`,
+});
 
 // ---- the loop -----------------------------------------------------------------
 const promptTemplate = readFileSync(path.join(import.meta.dirname, "PROMPT.md"), "utf8");
@@ -299,4 +310,32 @@ try {
 }
 
 log({ event: "end", advanced, halted: halted?.ticket ?? null });
+
+// ---- evidence outlives the machine ---------------------------------------------
+// `.loop/` dies with its container; the caps this log exists to re-derive need rows that
+// accumulate across machines. The conductor's true last act copies the run's log into the
+// effort's committed history and commits that single file — file per run, so no two machines
+// ever collide (scripts/loop/evidence.mjs has the ruling). Explicit path, worker mess untouched:
+// `git commit -- <path>` commits only this file, so a halted tree stays exactly as evidence.
+{
+  const rel = effortLogFile(ticketDir, runId);
+  const src = path.join(runDir, "log.jsonl");
+  if (rel === null) {
+    console.log("[conduct] run evidence not banked — ticket dir is outside .wayfinder/ (scratch run)");
+  } else if (existsSync(src)) {
+    mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    copyFileSync(src, path.join(root, rel));
+    const msg = `loop(${runId}): run evidence — ${advanced} advanced${halted ? `, halted at ${halted.ticket}` : ""}`;
+    const add = trySh(`git add -- ${JSON.stringify(rel)}`);
+    const commit = add.ok ? trySh(`git commit -m ${JSON.stringify(msg)} -- ${JSON.stringify(rel)}`) : add;
+    if (commit.ok) {
+      console.log(`[conduct] run evidence committed: ${rel}`);
+    } else {
+      // The file is in the tree either way; a failed commit is loud, never fatal — the run's
+      // exit code belongs to the campaign, not to this bookkeeping.
+      console.error(`[conduct] run evidence written to ${rel} but NOT committed — ${commit.out.split("\n")[0]}`);
+    }
+  }
+}
+
 process.exit(halted ? 2 : 0);

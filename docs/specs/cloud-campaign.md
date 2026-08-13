@@ -453,7 +453,7 @@ Then, for the AFK campaign:
 |---|---|---|---|
 | 6.1 | What dispatches a cloud session non-interactively, with what credentials and what durability? | cloud | **Answered, and the answer is "not from here"** — see below |
 | 7.1 | Can *Claude Code Remote*'s MCP schemas be deferred or disabled? What is the resulting startup? | cloud | **Answered** — ADR-0013: denied, not deferred; 29.8k → 22.8k |
-| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud | **Blocked, and not on effort** — `.loop/` dies with its container, so there is no source. **n=1 banked below.** `inbox/the-loop-log-does-not-survive-the-container.md` |
+| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud | **Unblocked 2026-08-13:** run logs now survive as committed `.wayfinder/<effort>/log/<run-id>.jsonl` (conductor-written); rows accumulate from the next campaign. **n=1 banked below.** |
 | 6.3 | `pnpm verify` wall time on a cloud container. | cloud | **Answered: 43.9s** (n=3, `6c6e001`), `next build` 54% of it. No cold/warm distinction exists — every build is cold by design. `loop.md` corrected |
 | 5.3 | Does a merge queue accept this repo's plan and ruleset shape? | GitHub | Refused by GitHub (§5.3); squash-only landed |
 | 6.4 | Does dispatch width 3 produce zero conflicts after 8.1? Raise only on that evidence. | cloud | **Blocked on 6.1 and on 6.2's log problem** |
