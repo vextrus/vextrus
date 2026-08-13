@@ -22,13 +22,17 @@ bid that can win.** Takeoff, cost database, estimation, and bidding, in one trac
 drawing → quantity → rate → estimate → bid. Bangladesh first (B2C and B2B), built to travel
 across the BOQ Belt.
 
-Three differentiators, each verified against the 2026 market as **unoccupied ground**:
+Three differentiators, each verified against the 2026 market as **unoccupied ground** — with
+differentiator 1 corrected on 2026-08-13, see the note below:
 
-1. **Revision-stable quantity identity.** No shipping product survives a drawing revision —
-   quantities regenerate, downstream links die, rework is disproportionate (Bluebeam's own blog
-   concedes it). Our Quantity Register gives every element a deterministic identity that
-   survives revisions, so a new revision produces a *delta*, not a do-over. This is the deepest
-   moat available and it must be right from the first migration.
+1. **Revision-stable quantity identity.** ~~No shipping product survives a drawing revision~~ —
+   **corrected: one partially does (see the correction note).** Where the field re-matches
+   measurements to revised drawings *by geometry*, our Quantity Register gives every element a
+   deterministic identity **derived from the domain and carrying no coordinates** — `(project,
+   discipline, level, element type, mark, ordinal)`, ordinal frozen at first registration — so a
+   new revision produces a *delta*, not a do-over, **even when the drawing has been re-origined,
+   re-authored, or re-issued as a scan.** This is the deepest moat available and it must be right
+   from the first migration.
 2. **Trust as the product.** The market's core objection to AI takeoff is "a locked number with
    no visible assumptions" — every vendor's accuracy claim is self-reported and failure is
    systematic, not random. We ship the opposite: per-quantity provenance to drawing geometry,
@@ -44,6 +48,41 @@ Three differentiators, each verified against the 2026 market as **unoccupied gro
    >10% above the SoR-derived Official Cost Estimate — reconstructing the OCE and pricing into
    the winning band is a directly monetizable feature with 143,000+ registered tenderers as the
    countable market.
+
+### Correction — 2026-08-13: differentiator 1 is *partially* occupied
+
+The founding session's claim that **"no shipping product survives a drawing revision"** was
+checked against vendor primary sources during the takeoff wayfinder session and is **false as
+written** (`docs/research/takeoff-competitors-2026.md`).
+
+**RIB CostX ships "Auto-Revisioning":** it loads existing dimensions onto a revised drawing,
+re-matches them to the new geometry via "Best Match All", and puts a warning flag on unreviewed
+Dimension Groups; CostX 6.5 added a Measure button inside Comparison Mode explicitly for "adds &
+omits". That is a persisting measurement object, a delta output, and a non-silent unreviewed
+state — three things this section claimed as unoccupied.
+
+**What survives, and it is the part that matters.** CostX re-matches by *geometry*, and RIB's own
+documentation concedes the limit: *"if the drawing has been offset by the designer… no lines will
+match"*, and object-ID comparison depends on IDs the CAD file supplies. Our key is **derived from
+the domain, not from the drawing** — no coordinates, no labels, no correctable attribute
+(`identity.md` §2) — so it survives re-origining, re-authoring, and a raster re-issue, none of
+which geometry matching survives. No vendor reviewed claims that.
+
+**Consequences for how we speak and what we build.** "We re-link measurements across revisions"
+is a claim a CostX user beats in one sentence and must not be made. The defensible claim is
+*domain-derived identity*, plus priced delta propagation downstream once `estimate/` and `bid/`
+exist — which no vendor claims either. The other vendors are further back: Bluebeam's Batch Slip
+Sheet moves markups to the same **page coordinates** (silently wrong if a wall moved), Autodesk
+ships a gray→yellow indicator with customers publicly asking that updating a version stop
+deleting prior takeoff, and Countfire persists the *symbol definition*, not the instance.
+
+**Differentiators 2 and 3 were also re-checked.** Differentiator 2 holds and is the strongest of
+the three: per-quantity drawing traceability is table stakes, but **basis taxonomy, coverage
+declaration, and refusal-with-reason are unoccupied across every vendor reviewed**. Differentiator
+3 is *occupied as architecture, unoccupied as coverage* — ACCA PriMus has distributed all 20
+Italian regions' official price books, year-versioned and structured, for years; the wedge is that
+the BD PWD SoR and CPWD DSR exist only as PDFs, nobody structures them, and nobody handles the
+correction-slip problem.
 
 **Who buys.** B2B: contractors and developers preparing tenders (Excel is the incumbent; RIB
 Candy is the only local muscle memory and has no AI); QS practices; Tier-2/3 firms with no
@@ -234,8 +273,12 @@ digitisation pipeline (extract → QA gate → refuse-on-flag → load).
 
 **estimate (`src/modules/estimate/`)** — prices register lines against the pinned book through
 the unit canon (conversion is the last term of the formula; rates convert inversely, once);
-estimate = boundary + pinned rule set + signature (RICS AI standard: named surveyor, written
-reliability decision, dip sample); Certificate of Measured Coverage bound into one
+estimate = boundary + pinned rule set + signature (RICS *Responsible use of artificial
+intelligence in surveying practice*, 1st ed., published 17 Nov 2025, **in force 9 March 2026** —
+verified 2026-08-13: a written reliability decision by a **named** surveyor, AI in Terms of
+Engagement, risk registers, procurement due diligence. *"Dip samples on automated output"* was
+**not verifiable** at rics.org and is our own instrument until the full standard is read);
+Certificate of Measured Coverage bound into one
 server-generated PDF with the bill; no grand total under incomplete coverage.
 
 **bid (`src/modules/bid/`)** — consumes an *issued* estimate: markup/OH&P, OCE reconstruction
