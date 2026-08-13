@@ -3,7 +3,7 @@
 wayfinder:prototype
 Status: open
 Blocked by:
-Claimed by:
+Claimed by: claude/the-design-system
 
 ## Objective
 
