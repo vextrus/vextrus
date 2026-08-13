@@ -3,7 +3,7 @@
 wayfinder:grilling
 Status: open
 Blocked by:
-Claimed by:
+Claimed by: dispatched 2026-08-13
 
 ## Objective
 
