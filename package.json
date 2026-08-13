@@ -30,7 +30,8 @@
     "loop": "node scripts/loop/conduct.mjs",
     "flags": "node scripts/loop/flags.mjs",
     "promote": "node scripts/wayfinder/promote.mjs",
-    "reland": "node scripts/reland.mjs"
+    "reland": "node scripts/reland.mjs",
+    "dispatch": "node scripts/dispatch.mjs"
   },
   "dependencies": {
     "@trpc/server": "^11.18.0",
