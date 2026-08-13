@@ -225,9 +225,9 @@ against what the suite asserts **today**:
 | 5 | feet-inch on a metric sheet; `1ST TO TOP FLOOR`; `7th-Roof` | **gap, buildable now** |
 | 6 | Bangla and mixed en+bn captions | **gap, buildable now** — caption grammar is built, bn stems untested |
 | 9 | re-origined revision pair | **gap, buildable now** — lands as a new frozen composite |
+| 10 | member moved between sheets across revisions | **ruled, buildable now** — ticket 04 closed on `main` during this session; §3 rules the member keeps its identity and ordinal and re-presents for disposition, and removal-plus-registration **is the defect** the case asserts against |
 | 3 | schedule y-jitter 0.1–0.7 against a 7.4 row gap | **undecided** → ticket 19 |
 | 7 | three internal scales; `NOT TO SCALE` that is to scale | **undecided** → ticket 12 |
-| 10 | member moved between sheets across revisions | **undecided** → ticket 04 |
 | 12 | raster sheet; vector PDF with no `$INSUNITS` | **undecided** → tickets 06, 07 |
 | 13 | pile-cap plan area disagreeing with its shoelace >0.5% | **undecided** → member algebra |
 | 14 | opening exactly *at* the deduction threshold | **undecided** → ticket 13 / face rail |
@@ -337,3 +337,16 @@ ticket too big for one session is a graph defect — split the node, never stret
 
 *Also:* the newline fix deserves a commit of its own rather than burial under a frame's worth of
 new files, for the reason given in ruling 9.
+
+### Postscript — the expiry clause fired before the frame existed
+
+`origin/main` moved 11 commits during this session and closed tickets 01–04. Case 10 had been
+triaged `undecided → ticket 04`; ticket 04 §3 now rules that a member re-sheeted between
+revisions **keeps its identity and its ordinal and re-presents for disposition, and
+removal-plus-registration is a defect** — so case 10 entered the census already ruled, and the
+table above was corrected before this ticket closed. Tickets 06, 07, 12, 13, 19, 20 remain open,
+so the other six `undecided` entries stand.
+
+That is ruling 6 working by hand on its first day, which is the argument for building it: the
+correction was available only because someone re-read a triage table against the tracker. The
+meta-test is what makes that automatic instead of lucky.
