@@ -104,6 +104,14 @@ done (`measurement-rules.md` §8).
 - **Scale/architecture, ruled in charting.** The JSON artifact stays the immutable, hashable
   **evidence of record**; a **derived, rebuildable Postgres entity index** serves queries and
   the viewer. The CLI stays pure — ADR-0001 untouched.
+- [The private corpus lane](tickets/08-the-private-corpus-lane.md) — **built and the BOQ is
+  sealed.** `pnpm corpus` runs the pipeline over `VEXTRUS_PRIVATE_CORPUS` and reports counts,
+  counters, refusals and stage failures; it refuses mechanically if the path resolves inside (or
+  contains) the repo, writes nothing into the tree, and gates nothing — proven by reading
+  `verify.mjs`/`ci.yml`. The Edison BOQ workbook is **not read as ground truth at all** until
+  bar 2's clean-room yardstick exists, and then only as corroboration: §5's back-solving ban is
+  unenforceable once the number has been seen. Rejected: reading it now for defect discovery.
+  Operator doc: `docs/private-corpus-lane.md`.
 - **Deployment, ruled in charting.** A deployed environment sufficient for bar (c): real URL,
   real auth, real tenancy, invite-only. No billing, no signup funnel, no SLA — those are
   surfaces for customers who do not exist yet (legacy fault F8 in miniature).
