@@ -30,10 +30,17 @@ const FIELD = {
   claimed: /^Claimed by:[ \t]*(.*)$/m,
 };
 
-/** `tickets/18-what-fills-a-cloud-session.md` → `what-fills-a-cloud-session`. */
+/**
+ * `tickets/18-what-fills-a-cloud-session.md` → `what-fills-a-cloud-session`. Separators are
+ * normalized by hand: `path.basename` only splits on `\` when the host is Windows, and a
+ * dispatcher's Windows-style path must slug identically on the Linux host that runs the loop
+ * (caught by CI — the parity run is the Linux reading of this contract).
+ */
 export function slugOf(ticketPath) {
-  return path
-    .basename(String(ticketPath))
+  return String(ticketPath)
+    .replaceAll("\\", "/")
+    .split("/")
+    .pop()
     .replace(/\.md$/, "")
     .replace(/^\d+-/, "");
 }
