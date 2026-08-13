@@ -97,25 +97,48 @@ trims or overshoots at a junction; more pixels do not resolve a corner the detec
 to commit to. **Buying resolution buys you position, never extent.** This is the single most
 consequential number in the set, because a quantity is almost always an *extent*.
 
-### F2 — The dimension floor is ~1.2 m
+### F1b — Extent error is a constant in *paper* space: about one pen width
 
-Worst-case extent p95 for a class that is reliably detected at ≥200 dpi is ≈ 37 mm (0.50 mm class,
-scan). At `quantity-contract.md` §5's ±3 % under / +0 % over, a raster-derived dimension only fits
-inside tolerance above 37 / 0.03 ≈ **1 230 mm**. A thickness measured *between* two detected lines
-carries up to two position errors — 2 × 17.7 ≈ 35 mm at 200 dpi — landing in the same place.
+Converting every extent p95 back to paper mm and dividing by the plotted line weight collapses the
+whole table onto one ratio. Excluding the cells where detection collapsed outright (150 dpi scan
+and 150/200 dpi fax on thin lines — see F3, F4), the ratio of extent p95 to plotted line weight
+runs **0.4× to 2.05×**, with per-class medians of 1.74 / 1.69 / 0.65 for the 0.13 / 0.35 / 0.50 mm
+classes. In absolute terms, extent p95 sits at **0.3–0.7 paper mm at every resolution tested**.
 
-Against real members:
+So the floor is set by **the pen, not the scanner**. A line drawn 0.35 mm wide has ends that are
+uncertain to roughly its own width, and that is a property of the plot, not of the scan of it. This
+converts to model space through the drawing scale alone:
+
+> **extent error p95 ≈ 0.7 paper mm × the scale denominator**
+
+— ≈ 35 mm at 1:50, ≈ 70 mm at 1:100, ≈ 140 mm at 1:200. A DPI table would have hidden this; it is
+a scale law, and it means the scan lane's competence is decided when the drawing is plotted.
+
+### F2 — The dimension floor is ~2.4 m at 1:100, and scales with the drawing
+
+Worst-case extent p95 among classes reliably detected at ≥200 dpi is **71.9 mm** (0.35 mm class —
+the bulk of the drawing, 51 of 62 segments — at 200 dpi scan); the median across those cells is
+≈ 50 mm. At `quantity-contract.md` §5's ±3 % under / +0 % over, a raster-derived dimension only
+fits inside tolerance above **71.9 / 0.03 ≈ 2 400 mm** (≈ 1 700 mm on the median). A thickness
+measured *between* two detected lines carries up to two position errors — 2 × 17.7 ≈ 35 mm at
+200 dpi — and lands in the same territory.
+
+By F1b that floor is `≈ 23 × scale denominator` mm: ≈ 1.2 m at 1:50, ≈ 2.4 m at 1:100, ≈ 4.8 m at
+1:200.
+
+Against real members, at 1:100:
 
 | member | dimension | extent p95 as % | verdict |
 |---|---|---|---|
-| column 450 sq | 450 mm | 8.2 % | **unmeasurable** |
-| beam width | 250 mm | 14.8 % | **unmeasurable** |
-| wall thickness | 125 mm | 29.6 % | **unmeasurable** |
-| room span | 3 000 mm | 1.2 % | within tolerance |
-| floor plate run | 20 000 mm | 0.2 % | within tolerance |
+| wall thickness | 125 mm | 58 % | **unmeasurable** |
+| beam width | 250 mm | 29 % | **unmeasurable** |
+| column 450 sq | 450 mm | 16 % | **unmeasurable** |
+| room span | 3 000 mm | 2.4 % | **marginal** — inside ±3 % with no margin left |
+| floor plate run | 20 000 mm | 0.4 % | within tolerance |
 
-Raster geometry is competent at *building-scale* extents and incompetent at *member-scale* ones —
-and member-scale is where the concrete volume and the BBS live.
+Raster geometry is competent only at *building-scale* extents. Member-scale — where concrete
+volume and the whole BBS live — is out of reach by an order of magnitude, and even a room span
+consumes the entire tolerance band on its own, before any other error term is added.
 
 ### F3 — Whole line classes vanish silently
 
@@ -171,3 +194,5 @@ Stated so nobody reads more into the table than it holds:
 - **Neural vectorizers** — none tested. The measured floor is the classical stack's.
 - **Real scans** — synthetic degradation is a model of a scanner, not a scanner. The direction of
   the findings is robust; the exact millimetres are not portable to a specific real device.
+- **One scale** — everything was rendered at 1:100. F1b's paper-space law predicts the behaviour
+  at other scales and the prediction is untested.
