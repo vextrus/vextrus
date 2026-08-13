@@ -91,21 +91,75 @@ Nobody in the field ships this; it is a differentiator, not overhead.
   (~6–8 acts per project; per-drawing affirms a falsehood — one legacy sheet carried three
   internal scales; per-view degenerates into confirm-all). Machine proposes; a QS affirms.
 - **Membership is positive, never residual.** A view joins a family on affirmative evidence;
-  no evidence ⇒ unplaceable, hatched, and it **measures nothing** — the strand is named, never
-  silent. Known declared absence is traded for unknown silent error, deliberately.
+  no evidence ⇒ **uncalibrated**, hatched, and it **measures nothing** — the strand is named,
+  never silent. Known declared absence is traded for unknown silent error, deliberately.
+  *Uncalibrated, not unplaceable* (amended by `.wayfinder/takeoff/tickets/12`): §9's
+  **placement** locates an instance against the grid and needs no scale at all, so the two words
+  named two different states and one of them was doing the other's work.
 - **Precedence:** QS two-point → grid spacing match → overridden dimension ratio (style factor
   divided out) → file units header. **Printed scale notes are not evidence at any rank**
   (measured: the sheets printing `NOT TO SCALE` were the ones to scale). A QS override wins
-  but is a declared disagreement and a dip-sample stratum.
+  but is a declared disagreement and a dip-sample stratum. **The order is lane-independent** — a
+  lane never re-ranks to compensate for a rung it lacks; what a short lane loses is *reach per
+  act*, never lawfulness (amended by `.wayfinder/takeoff/tickets/12`, which also rules the two
+  jobs the rungs do: **rung 2 transfers an affirmed value, never originates one**, and only from
+  an affirmed value, so propagation depth is always exactly one act — that is the mechanism
+  behind ~6–8 acts per project; and the verification rule below demotes **rung 4 to
+  corroboration-only**, since a file holds exactly one units header and a second observation of
+  its kind cannot exist).
+- **A calibration is one pair `(sx, sy)`, in metres of real length per native drawing unit** —
+  the *composite* of the drawing's unit and its plot ratio, never decomposed (that would
+  attribute a factor between two unobserved quantities) and **never snapped to a nominal ratio**
+  (a measured 1:99.2 stored as 1:100 is a silent 0.8% edit against a 1% budget; a nominal ratio
+  may label, never multiply).
 - X and Y derive independently and are **averaged as nothing** — anisotropic scale is a
-  scanning remedy; disagreement beyond tolerance makes the view unplaceable.
+  scanning remedy; disagreement beyond tolerance makes the view uncalibrated. Mechanically:
+  **geometry always multiplies per axis** — an axis-aligned area is `(dx·sx)(dy·sy)`, a diagonal
+  is `√((dx·sx)² + (dy·sy)²)` — so no scalar scale exists anywhere for a formula to reach for.
 - Verification is mandatory for a scale from a single observation, rejected at **±1%
   symmetric** — derived, because scale error cubes into a volume against the ±3% band.
+  **One band, four uses, every one a comparison of two *observations* and never of an
+  observation against truth**: verification ±1%; anisotropy `sx` vs `sy` ±1% (two observations
+  each within ±0.5% of their mean may differ by 1% by chance); rung-2 membership against the
+  family's **affirmed** value — never against another member — ±0.5%, because the affirmed value
+  has already spent half the axis budget; QS override vs machine proposal ±1%, inside which
+  there is no disagreement to declare. These bands are **methods, not parameters** (§1): *a
+  threshold that comes from an authority is a parameter; a threshold derived from our own error
+  budget is a method*, so no project may configure its way out of the contract.
+- **The band is symmetric though the contract is not**, deliberately: a calibration is an
+  *observation*, not a quantity, and biasing it under to buy headroom is the move
+  `.wayfinder/takeoff/tickets/03` already rejected for the vectorizer. The asymmetry is enforced
+  at the gate on the value.
+- **Amplification, and the kind the cubic budget does not cover.** `3ε ≤ 3%` holds for the
+  volume kinds. It fails where a **scaled** gross nets an **unscaled** scheduled deduction:
+  `net = G(1 ± 2ε) − D` carries `2ε·G/(G−D)` — 2.9ε at 30% deductions, 4ε at 50%, unbounded as
+  `D → G`, so a curtain-walled elevation breaches ±3% at a lawful calibration. The remedy is
+  neither a tighter band (the deduction ratio is unbounded) nor a block (the measurement is
+  lawful): **the gate measures each line's amplification by re-evaluating that line's own
+  formula with every drawing-unit-sourced variable perturbed by the band, and a result beyond
+  ±3% joins a mandatory dip-sample stratum** — §5 of `quantity-contract.md`'s own precedent, on
+  machinery `.wayfinder/takeoff/tickets/13` already requires.
 - Every quantity references its calibration (**NOT NULL** — unrepresentable without); a scale
-  family is in the signed rule set, so recalibration voids every signature scoped to it.
+  family is in the signed rule set, so recalibration voids every signature scoped to it — and
+  **the void is a query, never a flag**: a signature records each family's calibration id at
+  signing and is void iff any is now superseded, so no `UPDATE` can be forgotten. The slot's
+  lawful non-scaled form takes §7's `levelBases` pattern — `SCALED | UNSCALED`, never a bare
+  null — and **`UNSCALED` is measured, not asserted**: the same perturbation above must move the
+  value by nothing (amended by `.wayfinder/takeoff/tickets/12`, which measured that the first
+  vertical slice is scale-free end to end — `count × L × B × H` takes count from grid-relative
+  placement, `L`/`B` from the schedule and `H` from the level stack). The clause exists to stop
+  a quantity that *depended on* a scale from existing without an affirmed one, and a formula
+  with no scaled term did not.
 - The strict unit lane: an unknown or unmapped unit resolves to **null — never guess a
   scale**. A sheet-layout lane may assume a convention to *partition and declare*, but nothing
   on that lane may multiply geometry into a stored dimension.
+- **Two refusal causes, split on remedy** (the test that split `INGESTION_TRUNCATED` from
+  `ENTITY_TYPE_UNHANDLED`): `SCALE_NOT_AFFIRMED` — a QS act inside the product fixes it, whether
+  the act is a two-point measurement or a confirmation — and `SCALE_ANISOTROPIC`, which only a
+  better source file fixes. Both are machine-originated in the one taxonomy (`identity.md` §7)
+  and reach the scope register as machine deferral records; without them an unaffirmed family
+  falls through to `NOT_ESTABLISHED` and reads as generic residue when one act would publish
+  hundreds of lines.
 
 ## 6. The register holds facts, never bands
 

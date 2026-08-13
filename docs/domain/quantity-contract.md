@@ -141,15 +141,26 @@ signature — an unaffirmed scale *declares*; an unauthorised sighting *never em
 
 **A hard block has two reaches, discriminated by what the defect impugns** (amended by
 `.wayfinder/takeoff/tickets/13`, which reconciles this table with §6). Impugning **the number** —
-a missing, unresolvable or unpinned publishable attribute — suppresses the *quantity*: the row
-survives with no quantity, a named deferral and a queue item, because *no line is the most
-expensive defect* (§6). Impugning **the existence of the scope** — the over-measurement class
-above: outside the pinned manifest, repudiated, a duplicate, an unaffirmed calibration, a
+a missing, unresolvable or unpinned publishable attribute, **or an unaffirmed calibration** —
+suppresses the *quantity*: the row survives with no quantity, a named deferral and a queue item,
+because *no line is the most expensive defect* (§6). Impugning **the existence of the scope** —
+the over-measurement class above: outside the pinned manifest, repudiated, a duplicate, a
 negative or netting offer — severs the *object* from bill reach entirely, into the table with no
 join from any bill (`identity.md` §2, §7); a row here would itself assert the scope exists. The
 cell severance leaves reports as ordinary §2 residue with no claim attached — which is not the
 banned declared exclusion, because a disclosure lets a reader know to **add**, and severance
 leaves nothing to subtract.
+
+**An unaffirmed calibration moved from the severing reach to the suppressing one** (amended by
+`.wayfinder/takeoff/tickets/12`). It sat two lines below this section's own sentence *"an
+unaffirmed scale **declares**"*, which is suppressing behaviour, and the measurement settles it:
+identity, placement and the view partition are all **scale-free** (`cad-ingestion.md` §9's
+placement constants are shares of grid spacing; the view partition reads text-height ratios), so
+an unaffirmed calibration leaves the object's existence untouched and impugns only the number.
+Under the old placement, a column whose `UNSCALED` concrete line is perfectly lawful would be
+severed because *another* offer on the same object cited an unaffirmed calibration — severance is
+per object, suppression is per line. Nothing else in `tickets/13` moves: the gate still refuses
+an offer carrying a scaled term with no calibration.
 
 **Corroboration is the publishability gate for `INTERPRETED`.** An interpreted line reaches a
 bill only as `AGREED` (`identity.md` §7); uncorroborated interpreted geometry is not a line at
