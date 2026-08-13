@@ -141,7 +141,63 @@ forward invisibly.
 - **A project record** pins config (book edition, rule set, multiplier scheme) as a
   **precondition of campaign creation**; facts (level stack, attributes) stay authorable from
   inside a campaign as *readings*. A campaign = a measurement effort against a pinned drawing
-  revision producing at most one issued bill. One edition, two consequences: unsigned → stale
-  (freshness gate); signed → **voids whole**.
+  **set** revision (§9) producing at most one issued bill. One edition, two consequences:
+  unsigned → stale (freshness gate); signed → **voids whole**.
 - A surface beside the measurement flow may never write a **quantity**; it may write a project
   fact, against the project boundary. Reference surfaces are read-only.
+
+## 9. The drawing-set revision
+
+*Amendment, 2026-08-13.* §8 said a campaign pins "a drawing revision", singular. §2 already
+contradicted it — authority splits in two, so a general-note sheet supplies fy/cover while
+measuring nothing — and `quantity-contract.md` §8 already voids a signature on "a new revision
+of **any cited drawing**", plural. A campaign pins a **set**.
+
+**The manifest.** A drawing-set revision is an immutable, unordered set of
+`(drawing, drawing revision)` pairs — surrogate ids on both axes, never a sheet number, title or
+issue date (§2: no labels, no mutable attributes). It is **content-addressed**: its key is a
+digest over its member pairs in canonical sort order, so an identical pinned set *is* the
+identical set revision. §3's zero-minted-ids law extends from derived row keys to this **citation
+scope key**, for the same reason it exists there: minted, "did any cited evidence move?" becomes
+a diff query instead of a key comparison, and re-pinning an unchanged set would void a signature
+that nothing invalidated. The pinning **act** is still an act (§7) with actor, timestamp and
+cause — the act is minted, the scope it names is derived.
+
+**The manifest is the citation list.** Every member is cited by the campaign whether or not it
+produced a quantity; an attribute-authority sheet cites exactly as hard as a measured one. There
+is no second list, so the two cannot diverge, and `quantity-contract.md` §8 reads its cited
+drawings off the manifest.
+
+**Mutation: advance, never drift.** Adding, removing or re-revving a member yields a *new* set
+revision; an in-flight campaign's pin does not follow it. A campaign advances only by an
+**authored re-pin** — one act naming the outgoing and incoming set revision keys and the member
+changes between them. Three consequences are stated at the act, before it commits:
+
+- rows whose cited evidence moved re-present (§5);
+- an added member widens the scope register's denominator (`quantity-contract.md` §2.2), so a
+  line that was `COMPLETE` may become `PARTIAL_DECLARED` — this alone forbids an implicit re-pin;
+- a signature on the outgoing set **voids whole** (§8). A re-pin under a signature is permitted
+  and voids it: never silently blocked, never silently applied.
+
+A campaign never **forks** across set revisions. Two campaigns over one project scope reopen the
+double-count door §2 closes at the register, and two lineages would both claim first
+registration for one ordinal. A superseded pin is history, like a superseded placement.
+
+**The pairing domain is the set revision, not the drawing.** Pairing (§4) runs over
+`(prior set revision's live sightings) × (new set revision's sightings)` per mark family. The
+identity key carries no drawing (§2: `drawingId` is provenance), so a member **re-sheeted**
+between revisions keeps its identity and its ordinal, and re-presents for disposition because its
+cited evidence source keys moved (§5). Treating a re-sheet as removal-plus-registration is a
+defect: it retires an ordinal for no physical reason. Precedence stays drawing-local first — exact placement
+key, then nearest unclaimed prior of the same view within the carry bound — and only then the
+same family sighted from *another* drawing of the prior set, so a re-sheet can never take a prior
+that a sibling still stands on. The double-count guard is untouched: it acts **within** one set
+revision, where a second sighting of the same scope still refuses at the door as
+`DUPLICATE_IDENTITY`.
+
+**Partial re-issue re-presents nothing by itself.** Re-issue only the plumbing sheets and the
+structural rows' cited evidence has not moved: semantics unchanged, filed dispositions carry, no
+re-presentation (§5). Row-level re-presentation is governed by the **semantic**; boundary-level
+validity by the **manifest**. The two are independent, and both are honest: a bill signed over
+the old set is void because its citation scope changed, while structural scope already disposed
+is not made to be disposed twice.

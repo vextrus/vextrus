@@ -235,7 +235,8 @@ Two instruments: quantities are **sampled** (many, expensive); the boundary is *
   fix / move the boundary / qualify; **over → hard block, no qualification door**. A failed dip
   sample has exactly two legitimate outputs: fix the input, or move the boundary.
 - The signature binds **one-to-one to its sample**; void on boundary change, rule-set change,
-  or a new revision of any cited drawing. No clock-based or volume-based re-sampling — the
-  bill's freshness gate is the volume rule. Draws are irrevocable; abandonment is recorded; the
-  certificate prints the failure count. No numeric void threshold — that judgement already has
+  or a new revision of any cited drawing — the cited drawings being exactly the campaign's
+  pinned drawing-set revision manifest, which is why there is no second list (`identity.md` §9).
+  No clock-based or volume-based re-sampling — the bill's freshness gate is the volume rule.
+  Draws are irrevocable; abandonment is recorded; the certificate prints the failure count. No numeric void threshold — that judgement already has
   a name (`NOT_RELIABLE`).
