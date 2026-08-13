@@ -67,10 +67,18 @@ place a second dispatch would look, so claiming is not a session's job:
 
 - **The dispatcher picks the ticket and sets `Claimed by:` on `main` at dispatch**, in the same
   breath as creating the branch. A session is never handed "take the next frontier ticket".
+- **The claim says whether anyone is watching.** `dispatched <date>` is a container running
+  alone; `attended <date>` (`pnpm dispatch --attended`) is the dispatcher in the room. Both are
+  written by the dispatcher and land on `main` through a PR they click, which is what makes
+  `attended` unforgeable: a session cannot push to `main` and never merges its own PR, so it
+  cannot manufacture the value that would let it close a HITL ticket (ADR-0015).
 - **A session never sets a claim, and never touches another's.** The one claim edit a session
-  makes is clearing *its own* in the same edit that closes the ticket — a closed ticket keeps
-  no claim. Finding a claim it did not expect, it stops and reports: an unexpected claim means
-  a stale container or a dispatch mistake, and neither is a session's to adjudicate.
+  makes is clearing *its own*, in the edit where it **stops** — closing the ticket, or halting
+  at a HITL boundary it may not cross. A closed ticket keeps no claim, and neither does a
+  ticket whose session ended without closing it: a claim outliving its session is a ticket the
+  frontier can never see again. Finding a claim it did not expect, it stops and reports: an
+  unexpected claim means a stale container or a dispatch mistake, and neither is a session's to
+  adjudicate.
 - **Only the dispatcher breaks a stale claim** — they are the only party who knows whether that
   container is still alive.
 - **The loop is the exception, by unit not by rule.** Its dispatch unit is the *arc directory*,
