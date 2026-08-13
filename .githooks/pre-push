@@ -10,6 +10,14 @@
 
 # 1. A loop campaign owns the remote for its duration (ADR-0008). Pushing
 #    mid-campaign publishes unreviewed worker commits.
+#
+#    This is already scoped to the LOCAL sequential conductor and needs no
+#    cloud carve-out: `.loop/` is gitignored and untracked, so `ACTIVE` exists
+#    only in the checkout that conduct.mjs is running in. A cloud worker
+#    container, which owns its own branch and must push it, never has this file
+#    and is never refused by it (docs/specs/cloud-campaign.md §8.10, verified
+#    2026-08-13). Do not "fix" this by adding a branch condition — the scoping
+#    is the file's location, and a condition would weaken it.
 if [ -f ".loop/ACTIVE" ]; then
   echo "pre-push: refused — a loop campaign is active (.loop/ACTIVE)." >&2
   echo "Pushing mid-campaign publishes unreviewed worker commits. Push after the run ends." >&2

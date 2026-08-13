@@ -1,7 +1,9 @@
 # The cloud campaign — parallel sessions, mechanical landing, unattended arcs
 
-**Status:** proposed, except items 8.1, 8.2, 8.4 and 8.5, which have landed (see §8). Written from
-a local exploration session on
+**Status:** items 8.1–8.5, 8.7 and 8.10 are landed; 8.6 is half-landed and half-refused by GitHub;
+**8.8 and 8.9 are deliberately not built** — they rest on measurement 6.1, which can only be taken
+in a cloud session, and building a dispatch mechanism against an unmeasured seam is the guess this
+spec exists to avoid. See §8. Written from a local exploration session on
 `2026-08-13T07:29:15Z · win32 x64 · node v24.12.0 · main@00c6ce3 +dirty · postgres via compose ·
 Debian 16.14-1.pgdg13+1`, against the completed first parallel wave (PRs #16–#24, takeoff tickets
 01–09).
@@ -236,20 +238,31 @@ exactly what produced the measured collision — every parallel session reads th
 
 ### 5.3 A relander, because nobody is left to land
 
-Two mechanisms, in order of preference:
+Two mechanisms were proposed, in order of preference. **The first is unavailable, so the second is
+not a fallback — it is the mechanism.**
 
-1. **A merge queue.** `vextrus/vextrus` is public and `allow_auto_merge` is true, so a queue is
-   available — but it is configured through **rulesets**, and `GET /repos/vextrus/vextrus/rulesets`
-   returns `[]` today; the branch is on classic protection. Migrating protection to a ruleset with
-   a merge queue makes the entire §1 treadmill vanish: PRs are enqueued, GitHub builds the
-   speculative merge, runs `parity` on *that*, and merges in order. No human, no re-land, and the
-   up-to-date guarantee gets *stronger*.
-2. **A conductor-side relander**, and worth building anyway as the fallback that depends on no
-   GitHub plan feature: for each open campaign PR that is behind and `mergeable`, merge
-   `origin/main` into it and push. Deterministic, no model involved. Where the merge conflicts,
-   it must **not** resolve — it re-dispatches a session against that branch with the conflict as
-   its task, or files a halt. A relander that resolves conflicts is a second doer, and ADR-0010
-   already names the failure mode: resolving by discarding the other branch's work.
+1. ~~**A merge queue.**~~ **Refuted by probe, 2026-08-13.** A queue would remove the whole §1
+   treadmill: PRs are enqueued, GitHub builds the speculative merge, runs `parity` on *that*, and
+   merges in order. It is configured through rulesets, and
+   `POST /repos/vextrus/vextrus/rulesets` with a `merge_queue` rule returns **422, `Invalid rule
+   'merge_queue'`**. A plain ruleset (a `deletion` rule on a throwaway ref pattern) was accepted
+   and deleted in the same probe, so this is `merge_queue` specifically and not rulesets or
+   permissions. The cause is ownership: GitHub restricts merge queues to **organization-owned**
+   repositories, and `vextrus/vextrus` is user-owned (`owner.type: "User"`, public). **Moving the
+   repo to an organization is the only route to a queue**, and it is a decision with consequences
+   well outside this spec — named here, not taken.
+2. **The relander.** Built: `scripts/reland.mjs` / `pnpm reland`. For each open PR whose
+   `mergeStateStatus` is `BEHIND`, it calls GitHub's **update-branch** endpoint — the merge happens
+   on GitHub, against the head GitHub resolved, and it merges rather than rebases (ADR-0010).
+   `expected_head_sha` makes it optimistic-concurrent: if the branch moved since the listing, GitHub
+   refuses rather than merging into a head nobody looked at. No checkout, so no working tree to
+   corrupt and no second writer.
+
+   It **never resolves a conflict**: `DIRTY` is reported and the PR left exactly as it is, for a
+   session on that branch. A relander that resolves conflicts is a second doer, and ADR-0010
+   already names the failure mode — resolving by discarding the other branch's work. It also
+   leaves `BLOCKED` and `UNSTABLE` alone: those are up to date, and updating them would restart CI
+   for no reason and hide why they are blocked.
 
 ---
 
@@ -360,7 +373,10 @@ Before dispatching the next wave (ten frontier tickets, all `MAP.md` writers):
   (refuse / override / new-map exempt / inbox / edit-not-add / main-push regression / ordinary
   code). `frontier.mjs` needed no change: `inbox/` is a sibling of `tickets/` and its read is not
   recursive. *(§5.2)*
-- **8.3** Amend ticket 09's acceptance list: the torture-corpus index is file-per-case. *(§5.1)*
+- ~~**8.3** Amend ticket 09: the torture-corpus index is file-per-case.~~ **Landed** as an
+  `## Amendment` on the closed ticket (its ruling 3 said *"a single committed index"*), with the
+  decision file updated to match. Binding on the arc `/to-tickets` will write — cheapest before the
+  frame exists, a rewrite once every rail cites it. *(§5.1)*
 - ~~**8.4** Commit the replacement CLAUDE.md sentence.~~ **Landed** on the same branch;
   file at 5,998 bytes. *(§3)* — **8.5 now owes it a home**: until ADR-0010's amendment #2 lands,
   CLAUDE.md forbids self-merge and names no party who does it instead.
@@ -369,15 +385,31 @@ Before dispatching the next wave (ten frontier tickets, all `MAP.md` writers):
   stated take-effect condition — *when the conductor exists* — rather than as though built, the
   shape amendment #1 used for CI. Squash-only is ruled and flagged as a human repository action.
   *(§4)*
-- **8.6** Migrate `main` from classic protection to a ruleset with a merge queue; squash-only.
-  Verify `parity` remains required and `enforce_admins` equivalent stays on. *(§5.3)*
-- **8.7** Build the relander (deterministic, refuses to resolve conflicts). *(§5.3)*
+- **8.6** **Split by the probe.** *Squash-only:* **done** — `allow_merge_commit` and
+  `allow_rebase_merge` are now false, `parity`/`strict`/`enforce_admins` verified unchanged
+  afterwards. Reversible in one API call. *Merge queue:* **refused by GitHub**, see §5.3; it needs
+  the repo moved to an organization, which is the dispatcher's call and not taken here. Classic
+  protection therefore **stays** — there is no reason left to migrate it to a ruleset. *(§5.3)*
+- ~~**8.7** Build the relander.~~ **Landed:** `scripts/reland.mjs` / `pnpm reland`, policy as a
+  pure `classify(pr)` with 25 tests in the scripts lane. Promoted from fallback to primary by the
+  merge-queue probe. *(§5.3)*
 
 Then, for the AFK campaign:
 
 - **8.8** Conductor v2 per §6 — claims by CAS, per-ticket PR, G1–G4, quarantine, fuses.
+  **Blocked on 6.1, and deliberately not started.** Every other item here was buildable because its
+  mechanism was known; the conductor's dispatch call is not, and writing one against a guessed API
+  would produce code whose first contact with the cloud rewrites it. The parts that *are*
+  mechanism-independent — the claim CAS, the gates, the quarantine policy — are specified in §6
+  and cost nothing to hold.
 - **8.9** The per-PR review session (`REVIEW.md` rescoped to one diff, fails closed, files only).
-- **8.10** Rescope `.githooks/pre-push`. *(§6)*
+  **Blocked on the same seam** — it is a Claude session running in CI, so it needs 6.1's answer
+  about credentials and invocation before it is anything but YAML.
+- ~~**8.10** Rescope `.githooks/pre-push`.~~ **No change needed, verified.** `.loop/` is
+  gitignored and untracked (`git ls-files .loop` is empty), so `ACTIVE` exists only in the checkout
+  running `conduct.mjs`. A cloud worker container never has the file and is never refused by it —
+  the guard was already scoped by the marker's *location*. A comment now says so, because the
+  obvious "fix" is to add a branch condition, which would weaken it. *(§6)*
 
 **Measurements owed — each must be taken on the machine it describes, and quoted with its
 `checkup` environment line:**

@@ -28,7 +28,8 @@
     "db:replay": "node scripts/db-replay.mjs",
     "test:db": "vitest run -c vitest.db.config.ts",
     "loop": "node scripts/loop/conduct.mjs",
-    "promote": "node scripts/wayfinder/promote.mjs"
+    "promote": "node scripts/wayfinder/promote.mjs",
+    "reland": "node scripts/reland.mjs"
   },
   "dependencies": {
     "@trpc/server": "^11.18.0",

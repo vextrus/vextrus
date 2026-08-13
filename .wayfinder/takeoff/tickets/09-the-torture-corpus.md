@@ -410,3 +410,37 @@ Three of this map's tickets closed during one grilling session. That is the conc
 `.wayfinder/TRACKER.md` anticipates, and it is worth naming as evidence for ruling 6 rather than
 as an incident: a corpus whose completeness is tracked in anyone's head does not survive a map
 being worked by several sessions at once.
+
+## Amendment — 2026-08-13: the index is a directory, one file per case
+
+Ruling 3 says *"a single committed index"*. That word is now wrong, and it is wrong for a reason
+measured after this ticket closed.
+
+Every rail ticket owes the corpus (this map's Notes: *"no rail is done until it has added its
+cases to the index"*). So the index is a file that every rail session appends to — which is
+precisely the structure that broke the first parallel wave: replaying every session-side merge
+with `git merge-tree --write-tree`, **six of seven conflicted and every one was
+`.wayfinder/takeoff/MAP.md`'s append-only decision list, nothing else** (`docs/specs/cloud-campaign.md`
+§1). Ten rails run in parallel against one index file is nine conflicts by arithmetic, and worse
+than the map's: a hand-resolved conflict in *prose* costs an argument, while a hand-resolved
+conflict in a **machine-read census** can silently drop a case, and a corpus that looks complete
+while asserting less than it claims is the one failure bar 1 cannot survive.
+
+**Ruled: the index is a directory of one file per case** — `<case-id>` names the file, as ticket
+filenames name their decisions — globbed by the meta-tests. Nothing else in ruling 3 changes: the
+schema, the zod and dataclass validators, the entry↔test binding in both directions, the terminus
+ratchet and the `undecided` expiry all work identically over a glob. Two rails adding two cases
+then write two different files and merge cleanly by construction.
+
+The case id is already allocated by the case itself, not by a counter, so this carries no
+allocation hazard of the kind `inbox/` exists to prevent (`.wayfinder/TRACKER.md`).
+
+*Put and rejected:* a `merge=union` driver on one index file — it resolves the conflict by
+interleaving records with no marker, which in a census is the silent drop described above. And
+keeping one file on the grounds that rails land one at a time: they do not, and this map's own
+Notes say so.
+
+*Binding on the build.* This ticket rules and stops (ruling 10); the frame is built downstream
+through `/to-spec` → `/to-tickets`. That arc's acceptance list must carry the directory form —
+it is the cheapest possible change before the frame exists, and a rewrite afterwards once every
+rail cites it.
