@@ -24,11 +24,26 @@ under-measurement, and harder to spot.
 | `DERIVED` | produced by a named rule from a measured number |
 | `IMPORTED` | carried in from an external artifact |
 | `ENTERED` | typed by a human |
+| `INTERPRETED` | machine-vectorized from a raster image — the source is pixels, not geometry |
 | `DEFAULTED` | supplied by config where the drawing was silent |
 
 `DEFAULTED` is weakest because it is the only value where *nobody looked and nobody decided*.
 `TRANSCRIBED` is not cosmetic: geometry is checked by re-measuring, a transcription only by
 re-reading, and ingestion losses are transcription failures that `MEASURED` would hide.
+
+`INTERPRETED` is second-weakest — a machine looked, nobody decided. What orders this ladder is
+**recourse**: `MEASURED` is rechecked by re-measuring, `DERIVED` by re-running a pinned rule id
+and version, `IMPORTED` against its artifact, `ENTERED` by challenging a named human who owns an
+act-log row. An interpreted number has no such check. It is *reproducible* — `cad-ingestion.md`
+§2 requires determinism within a pinned extractor identity — but **reproducibility is not
+recourse**: re-running the vectorizer re-derives the same guess and confirms nothing, where
+`DERIVED` re-runs a named rule over an input that is itself independently checkable. Short of a
+human looking, there is no second reading to compare against. It beats `DEFAULTED` on one count
+only: something looked at the actual drawing. **`INTERPRETED` names the source medium, never the agent**: a QS
+who hand-traces an outline on a calibrated scan also produces `INTERPRETED`. Their care is real
+and is recorded — as an act and a corroboration state, which is where certainty belongs. Basis
+is a historical claim and does not change when someone checks it; **`INTERPRETED` is never
+relabelled `MEASURED`**.
 
 **Coverage** — what fraction of the scope the line *claims* to account for:
 `COMPLETE` · `PARTIAL_DECLARED` (every omitted component enumerated on the row) ·
@@ -51,12 +66,19 @@ overcharge class, which no quantity tolerance can catch.
    this number accounts for everything this description names.
 2. **For absence: the scope register.** A per-line column cannot annotate a row that does not
    exist (legacy: pile-cap rebar was −100% with no line and no deferral). The scope register is
-   derived from **what ingestion saw**; every element class present in a drawing that produced
-   no line becomes a declared exclusion. Consequence: **surfacing ingestion truncation is
-   mandatory** — the artifact's fidelity counters exist for this.
+   derived from **what ingestion saw**, keyed **`(element class × quantity kind)`** (amended by
+   `.wayfinder/takeoff/tickets/01`); every (class × kind) cell that produced no line becomes a
+   declared exclusion. Class grain alone hides the missing *rule* — a beam that produced a
+   concrete line is not absent, so its unmeasured formwork goes silent, and one kind covers
+   twelve PWD member-type sub-items. `(class × kind)` is also §8's dip-sample draw unit.
+   Consequence: **surfacing ingestion truncation is mandatory** — the artifact's fidelity
+   counters exist for this.
 
-The scope register attaches a **cause** to an absence the rate book already knows about (the
-book is the enumeration; see `bd-authority.md`). Causes have per-member originator legality:
+The scope register attaches a **cause** to an absence the **work-item catalogue** already knows
+about (the catalogue is the enumeration — the spine-owned, rate-free half of the book's job;
+amended by `.wayfinder/takeoff/tickets/01`). The two sources divide the work: the catalogue
+catches the **missing sheet** (ingestion saw nothing, so it can report nothing); the
+`(class × kind)` rows catch the **missing rule**. Causes have per-member originator legality:
 `NOT_IN_PROJECT_SCOPE` and `NOT_IN_THIS_BILL` are **human-only** (a machine can rarely
 establish absence); the machine's default is `NOT_ESTABLISHED`; ingestion-fidelity rows split
 `INGESTION_TRUNCATED` (a cap you raise) from `ENTITY_TYPE_UNHANDLED` (code nobody wrote) —
@@ -74,6 +96,7 @@ merging them tells a contractor the unmeasured scope is excluded from the *works
 | provenance to a register row | always, as a **reference**, never prose |
 | the (drawing, view) it was read from | always |
 | the rule id + version that produced it | wherever basis is `DERIVED` |
+| the vectorizer id + version + render DPI | wherever basis is `INTERPRETED` |
 | an affirmed calibration reference | always — a quantity without one is unrepresentable |
 
 Provenance must be a reference because prose provenance is uncheckable (the legacy census found
@@ -81,8 +104,11 @@ Provenance must be a reference because prose provenance is uncheckable (the lega
 
 **Attribution is two-level.** One named responsible surveyor per issued bill (RICS AI standard,
 mandatory since 9 March 2026: written reliability decision, randomised dip samples on automated
-output, AI disclosure) — plus a per-line actor **only where judgement entered** (basis not
-`MEASURED`, coverage not `COMPLETE`, or a deferral). Signing every line puts a name on rows
+output, AI disclosure) — plus a per-line actor **only where judgement entered** (basis neither
+`MEASURED` nor `INTERPRETED`, coverage not `COMPLETE`, or a deferral). `INTERPRETED` is excluded
+because no human authored the reading: machine work is *checkable rather than believable*
+(`identity.md` §7), so it carries machine provenance above and a manufactured actor would degrade
+the signature the same way signing every line does. Signing every line puts a name on rows
 where nobody decided anything and degrades the signature where it matters. Attribution is
 **derived from the append-only act log**, never stamped on rows (see `identity.md`).
 
@@ -94,6 +120,7 @@ where nobody decided anything and degrades the signature where it matters. Attri
 | known scope, not measured | **declared exclusion** + queue item |
 | evidence absent or illegible | **declared exclusion** |
 | the drawing was silent | **never a silent default** |
+| interpreted geometry, uncorroborated | **declared exclusion** + queue item — never a line |
 
 **The over-measurement asymmetry:** over-measurement is a **hard block**, never a declared
 exclusion. A disclosure lets a reader know to *add*; nothing lets a reader know to *subtract*.
@@ -101,6 +128,15 @@ Where the system cannot establish that an element belongs to the class and drawi
 measuring under, it refuses to emit at all. (Legacy exemplar: a phantom pile cap read off the
 wrong plan invented money inside a class that read net short.) Prevention sits upstream of the
 signature — an unaffirmed scale *declares*; an unauthorised sighting *never emits*.
+
+**Corroboration is the publishability gate for `INTERPRETED`.** An interpreted line reaches a
+bill only as `AGREED` (`identity.md` §7); uncorroborated interpreted geometry is not a line at
+all but a declared exclusion with a named cause and a queue item — the *known scope, not
+measured* shape above. The raster lane therefore measures less, completely, and says so. Bulk
+corroboration is lawful and recorded at the granularity performed (a sheet's class in one act
+with N subjects); the force against rubber-stamping is not per-row ceremony — §7 rejects that as
+degenerating into `confirm-all` at volume — but §8, under which an unvalidated engine class is a
+mandatory dip-sample stratum with Part A reviewed **in full**.
 
 ## 5. Tolerance
 
@@ -119,16 +155,34 @@ never dropped; every disagreement is our defect until outside evidence says othe
 yardstick-defect, basis difference, and revision drift are **unavailable as excuses for an
 over-measurement**. Two ledgers: **coverage** is per bill and client-facing; **validation** is
 per engine, per class, internal — an unvalidated class never reaches a certificate and becomes
-a mandatory dip-sample stratum.
+a mandatory dip-sample stratum. **The raster path is a distinct engine**: it produces the same
+classes as the vector path and may never borrow the vector path's validation. The band binds it
+unchanged — a relaxed `+0%` for scan-derived lines is a basis-difference excuse, which the
+sentence above already forecloses.
 
 ## 6. Declaring the boundary
 
 - **One coverage statement, computed at publish**, from the scope register. The **Certificate
-  of Measured Coverage is that statement** — a query over book × scope register, never prose. A
+  of Measured Coverage is that statement** — a query over **work-item catalogue × scope
+  register**, never prose (amended by `.wayfinder/takeoff/tickets/01`). The whole catalogue is
+  in every project's denominator; narrowing is an **attributed act** (`NOT_IN_PROJECT_SCOPE`,
+  human-only), never a project pin — a pin that filters the denominator is a silent exclusion
+  with no actor, and §8's absence census has nothing to census. A
   bill without its certificate is not a bill and cannot be emitted; they bind into **one
   server-generated PDF** (a browser print cannot guarantee the certificate travels).
 - The certificate rides in **every export channel** and is **never carried by colour alone** —
   a tint dies in greyscale and print.
+- **Scan-derived geometry discloses by sheet, never by line.** Sheets supplied as raster images
+  are named, with the vectorizer id + version and render DPI: *"all geometry on these sheets is
+  machine-interpreted from a raster render and was not read from drawing geometry."* The unit is
+  the sheet because §3 already makes the (drawing, view) a mandatory per-line citation, so the
+  statement is a query over data the register holds; because §8 makes the boundary instrument
+  **enumerated and few** while a per-line list is the bill reprinted inside its own certificate;
+  and because a sheet count converts to no percentage in either direction. **No count of
+  interpreted lines prints** — by count meaningless, and a reader recovers the banned percentage
+  by subtraction. No corroborated/uncorroborated split prints either: uncorroborated interpreted
+  geometry is never a line (§4), so it is already reported as a scope-register exclusion. This
+  statement is also the **AI disclosure** §3 requires.
 - **No grand total under incomplete coverage.** The bill emits a labelled *measured-scope
   subtotal* only. The bill's face stays clean — no per-row marks (a hatched "not measured" row
   inside a priced bill reads as *excluded from contract*, a worse lie); missing item-selecting
@@ -148,7 +202,8 @@ into `confirm-all` at volume, and the money is in *absence*, which disposing row
 Two gates, deliberately separate because one conflated gate is how `incomplete: 0` printed over
 a bill 54% short:
 
-1. **Coverage/boundary** — founded outside the register (the book + scope register). No
+1. **Coverage/boundary** — founded outside the register (the work-item catalogue + scope
+   register). No
    sampling rate finds the row that is not there; this gate is enumerated, in full.
 2. **Reliability** — the named surveyor's written decision, informed by the dip sample.
 
@@ -181,7 +236,7 @@ Two instruments: quantities are **sampled** (many, expensive); the boundary is *
   sample has exactly two legitimate outputs: fix the input, or move the boundary.
 - The signature binds **one-to-one to its sample**; void on boundary change, rule-set change,
   or a new revision of any cited drawing — the cited drawings being exactly the campaign's
-  pinned drawing-set revision manifest, which is why there is no second list (`identity.md` §9). No clock-based or volume-based re-sampling — the
-  bill's freshness gate is the volume rule. Draws are irrevocable; abandonment is recorded; the
-  certificate prints the failure count. No numeric void threshold — that judgement already has
+  pinned drawing-set revision manifest, which is why there is no second list (`identity.md` §9).
+  No clock-based or volume-based re-sampling — the bill's freshness gate is the volume rule.
+  Draws are irrevocable; abandonment is recorded; the certificate prints the failure count. No numeric void threshold — that judgement already has
   a name (`NOT_RELIABLE`).

@@ -47,7 +47,8 @@ silently resolved.
 Every derived row key is **content-derived with zero minted ids** — no UUIDs, no DB sequences,
 no timestamps — so an identical re-derivation reproduces the identical key multiset:
 
-- **View key** = view class + caption anchor handle (row ids re-mint on every partition
+- **View key** = view class + caption anchor **source key** (`cad-ingestion.md` §2 — a
+  `scheme:key` token; an unprefixed one reads as `DXF_HANDLE`) (row ids re-mint on every partition
   rebuild; the key, not the row id, rides in downstream keys).
 - **Placement key** = view key + mark + world coordinates **quantized to 0.1 drawing unit**.
 - **Instance row key** = placement key + level *surrogate id* (typed so a bare label string
@@ -74,7 +75,7 @@ arbitrary representative — measured in the legacy as an 82.6%-phantom-money cl
 ## 5. Semantic vs identity — the carry law
 
 Every derived row also carries an order-normalized **semantic** (canonical JSON of its content
-*including its cited evidence handles*). The semantic is the **invalidator, never the key**:
+*including its cited evidence source keys*). The semantic is the **invalidator, never the key**:
 unchanged semantic → human dispositions carry forward across a rebuild; changed semantic → the
 row re-presents for disposition. Lineage is inside the semantic deliberately — a row whose
 numbers are unchanged but whose cited evidence moved must re-present, or a stale lineage rides
@@ -111,6 +112,17 @@ forward invisibly.
   **competing observation** with its own basis and a declared precedence. Agreeing readings
   corroborate (and bump the edition); disagreeing ones **suspend the fact pending
   re-affirmation** — this shape recurs everywhere (attributes, scope rows, note readings).
+- **Repudiation — the one disagreement suspension cannot hold.** Confirming machine-vectorized
+  geometry (basis `INTERPRETED`) admits two disagreements, not one. *That measurement is wrong*
+  is two readings of a number and suspends, above, unchanged. *That is not a column* — it is a
+  hatch, a leader, a scanning artefact — denies the object, and suspension parks an **attribute**
+  while leaving the register object standing: a suspended phantom still occupies a row, which is
+  the pile-cap exemplar (`quantity-contract.md` §4) reproduced, and a phantom is over-measurement
+  — a hard block, never a disclosure. A repudiated object therefore moves to the **separate table
+  with no join from any bill** that §2 already chose for a second sighting, for the same stated
+  reason: a status flag on the register is one forgotten `WHERE` from over-measurement.
+  Repudiation is **human-only**, consistent with §2's one-way presence recogniser — it is an act,
+  never a recogniser's verdict.
 - A deferral carries: actor, timestamp, a **closed cause enum shared with the machine's own
   refusals** (one taxonomy, two originators), a scope reference, and a note that is never
   itself the exclusion.
@@ -129,8 +141,8 @@ forward invisibly.
 - **A project record** pins config (book edition, rule set, multiplier scheme) as a
   **precondition of campaign creation**; facts (level stack, attributes) stay authorable from
   inside a campaign as *readings*. A campaign = a measurement effort against a pinned drawing
-  **set** revision (§9) producing at most one issued bill. One edition, two consequences: unsigned → stale
-  (freshness gate); signed → **voids whole**.
+  **set** revision (§9) producing at most one issued bill. One edition, two consequences:
+  unsigned → stale (freshness gate); signed → **voids whole**.
 - A surface beside the measurement flow may never write a **quantity**; it may write a project
   fact, against the project boundary. Reference surfaces are read-only.
 
@@ -175,8 +187,8 @@ registration for one ordinal. A superseded pin is history, like a superseded pla
 `(prior set revision's live sightings) × (new set revision's sightings)` per mark family. The
 identity key carries no drawing (§2: `drawingId` is provenance), so a member **re-sheeted**
 between revisions keeps its identity and its ordinal, and re-presents for disposition because its
-cited handles moved (§5). Treating a re-sheet as removal-plus-registration is a defect: it
-retires an ordinal for no physical reason. Precedence stays drawing-local first — exact placement
+cited evidence source keys moved (§5). Treating a re-sheet as removal-plus-registration is a
+defect: it retires an ordinal for no physical reason. Precedence stays drawing-local first — exact placement
 key, then nearest unclaimed prior of the same view within the carry bound — and only then the
 same family sighted from *another* drawing of the prior set, so a re-sheet can never take a prior
 that a sibling still stands on. The double-count guard is untouched: it acts **within** one set
