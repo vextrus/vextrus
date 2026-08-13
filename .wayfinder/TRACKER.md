@@ -13,6 +13,8 @@ the same git history as the code the decisions are about.
       NN-<slug>.md      decision tickets (charted by /wayfinder)
     decisions/
       NN-<slug>.md      one per closed ticket, named for it; the map's index, sharded
+    inbox/
+      <slug>.md         newly surfaced tickets, no number yet — promoted by the dispatcher
     arcs/
       <arc-id>/
         NN-<slug>.md    build tickets (written by /to-tickets, one arc at a time)
@@ -32,6 +34,7 @@ and the loop (`docs/specs/loop.md`) executes arc tickets headless.
 | **Claiming** | `Claimed by:` line, set **before** any work. |
 | **Open / closed** | `Status:` line. |
 | **The frontier** | Open, unclaimed, every blocker closed. `grep -L "Status: closed" .wayfinder/<effort>/tickets/*.md` |
+| **A new ticket** | `inbox/<slug>.md`, **no number** — a session never allocates one. `node scripts/wayfinder/promote.mjs .wayfinder/<effort>` numbers them on `main`. |
 | **Resolution** | `## Resolution` appended; `Status: closed`; a gist written to `decisions/<the ticket's own filename>`. Never edit `MAP.md` to close a ticket. |
 
 ## Rules
@@ -43,6 +46,12 @@ and the loop (`docs/specs/loop.md`) executes arc tickets headless.
   session.
 - A resolution states the ruling, the measurement that forced it, and the alternative that was
   put and rejected.
+- **A session never allocates a ticket number.** It cannot see what other branches are minting,
+  and two branches that pick the same number produce two *different* filenames, which git merges
+  **without a conflict** — measured 2026-08-13, `23-` and `24-` both minted twice, invisible to
+  every mechanism here and caught by hand. Mint into `inbox/<slug>.md`; the same slug is the same
+  path, so a real collision becomes a real conflict. `.githooks/pre-push` refuses the numbered
+  form on an effort that already has tickets.
 - **Nothing a closing session writes may be a file another closing session also writes.** An
   append-only list shared by N parallel sessions conflicts N−1 times, mechanically, forever: in
   the first parallel wave six of seven merges conflicted and every one was `MAP.md`'s decision
