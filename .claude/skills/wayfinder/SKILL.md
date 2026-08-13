@@ -80,6 +80,6 @@ Two modes. Either way, **never resolve more than one ticket per session** — re
 2. Choose the ticket (the user's, or the first frontier ticket). **Claim it** — set `Claimed by:` before any work.
 3. Resolve it — zoom into related/closed tickets on demand; invoke the skills the Notes name. If in doubt, `/grilling`.
 4. Record: append `## Resolution` (the ruling, the measurement that forced it, the alternative put and rejected), set `Status: closed`, clear the claim, write the gist to `decisions/<this ticket's filename>`. **Don't touch `MAP.md`** unless the ruling changes the destination, the notes or the fog — a closing session that edits the map is the conflict this layout removed.
-5. Add newly-surfaced tickets; graduate fog the answer made specifiable; rule mis-scoped tickets out of scope; update or delete tickets the decision invalidated.
+5. Add newly-surfaced tickets **into `inbox/<slug>.md`, with no number** — you cannot see what other branches are minting, and two branches picking the same number merge without a conflict (`.wayfinder/TRACKER.md`; the pre-push hook refuses the numbered form). Write `Blocked by:` edges to inbox tickets by slug; promotion rewrites them. Then: graduate fog the answer made specifiable; rule mis-scoped tickets out of scope; update or delete tickets the decision invalidated.
 
 Other sessions may be working the map concurrently — expect concurrent edits; the claim line is what keeps you off each other's tickets.

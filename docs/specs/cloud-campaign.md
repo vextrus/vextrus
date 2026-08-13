@@ -1,7 +1,7 @@
 # The cloud campaign — parallel sessions, mechanical landing, unattended arcs
 
-**Status:** proposed, except §5.1 and §3 — those landed together as 8.1 and 8.4 on
-`claude/decisions-per-file`. Written from a local exploration session on
+**Status:** proposed, except items 8.1, 8.2, 8.4 and 8.5, which have landed (see §8). Written from
+a local exploration session on
 `2026-08-13T07:29:15Z · win32 x64 · node v24.12.0 · main@00c6ce3 +dirty · postgres via compose ·
 Debian 16.14-1.pgdg13+1`, against the completed first parallel wave (PRs #16–#24, takeoff tickets
 01–09).
@@ -352,12 +352,23 @@ Before dispatching the next wave (ten frontier tickets, all `MAP.md` writers):
   `.wayfinder/TRACKER.md` and `/wayfinder` updated so a closing session writes `decisions/` and
   **does not touch `MAP.md`**. *(§5.1 — the load-bearing one; without it the wave produced nine
   conflicts by arithmetic.)*
-- **8.2** Add the `inbox/<slug>.md` rule and teach `frontier.mjs` to ignore it. *(§5.2)*
+- ~~**8.2** Add the `inbox/<slug>.md` rule.~~ **Landed**: `scripts/wayfinder/promote.mjs`
+  (`pnpm promote`) allocates past the highest existing number and rewrites `Blocked by:` edges
+  that name an inbox slug, refusing as a whole rather than half-promoting; 17 tests, with
+  `scripts/**/*.spec.mjs` joining the vitest lane. `.githooks/pre-push` refuses a numbered ticket
+  added to an effort that already has them — exercised on seven cases in a scratch clone
+  (refuse / override / new-map exempt / inbox / edit-not-add / main-push regression / ordinary
+  code). `frontier.mjs` needed no change: `inbox/` is a sibling of `tickets/` and its read is not
+  recursive. *(§5.2)*
 - **8.3** Amend ticket 09's acceptance list: the torture-corpus index is file-per-case. *(§5.1)*
 - ~~**8.4** Commit the replacement CLAUDE.md sentence.~~ **Landed** on the same branch;
   file at 5,998 bytes. *(§3)* — **8.5 now owes it a home**: until ADR-0010's amendment #2 lands,
   CLAUDE.md forbids self-merge and names no party who does it instead.
-- **8.5** Land ADR-0010 amendment #2. *(§4)*
+- ~~**8.5** Land ADR-0010 amendment #2.~~ **Landed**, closing the gap 8.4 opened. Rules the
+  non-author merge, and rules the claim compare-and-swap and the arc-exemption's retirement with a
+  stated take-effect condition — *when the conductor exists* — rather than as though built, the
+  shape amendment #1 used for CI. Squash-only is ruled and flagged as a human repository action.
+  *(§4)*
 - **8.6** Migrate `main` from classic protection to a ruleset with a merge queue; squash-only.
   Verify `parity` remains required and `enforce_admins` equivalent stays on. *(§5.3)*
 - **8.7** Build the relander (deterministic, refuses to resolve conflicts). *(§5.3)*
