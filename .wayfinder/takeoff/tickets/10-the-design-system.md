@@ -44,3 +44,36 @@ cheap artifact, not by arguing. This is the ticket the CEO's brief asked for pro
 ## Blocks
 
 Tickets 14, 15 and 16 are all downstream of this.
+
+## Prototype (built, not resolved)
+
+`src/app/prototype/design-system/` — three variants on `/prototype/design-system`, switchable
+with `?variant=A|B|C`, plus `?lang=en|bn`, `?density=relaxed|default|dense` and a greyscale
+toggle. `pnpm dev`, then open the route; the README beside the code is the reading guide.
+
+**This ticket stays open and stays claimed.** It is `wayfinder:prototype` — HITL — and the
+register pick (§1) is a judgement about who the instrument is for, made in a live exchange. The
+session that built the artifact does not get to answer its own question, so it did not: the
+variants argue three different cases (canvas-first · disposition-first · document-first) with
+real domain content, and the pick is the human's.
+
+What the artifact settled on evidence rather than taste, and what a resolution should ratify or
+overturn:
+
+- **§4 colour is never the only channel** — status rides fill pattern + outline + glyph + a
+  named cause code, and the greyscale toggle is the standing check. This survived; a tint did not.
+- **§2 density** — a three-step scale (`density.ts`), computed row boxes 48/32/20 px, `default`
+  shipped. `dense` is the step at which the queue's reason sentence stops fitting, which is the
+  step at which the surface starts reading mechanical.
+- **§3 the stack** — components owned, no library: three radically different layouts came out of
+  Tailwind 4 with no component dependency, and the repeated parts are domain parts nobody ships.
+  The Genesis F6 risk is not components but **tokens** — each variant declares its own `--vx-*`
+  block, which must collapse into one `@theme` before any of this is real.
+- **§6 bilingual** — two findings, both visible on the `বাংলা` toggle: Bangla needs a taller line
+  box than the Latin scale (1.75 and still tight at `dense`), and **the monospace stack has no
+  Bengali coverage**, so every provenance strip and cause code breaks face mid-line. Numerals
+  render Bengali with lakh grouping here; whether a *tendered document* carries Bengali or
+  Western digits is a `bd-authority.md` question this poses and does not answer.
+
+§5 (the drawing is the hero) is the one the pick turns on and is left open by design: A gives the
+sheet the whole room, B keeps it larger than the list it serves, C demotes it to pinned evidence.
