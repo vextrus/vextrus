@@ -104,6 +104,20 @@ with a dated, observed cost — never speculatively.
   bubblewrap, `pnpm checkup` reports it, and `conduct.mjs` refuses by name before spawning —
   a worker that starts and cannot Bash burns its turns and fails every gate blaming the ticket.
 
+- **Inside a scrubbed worker's Bash, the repo root grows dotfiles that are `/dev/null` in
+  disguise — and `next build` dies on them.** 2026-08-13, the first conducted worker (run
+  `2026-08-13T17-52-09`, container at `449b7c7`): Tailwind v4's content scanner hit EACCES on
+  `.gitconfig`, `.bashrc`, `.idea`, … at the repo root and panicked `next build` — reproduced
+  by the worker on a pristine `globals.css`, so it presents as a CSS/build fault in whatever
+  was just edited. The files are zero-byte character devices (`crw-rw-rw- 1, 3` — the
+  `/dev/null` device) that exist **only inside the nested session's bubblewrap namespace**: the
+  scrub masks home-relative dotfiles, and with the workspace as cwd they surface at the repo
+  root. From a top-level session the paths do not exist (measured: `stat` says "No such file"
+  outside, "character special file" inside the same second), so the fault cannot be reproduced
+  where a human would look — and `rm` from inside is refused (it lands in `permission_denials`).
+  The standing fix is the worker's: name each one in `.gitignore`, which Tailwind's scanner
+  respects; a broad dotfile glob would hide real future files.
+
 - **A scratch clone with a symlinked `node_modules` cannot complete `next build`.** 2026-08-13,
   on a cloud container at `6c6e001`. Cloning the repo and symlinking `node_modules` back to the
   main checkout — the obvious way to stand up a second worktree without a second install — makes
