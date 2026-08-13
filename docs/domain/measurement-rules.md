@@ -63,10 +63,19 @@ dimension instead of a trade is the defect class that produced a measured 20.2×
   same kind as a platform-owned column with attributed override; **CI asserts totality both
   ways**; a dimension-named kind is illegal to emit.
 - **No null kind in the book, ever** — every item carries a kind or an authored exclusion
-  reason. `RATE_MODIFIER` is load-bearing: "added rate" items (e.g. per additional floor)
-  price as their own line **beside** the base item; without the class, no-null manufactures
-  over-measurement.
-- The book is thereby the **coverage denominator**: the certificate becomes a query.
+  reason. The **rate-modifier class** is load-bearing: "added rate" items (e.g. per additional
+  floor) price as their own line **beside** the base item; without the class, no-null
+  manufactures over-measurement. **The class is a pricing role, not a kind** (amended by
+  `.wayfinder/takeoff/tickets/01`): an added-rate item carries *its base item's* kind plus an
+  `isRateModifier` column in `book/`. A kind naming a pricing role is the same category error
+  this clause bans for dimension-named kinds — it names neither chapter, nor dimension, nor
+  trade. Under `identity.md` §1 a modifier **inherits** a quantity rather than originating one,
+  so it has no claim on the coverage denominator; the certificate query filters it out.
+- The **work-item catalogue** is thereby the **coverage denominator**: the certificate becomes
+  a query. The catalogue is the spine-owned half of the book's job — platform-owned,
+  code-derived at kind grain, primary-keyed on the kind value, rate-free (amended by
+  `.wayfinder/takeoff/tickets/01`; a book item joins up to it on `kind`, unit as the dimension
+  veto).
 
 **Mapping a line to a book item:** match on **trade first** (kind → chapter); the dimension
 lock has the final veto; never on dimension alone (a dimension-only matcher priced pile-cap
