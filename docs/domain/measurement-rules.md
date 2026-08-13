@@ -145,3 +145,17 @@ register, and the document stage; the gate's shape is spine-owned (a rail may no
 own definition of done); **rail is selected per quantity kind, not per drawing** — one
 architectural sheet originates both brick volume and finish area. MEP fittings: **derive,
 never count**; until ingestion fidelity is proven, MEP publishes runs only.
+
+**The gate's shape** (amended by `.wayfinder/takeoff/tickets/13`). A rail is a **pure function
+returning offers**, never lines: it holds no tenant context and cannot write, so the gate is the
+spine's sole writer of quantity lines — the register door's sibling one stage down, where the
+guard is a constraint rather than a function a caller may decline to call. The rail supplies
+per-attribute basis; the **gate** derives both roll-ups, the attribute roles (declared per
+algebra, never per row), the refusal cause, and the algebra the kind selects — an offer's own
+claim of algebra is checked, not trusted. Selection is two independent **total, code-owned maps
+on the kind axis** — kind → authoritative discipline (`identity.md` §2) and kind → algebra — with
+CI asserting totality both ways; they are independent exactly because one architectural
+discipline serves two algebras. They range over a code-owned **`bears` relation on
+`(element class × kind)`**, identical for every project and changed only by migration behind that
+assert — never a project pin. Over-measurement's hard block is enforced here, once, on the
+register's full-precision value and upstream of per-kind rounding.
