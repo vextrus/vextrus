@@ -16,10 +16,12 @@
  * campaign: derive --max-turns from ~2x the honest-close p95, never from a hunch.
  */
 import { execSync, spawnSync } from "node:child_process";
-import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { randomUUID } from "node:crypto";
+import { appendFileSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
+import { effortLogFile } from "./evidence.mjs";
 import { CONTEXT_LINE, overLine, parseWorkerOutput } from "./usage.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
@@ -36,6 +38,17 @@ const maxTickets = Number(flag("--max-tickets", "50"));
 // PROVISIONAL caps — re-derive from the first campaign's log (see header).
 const MAX_TURNS = 150;
 const WALL_CLOCK_MS = 30 * 60 * 1000;
+
+// The worker's allow surface, declared on the spawn line rather than inherited from
+// `.claude/settings.json` — deliberately, twice over. (1) An untrusted workspace ignores the
+// project allow list entirely (measured on a cloud container at 6c6e001; a fresh container is
+// always untrusted, and there is no documented way to pre-accept trust). (2) `bypassPermissions`
+// is refused outright under uid 0, and since CLI ~2.1.229 it is *silently downgraded to default
+// mode* on any machine where CLAUDE_CODE_SUBPROCESS_ENV_SCRUB is set — the CLI's own warning
+// says "Declare allowedTools explicitly", and this is that. dontAsk + explicit allows is
+// fail-closed: everything here auto-approves, everything else lands in the result's
+// permission_denials as evidence instead of hanging a prompt nobody will answer.
+const WORKER_TOOLS = "Bash Edit Write Read Glob Grep Skill Task TodoWrite";
 
 if (!ticketDir || !existsSync(path.resolve(root, ticketDir))) {
   console.error("usage: node scripts/loop/conduct.mjs <ticket-dir> [--arc <name>] [--max-tickets N] [--dry-run]");
@@ -127,7 +140,17 @@ if (!baseline.ok) {
   console.error("conduct: baseline pnpm verify is red — the loop only ever starts from green.");
   process.exit(1);
 }
-log({ event: "start", runId, ticketDir, arc, maxTickets, caps: { MAX_TURNS, WALL_CLOCK_MS, CONTEXT_LINE } });
+log({
+  event: "start",
+  runId,
+  ticketDir,
+  arc,
+  maxTickets,
+  caps: { MAX_TURNS, WALL_CLOCK_MS, CONTEXT_LINE },
+  // A number with no environment is not a measurement (CLAUDE.md). Every row below inherits
+  // this line's machine and commit when the log is read later, on a machine that no longer is.
+  machine: `${process.platform} ${process.arch} · node ${process.version} · ${sh("git rev-parse --short HEAD")}`,
+});
 
 // ---- the loop -----------------------------------------------------------------
 const promptTemplate = readFileSync(path.join(import.meta.dirname, "PROMPT.md"), "utf8");
@@ -155,14 +178,28 @@ try {
       .replaceAll("{RUN_ID}", runId)
       .replaceAll("{ARC}", arc);
 
-    log({ event: "spawn", ticket });
+    // Each worker gets its own session id. A nested `claude` inherits CLAUDE_CODE_SESSION_ID and
+    // appends its records to the *parent's* transcript file, where they read as a context
+    // collapse that never happened (docs/TRAPS.md). --session-id is the documented flag for
+    // exactly this; it also gives the log a handle to correlate a row with a transcript.
+    const workerSession = randomUUID();
+    log({ event: "spawn", ticket, workerSession });
     const t0 = Date.now();
     // stream-json, not json: the result object's `usage` is cumulative across the session and its
     // `iterations` array is partial, so neither is a context size (scripts/loop/usage.mjs measures
     // this). The stream carries one usage per message, which is the only way to see the peak — and
     // the peak is what the boundary review's flag pile is made of.
+    // The worker's surface is scripts/loop/worker-settings.json: no web, no browser, no
+    // planning skills — a worker executes one decided ticket and cannot wander (item 4,
+    // docs/specs/execution.md). --disallowedTools is the same denial on the flag path, so the
+    // restriction does not depend on how a given CLI version layers --settings.
+    // dontAsk + WORKER_TOOLS, never bypassPermissions — see the WORKER_TOOLS comment for the two
+    // measured reasons. If a needed tool is missing from the surface, the evidence is a named
+    // entry in permissionDenials on the log row, not a silent stall.
     const worker = spawnSync(
-      `claude -p --output-format stream-json --verbose --max-turns ${MAX_TURNS} --permission-mode bypassPermissions`,
+      `claude -p --output-format stream-json --verbose --max-turns ${MAX_TURNS} --permission-mode dontAsk` +
+        ` --allowedTools ${WORKER_TOOLS} --session-id ${workerSession}` +
+        ` --settings scripts/loop/worker-settings.json --disallowedTools WebSearch WebFetch`,
       {
         cwd: root,
         shell: true,
@@ -180,6 +217,32 @@ try {
       },
     );
     const parsed = parseWorkerOutput(worker.stdout);
+
+    // A worker that produced NO stdout never became a session at all — bubblewrap missing, a
+    // permission-mode refusal, a CLI that is not on PATH. That is a machine fault, not a ticket
+    // fault, and it is the least diagnosable failure the loop has: parseWorkerOutput returns
+    // all-nulls and the run reads like a worker that did nothing. Refuse by name, with the
+    // CLI's own stderr as the evidence, and never blame the ticket (docs/TRAPS.md).
+    if (!worker.stdout?.trim()) {
+      const stderrTail = (worker.stderr ?? "").trim().split("\n").slice(-15).join("\n");
+      halted = { ticket, spawnFail: true };
+      writeFileSync(path.join(runDir, "HALT.md"), [
+        `# Loop halted — the worker for ${ticket} never started`,
+        ``,
+        `No stdout arrived, so this is a spawn fault on this machine, not a fault in the ticket.`,
+        `Known causes, each with its trap entry (docs/TRAPS.md): bubblewrap missing under`,
+        `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1; a permission-mode refusal; \`claude\` not on PATH.`,
+        ``,
+        `## the CLI's stderr (last lines)`,
+        ``,
+        "```",
+        stderrTail || "(empty)",
+        "```",
+      ].join("\n"));
+      log({ event: "spawn-fail", ticket, workerSession, exit: worker.status, wallMs: Date.now() - t0 });
+      break;
+    }
+
     const meta = {
       turns: parsed.turns,
       costUsd: parsed.costUsd,
@@ -190,6 +253,10 @@ try {
       ctxWindow: parsed.ctxWindow,
       ctxCalls: parsed.ctxSeries.length,
       overContextLine: overLine(parsed.ctxPeak),
+      // Named refusals under the dontAsk surface. A denial that mattered shows up twice: here,
+      // and as the gate the worker consequently failed — this is the "which tool was missing"
+      // half of that evidence. null means the result record never arrived.
+      permissionDenials: parsed.permissionDenials,
       wallMs: Date.now() - t0,
     };
 
@@ -243,4 +310,32 @@ try {
 }
 
 log({ event: "end", advanced, halted: halted?.ticket ?? null });
+
+// ---- evidence outlives the machine ---------------------------------------------
+// `.loop/` dies with its container; the caps this log exists to re-derive need rows that
+// accumulate across machines. The conductor's true last act copies the run's log into the
+// effort's committed history and commits that single file — file per run, so no two machines
+// ever collide (scripts/loop/evidence.mjs has the ruling). Explicit path, worker mess untouched:
+// `git commit -- <path>` commits only this file, so a halted tree stays exactly as evidence.
+{
+  const rel = effortLogFile(ticketDir, runId);
+  const src = path.join(runDir, "log.jsonl");
+  if (rel === null) {
+    console.log("[conduct] run evidence not banked — ticket dir is outside .wayfinder/ (scratch run)");
+  } else if (existsSync(src)) {
+    mkdirSync(path.dirname(path.join(root, rel)), { recursive: true });
+    copyFileSync(src, path.join(root, rel));
+    const msg = `loop(${runId}): run evidence — ${advanced} advanced${halted ? `, halted at ${halted.ticket}` : ""}`;
+    const add = trySh(`git add -- ${JSON.stringify(rel)}`);
+    const commit = add.ok ? trySh(`git commit -m ${JSON.stringify(msg)} -- ${JSON.stringify(rel)}`) : add;
+    if (commit.ok) {
+      console.log(`[conduct] run evidence committed: ${rel}`);
+    } else {
+      // The file is in the tree either way; a failed commit is loud, never fatal — the run's
+      // exit code belongs to the campaign, not to this bookkeeping.
+      console.error(`[conduct] run evidence written to ${rel} but NOT committed — ${commit.out.split("\n")[0]}`);
+    }
+  }
+}
+
 process.exit(halted ? 2 : 0);

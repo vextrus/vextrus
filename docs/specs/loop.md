@@ -36,7 +36,9 @@ is fit, verify whether the tree is green, and a campaign needs both — pre-push
 (`.githooks/pre-push` refuses every push while a campaign is active).
 
 Per iteration: `frontier.mjs` picks the next ticket (open + unclaimed + blockers closed,
-fail-closed) → a worker session runs `scripts/loop/PROMPT.md` against it → the conductor
+fail-closed) → a worker session runs `scripts/loop/PROMPT.md` against it, under the worker
+surface (`scripts/loop/worker-settings.json`: no web, no browser, no planning skills — a
+surface a worker cannot wander into is a worker that stays on its ticket) → the conductor
 gates:
 
 | gate | checks |
@@ -101,8 +103,8 @@ autocompaction fires at **80% of it** (`CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=80`, i.e
 full working session on a real ticket peaked at **126,664** — 12.7% of the window, and under this
 line. So 150,000 is 15% of the window and will fire rarely; keep it as *"this session did
 unusually much, read it closely"*, never as a failure threshold, and re-derive it from
-`ctxPeak`/`ctxWindow` once ≥10 cloud closes exist — which needs
-`.wayfinder/harness/inbox/the-loop-log-does-not-survive-the-container.md` ruled first.
+`ctxPeak`/`ctxWindow` once ≥10 closes have banked rows in `.wayfinder/<effort>/log/` (the
+survival mechanism was ruled 2026-08-13; rows accumulate from the next campaign on).
 
 ## The boundary review
 
@@ -136,9 +138,12 @@ raise to 60 minutes.
 
 After the first campaign of ~10+ honest closes, derive the real caps from `.loop/*/log.jsonl`
 (p95 × 2) and update `conduct.mjs` and this spec with the measured numbers. An unmeasured cap is
-a guess wearing a constant's clothes — **and note that `.loop/` does not survive a container, so
-that derivation has no source today**
-(`.wayfinder/harness/inbox/the-loop-log-does-not-survive-the-container.md`).
+a guess wearing a constant's clothes. **The derivation has a source now (ruled 2026-08-13):**
+the conductor's last act copies its `log.jsonl` to `.wayfinder/<effort>/log/<run-id>.jsonl` and
+commits it — file per run, no collisions at any width — so rows accumulate across machines, and
+`flags.mjs` reads a committed log the same as a live one. That committed directory is where the
+boundary review's evidence actually comes from; `.loop/` remains per-machine scratch. Cloud
+workers under `docs/specs/execution.md` carry their row in the PR instead.
 
 ## What is deliberately absent
 

@@ -50,3 +50,26 @@ ADR-0011 made the cloud container the default surface. The loop's spawn line has
       container by the ruled mechanism.
 - [ ] `conduct.mjs` refuses by name rather than producing a null-stdout worker.
 - [ ] `docs/TRAPS.md` carries both, since both present as a broken worker and are neither.
+
+## Progress — 2026-08-13, harness-grounding session (workstation; container confirmation owed)
+
+Both faults are ruled; the container demonstration remains, so this stays open.
+
+1. **bypassPermissions is gone from the spawn line** — replaced with
+   `--permission-mode dontAsk --allowedTools <declared surface>`, which the uid-0 refusal does
+   not apply to. Not IS_SANDBOX (unsupported incantation, per this ticket's own guardrail), not
+   a non-root user (a provisioning step nothing else needs). Decisive new evidence: CLI 2.1.229
+   *silently forces* a nested session's mode to default wherever CLAUDE_CODE_SUBPROCESS_ENV_SCRUB
+   is set — stderr says "Declare allowedTools explicitly" — so bypass was already a no-op on
+   every machine, and the ruled line is the CLI's own named repair. Proven on the workstation at
+   63e088a: Bash and Write execute, denials land in permission_denials, exit 0.
+2. **Trust is routed around, not pre-accepted**: the worker's allow surface travels on the spawn
+   line (a CLI source), so the untrusted-workspace behavior of ignoring *project* allows stops
+   mattering. No supported pre-acceptance exists (docs/research/the-harness-against-the-docs.md).
+3. **conduct.mjs refuses by name**: an empty-stdout worker now halts with event `spawn-fail`,
+   the CLI's stderr tail in HALT.md, and a TRAPS pointer — never a gate-fail blaming the ticket.
+
+**What the cloud session must confirm** (the acceptance box that stays open): on a real
+container, as root, untrusted workspace — (a) the dontAsk worker starts and can Bash/Edit/Write;
+(b) permission_denials carries any refusal by name; (c) the --settings worker surface applies
+(WebSearch denied); (d) hooks fire (SessionStart checkup) in the nested -p session.

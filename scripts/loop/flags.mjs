@@ -7,9 +7,13 @@
  * blank space cannot distinguish "no session crossed the line" from "nobody measured", which are
  * opposite facts (`docs/specs/loop.md`).
  *
- * Usage:  node scripts/loop/flags.mjs [.loop/<run-id>]   (defaults to the most recent run)
+ * Usage:  node scripts/loop/flags.mjs [.loop/<run-id> | .wayfinder/<effort>/log/<run-id>.jsonl]
+ *         (defaults to the most recent run under .loop/)
  * exit 0  pile printed
  * exit 1  no run to read
+ *
+ * A committed run log (scripts/loop/evidence.mjs) reads identically to a live one — which is
+ * the point: the boundary review works from evidence that outlived the machine.
  */
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
@@ -20,7 +24,10 @@ const root = path.resolve(import.meta.dirname, "../..");
 const arg = process.argv.slice(2).find((a) => !a.startsWith("--"));
 
 let runDir;
-if (arg) {
+if (arg && arg.endsWith(".jsonl")) {
+  // A committed per-run log, addressed directly.
+  runDir = null;
+} else if (arg) {
   runDir = path.resolve(root, arg);
 } else {
   const loopDir = path.join(root, ".loop");
@@ -36,7 +43,7 @@ if (arg) {
   runDir = path.join(loopDir, runs[runs.length - 1]);
 }
 
-const logPath = path.join(runDir, "log.jsonl");
+const logPath = runDir === null ? path.resolve(root, arg) : path.join(runDir, "log.jsonl");
 if (!existsSync(logPath)) {
   console.error(`flags: ${logPath} does not exist.`);
   process.exit(1);
@@ -54,5 +61,5 @@ const entries = readFileSync(logPath, "utf8")
   })
   .filter(Boolean);
 
-console.error(`flags: ${path.relative(root, runDir)}, context line ${CONTEXT_LINE.toLocaleString("en-IN")}\n`);
+console.error(`flags: ${path.relative(root, runDir ?? logPath)}, context line ${CONTEXT_LINE.toLocaleString("en-IN")}\n`);
 console.log(flagPile(entries));

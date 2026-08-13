@@ -427,15 +427,19 @@ Then, for the AFK campaign:
   call is now known by name and known to be unreachable; the in-container conductor is ruled out on
   credential lifetime, and the CI conductor needs a credential the repository does not have. So
   8.8 is blocked on a repository action (`inbox/dispatch-needs-a-credential-the-repo-does-not-have.md`),
-  not on a measurement. Two further faults found by ticket 18 must be ruled before any worker runs
-  unattended, and both are invisible until one does: the spawn line
+  not on a measurement. **Re-ruled 2026-08-13:** the credential question is closed — not funded,
+  and not needed: the conductor is the dispatcher's Linux host and the dispatch primitive is the
+  Routine API (docs/research/the-dispatch-primitive.md); the successor spec is
+  docs/specs/execution.md. Two further faults found by ticket 18 must be ruled before any worker
+  runs unattended, and both are invisible until one does: the spawn line
   (`inbox/the-worker-spawn-line-does-not-run-on-a-cloud-container.md`) and the permission
   classifier (`inbox/the-permission-classifier-is-a-second-deny-list.md`). The parts that *are*
   mechanism-independent — the claim CAS, the gates, the quarantine policy — are specified in §6
   and cost nothing to hold.
 - **8.9** The per-PR review session (`REVIEW.md` rescoped to one diff, fails closed, files only).
-  **Blocked on the same seam** — it is a Claude session running in CI, so it needs 6.1's answer
-  about credentials and invocation before it is anything but YAML.
+  **Unblocked from the credential seam, 2026-08-13:** under docs/specs/execution.md the judge is
+  a local session on the conductor's host (no CI credential exists or is needed); a Routine with
+  a GitHub PR trigger is the later cloud variant. It stays unbuilt until the execution spec is.
 - ~~**8.10** Rescope `.githooks/pre-push`.~~ **No change needed, verified.** `.loop/` is
   gitignored and untracked (`git ls-files .loop` is empty), so `ACTIVE` exists only in the checkout
   running `conduct.mjs`. A cloud worker container never has the file and is never refused by it —
@@ -449,7 +453,7 @@ Then, for the AFK campaign:
 |---|---|---|---|
 | 6.1 | What dispatches a cloud session non-interactively, with what credentials and what durability? | cloud | **Answered, and the answer is "not from here"** — see below |
 | 7.1 | Can *Claude Code Remote*'s MCP schemas be deferred or disabled? What is the resulting startup? | cloud | **Answered** — ADR-0013: denied, not deferred; 29.8k → 22.8k |
-| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud | **Blocked, and not on effort** — `.loop/` dies with its container, so there is no source. **n=1 banked below.** `inbox/the-loop-log-does-not-survive-the-container.md` |
+| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud | **Unblocked 2026-08-13:** run logs now survive as committed `.wayfinder/<effort>/log/<run-id>.jsonl` (conductor-written); rows accumulate from the next campaign. **n=1 banked below.** |
 | 6.3 | `pnpm verify` wall time on a cloud container. | cloud | **Answered: 43.9s** (n=3, `6c6e001`), `next build` 54% of it. No cold/warm distinction exists — every build is cold by design. `loop.md` corrected |
 | 5.3 | Does a merge queue accept this repo's plan and ruleset shape? | GitHub | Refused by GitHub (§5.3); squash-only landed |
 | 6.4 | Does dispatch width 3 produce zero conflicts after 8.1? Raise only on that evidence. | cloud | **Blocked on 6.1 and on 6.2's log problem** |
