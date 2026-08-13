@@ -14,6 +14,7 @@
     "build": "next build",
     "start": "next start -p 3210",
     "worker": "tsx src/server/worker-main.ts",
+    "corpus": "tsx src/server/corpus-main.ts",
     "verify": "node scripts/verify.mjs",
     "checkup": "node scripts/checkup.mjs",
     "parity": "bash scripts/parity.sh",
