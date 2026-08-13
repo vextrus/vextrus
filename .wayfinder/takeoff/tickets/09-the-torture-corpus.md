@@ -68,19 +68,28 @@ are real.
 Ruled 2026-08-13 by grilling. The corpus is a **framed census**, not a pile of fixtures: ten
 rulings below, each with the measurement that forced it and the alternative put and rejected.
 
-Measured on this container (`claude/torture-corpus-eivgkr@63baec8`, linux x64, node v22.22.2 —
-**below the `engines` pin, so `pnpm verify` refuses at stage zero**; every stage was run
-directly and every figure below carries that caveat):
+Measured on this container, `claude/torture-corpus-eivgkr`, linux x64. **Two machines, and the
+difference matters** — the session began before `scripts/provision.sh` had ever run here, on
+node v22.22.2, below the `engines` pin, where `pnpm verify` refuses at stage zero (harness ticket
+09's stage-zero guard doing exactly its job). Those first figures were taken by running each
+stage directly, and they are kept below only because ruling 8 was argued on them and the
+correction is part of the record.
 
-| stage | wall |
-|---|---|
-| typecheck | 7.8s |
-| lint | 4.6s |
-| test (vitest — 114 tests, 11 files) | 10.6s |
-| cad:ruff | 2.1s |
-| cad:test (pytest — 35 tests) | 7.3s |
-| build (`next build`) | 40.3s |
-| **total** | **≈72.7s against the 90s bar** |
+| stage | node v22.22.2, stages run directly | node v24.19.0, `pnpm verify`, warm |
+|---|---|---|
+| typecheck | 7.8s | 5.2s |
+| lint | 4.6s | 2.2s |
+| test (vitest — 114 tests, 11 files) | 10.6s | 4.5s |
+| cad:ruff | 2.1s | 0.0s |
+| cad:test (pytest — 35 tests) | 7.3s | 0.7s |
+| build (`next build`) | 40.3s | 17.2s |
+| **total** | **≈72.7s** | **29.7s** |
+
+The provisioner's own cold run of the same tree reports **`verify: green in 54.2s`** (build
+27.3s), and `pnpm parity` — checkup, verify, `test:db` at 46 tests, dev answering 200 on :3210 —
+green in 76s. So the honest figure against the 90s bar is **29.7s warm, 54.2s cold, on a machine
+that satisfies the pin**, and headroom is roughly **35–60s**, not the ~17s the unfit machine
+showed. Ruling 8 was argued partly on that understated number; see the correction recorded there.
 
 ### 1. The corpus is framed now; rails fill it
 
@@ -294,9 +303,18 @@ The corpus stays **inside `pnpm verify`**. The frame names a corpus budget of **
 lanes**; `verify`'s existing per-stage line is the instrument. Breaching it triggers
 partition-by-lane — never trimming, per this ticket's guardrail.
 
-*Forced by:* the measurement above. Headroom is ~17s, not the slack it was assumed to be, and
-`next build` alone is 55% of the spend — so the corpus's growth allowance is governed by a stage
-the corpus does not control.
+*Forced by:* `next build` alone is 55–58% of the spend on either machine, so the corpus's growth
+allowance is governed by a stage the corpus does not control. That much holds regardless.
+
+**Correction, recorded rather than quietly fixed.** This ruling was argued on ~17s of headroom,
+measured before `scripts/provision.sh` had run on this container. On the provisioned machine the
+real figure is 29.7s warm / 54.2s cold against the 90s bar — **35–60s of headroom**, several
+times what was put to the dispatcher. The ruling is unchanged, because it never rested on
+scarcity: partition-now was rejected on ADR-0007 grounds (a lane outside `verify` is a lane
+outside the contract, and bar 1 requires the corpus to pass *inside* it), and those grounds are
+untouched. What the correction does change is urgency — the 20s budget is not close to binding,
+and a rail should not reach for partition-by-lane on a hunch. Measure first, on a machine that
+satisfies the pin.
 
 *Rejected — partition now:* a corpus lane outside `verify` is a lane outside the contract, and
 ADR-0007 rules the exit code **is** the contract. Destination bar 1 requires the corpus to pass
@@ -351,8 +369,9 @@ making a red test go away — but it is indistinguishable in a diff, so it is re
 explicitly. It should land in a commit whose entire subject is that invariant.
 
 *Cost:* regenerating both fixtures took 3.4s wall, mostly `uv run` + `ezdxf` import paid once.
-Marginal per-fixture cost is **unmeasured**; at ~20 fixtures it lands against ~17s of headroom,
-and if it does not fit, this is the first thing partition-by-lane should take.
+Marginal per-fixture cost is **unmeasured**. Against the corrected headroom (35–60s) this is
+comfortable at ~20 fixtures; it was not obviously so against the 17s first measured, and if it
+ever stops fitting, this is the first thing partition-by-lane should take.
 
 ### 10. This ticket rules and stops
 
