@@ -104,6 +104,13 @@ done (`measurement-rules.md` §8).
 - **Scale/architecture, ruled in charting.** The JSON artifact stays the immutable, hashable
   **evidence of record**; a **derived, rebuildable Postgres entity index** serves queries and
   the viewer. The CLI stays pure — ADR-0001 untouched.
+- **[Vector PDF to EntityGraph](tickets/06-vector-pdf-to-entitygraph.md) (2026-08-13).** The lane
+  is admitted at **two entity types of ten** — LWPOLYLINE + TEXT, the other eight named absences.
+  Extractor is **pikepdf** (measured: PDFium cannot name an object's layer); pypdfium2 stays for
+  rendering. Measured on real sheets: text is often outlined (0 chars on 3 of 3 CAD plots), OCGs
+  are usually flattened away (0 of 5), `/Measure` never appears (0 of 14), and content-stream
+  order renumbers a quarter of an untouched drawing across a revision. Rejected pypdfium2-alone
+  and pdfplumber. HABS/HAER corrected out of this lane — it is raster, ticket 07's material.
 - **Deployment, ruled in charting.** A deployed environment sufficient for bar (c): real URL,
   real auth, real tenancy, invite-only. No billing, no signup funnel, no SLA — those are
   surfaces for customers who do not exist yet (legacy fault F8 in miniature).
@@ -130,6 +137,10 @@ done (`measurement-rules.md` §8).
   ablation law — is a real question we cannot phrase before 19 rules how schedules are read.
 - **Multi-user concurrency on one campaign.** Two QSs disposing the same queue. Acts are
   append-only so the substrate is sound, but the contention model is unexplored.
+- **Bangladeshi drawings on the PDF lane.** Ticket 06 measured US/EU/AU sheets only; no BD
+  drawing has been through this lane. Whether BD practice plots SHX (text as outlines) or
+  TrueType, and whether Bangla labels survive at all, is a real gap — but it is a *corpus*
+  problem before it is a question, and 08's private lane may be where it graduates.
 - **The estimate seam.** What exactly `estimate/` will consume from a signed bill. Out of scope
   to *build*, but the seam's shape should be visible before this map closes so we do not paint
   it into a corner.

@@ -26,7 +26,15 @@ calibration is unrepresentable — `calibration_id NOT NULL`.** No spine table e
    rather than merely discouraged.
 3. **Precedence, implemented.** QS two-point → grid spacing match → overridden dimension ratio
    (style factor divided out) → file units header. **Printed scale notes rank nowhere.** The
-   PDF lane loses the last rank entirely (ticket 06); rule what that does to the ladder.
+   PDF lane loses **two** ranks, not one — ticket 06 measured it: no file-units header exists,
+   and no DIMENSION object exists either, so the dimension-ratio rank has no input. `/UserUnit`
+   read 1.0 in 14 of 14 files and PDF's own `/Measure` viewport (ISO 32000-1 §12.9) appeared in
+   none, so there is no PDF-native substitute. Worse, the surviving grid-spacing rank is itself
+   degraded: `cad-ingestion.md` §8 detects a bubble as text inside a **circle**, and the PDF lane
+   has no CIRCLE (a circle is four Beziers; recovering one is arc-fitting, which is a guess).
+   Rule what a two-rung ladder does to affirmation — and whether an arc-fit *proposal* a QS
+   affirms is admissible, or whether the honest answer is that a PDF sheet without a QS two-point
+   act is unplaceable and measures nothing.
 4. **X and Y derive independently and are averaged as nothing.** Disagreement beyond tolerance
    makes the view unplaceable. Rule the tolerance and where anisotropy is surfaced.
 5. **Single-observation verification at ±1% symmetric** — §5 derives this because scale error

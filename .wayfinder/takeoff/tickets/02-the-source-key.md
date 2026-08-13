@@ -19,7 +19,12 @@ weakening it, and the amendment is written into the domain file as part of the r
    PDF key? Charting proposed a **content-derived** digest (page + operator-path, quantized),
    explicitly **never an ordinal counter**, because `identity.md` §3 requires that an identical
    re-derivation reproduce the identical key multiset — a counter re-mints on re-ingest and
-   orphans every citation. Confirm or replace that construction.
+   orphans every citation. Confirm or replace that construction. **Ticket 06 measured the case
+   against an ordinal:** plotting the committed `structural-r1`/`r2` revision pair to vector PDF,
+   both give exactly 100 painted paths, and **25 of the 90 geometries unchanged between the two
+   land at a different content-stream index** — a three-column edit renumbers a quarter of the
+   untouched drawing. Stream position is not a provenance key; the content-digest proposal stands
+   unless something better appears.
 2. **Quantization.** A content digest over floating-point path coordinates is unstable unless
    quantized. §3 already quantizes placement keys to 0.1 drawing unit. What is the analogous
    figure for PDF user-space, and what happens when two distinct paths collide after
