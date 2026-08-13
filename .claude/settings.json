@@ -29,6 +29,12 @@
   "showTurnDuration": true,
   "enableAllProjectMcpServers": true,
   "skillOverrides": {
+    "docx": "off",
+    "pdf": "off",
+    "pptx": "off",
+    "xlsx": "off",
+    "skill-creator": "off",
+    "morning": "off",
     "dataviz": "off",
     "claude-api": "off",
     "update-config": "off",
@@ -79,7 +85,25 @@
       "ReportFindings",
       "ScheduleWakeup",
       "ShareOnboardingGuide",
-      "Workflow"
+      "Workflow",
+      "ShowOnboardingRolePicker",
+      "SuggestSkills",
+      "ListAgents",
+      "mcp__Claude_Code_Remote__archive_session",
+      "mcp__Claude_Code_Remote__create_session",
+      "mcp__Claude_Code_Remote__create_trigger",
+      "mcp__Claude_Code_Remote__delete_trigger",
+      "mcp__Claude_Code_Remote__fire_trigger",
+      "mcp__Claude_Code_Remote__get_session",
+      "mcp__Claude_Code_Remote__interrupt_session",
+      "mcp__Claude_Code_Remote__list_environments",
+      "mcp__Claude_Code_Remote__list_repos",
+      "mcp__Claude_Code_Remote__list_sessions",
+      "mcp__Claude_Code_Remote__list_triggers",
+      "mcp__Claude_Code_Remote__set_session_tags",
+      "mcp__Claude_Code_Remote__set_session_title",
+      "mcp__Claude_Code_Remote__unarchive_session",
+      "mcp__Claude_Code_Remote__update_trigger"
     ]
   }
 }
