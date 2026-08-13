@@ -95,6 +95,17 @@ mkdirSync(runDir, { recursive: true });
     process.exit(1);
   }
 }
+// The conductor's whole job is spawning nested `claude`, and on Linux that inherits
+// `.claude/settings.json`'s CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1, which is bubblewrap. Without the
+// binary every worker dies in 0.6s with empty stdout and a page of minified CLI source — measured
+// on a cloud container at 6c6e001. Read as a worker fault that is a machine fault, it would halt a
+// campaign on the first ticket and blame the ticket. Refuse here, by name, before anything spawns:
+// a refusal always carries a reason (CLAUDE.md). Linux only — the scrub is a no-op elsewhere.
+if (process.platform === "linux" && spawnSync("bwrap", ["--version"], { encoding: "utf8" }).status !== 0) {
+  console.error("conduct: bubblewrap is missing, so every worker would abort at startup under");
+  console.error("conduct: CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1 (docs/TRAPS.md). Run scripts/provision.sh.");
+  process.exit(1);
+}
 if (existsSync(activeMarker)) {
   console.error(`conduct: another run is active (${activeMarker}). Remove it only if you are sure it is stale.`);
   process.exit(1);
@@ -159,8 +170,13 @@ try {
         encoding: "utf8",
         timeout: WALL_CLOCK_MS,
         maxBuffer: 64 * 1024 * 1024,
-        // TRAPS: nested headless sessions inherit a permission scrub without this.
-        env: { ...process.env, CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "0" },
+        // No CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0 here any more. It was the workaround for a
+        // missing bubblewrap on the cloud image, and it bought a spawn by silently dropping the
+        // subprocess isolation `.claude/settings.json` deliberately turns on — invisibly, on
+        // every worker, forever. The dependency is provisioned instead (scripts/provision.sh,
+        // `pnpm checkup`'s bubblewrap line), so the scrub is inherited and works. The preflight
+        // above refuses by name when it cannot.
+        env: process.env,
       },
     );
     const parsed = parseWorkerOutput(worker.stdout);

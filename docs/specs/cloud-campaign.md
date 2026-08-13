@@ -337,11 +337,11 @@ the 12%.**
 
 What is actually worth doing, in order:
 
-1. **Establish whether the cloud's MCP schemas can be deferred.** Locally, MCP tools cost 0 tokens
-   until fetched (10.1k sits in the deferred pool, outside the 15.4k). In cloud, *Claude Code
-   Remote* reads as resident at 9.7k. If deferral or selective disabling is available there, that
-   single setting is worth more than every other item on this list combined. **Unknown from a
-   local session; measure it, do not assume it.**
+1. ~~**Establish whether the cloud's MCP schemas can be deferred.**~~ **Answered — ADR-0013.**
+   Not deferral: `permissions.deny` *prunes* the schema, and denying 15 of *Claude Code Remote*'s
+   20 tools took the startup from 29.8k to 22.8k. It was indeed worth more than everything else on
+   this list — and ticket 18 has since established that "everything else on this list" was worth
+   very little, so this item's own framing was the error. See the closing paragraph.
 2. **Keep the SessionStart hook.** ~400 tokens buys a fitness verdict on a machine nobody
    configured — the highest-value tokens in the startup, and this session is the proof: it opened
    with a named `BROKEN` on the pg locale.
@@ -353,6 +353,27 @@ What is actually worth doing, in order:
 
 Stated plainly because it is the answer to the actual question: **the harness is already near its
 floor. The remaining headroom is in the platform's hands, not the repo's.**
+
+**Closed by ticket 18 — stop optimising startup context.** That paragraph was right and
+understated. Measured on a cloud container at `6c6e001`: the window is **1,000,000 tokens**, not
+the ~200k this section was written against, and the platform autocompacts at 80% of it. ADR-0013's
+7k trim is therefore **0.7% of the window and 0.9% of the distance to the point where the platform
+itself intervenes** — and a full working session on a real ticket peaked at 126,664 tokens, 12.7%
+of the window.
+
+What actually fills a session is not the repo's surface at all: roughly half is the model's own
+generation (invisible — the transcript stores every `thinking` block with zero characters of
+content), a third is tool return dominated by `Bash`, and everything the harness controls is a
+rounding error. The repo's two nominal levers were measured and **neither has ever been reached**:
+`BASH_MAX_OUTPUT_LENGTH` at 50,000 would have to be cut 5× before it clipped a single result, and
+`pnpm verify`'s output is under 1,000 tokens on every path including all three reds — a red run
+prints *less* than a green one, because verify fails fast. Delegation is the one lever that works,
+measured at **4.1×** (a subagent absorbed 21,910 tokens of growth and returned 5,398), which
+supports `CLAUDE.md`'s existing restriction rather than changing it.
+
+**No further work on startup context is warranted**, including the 4.6k residue ADR-0013 left,
+which needs a change at the environment runner in any case.
+`docs/research/what-fills-a-cloud-session.md` has the tables.
 
 ---
 
@@ -402,9 +423,14 @@ Then, for the AFK campaign:
   each mutation turned exactly its own assertions red and nothing else, and `frontier.mjs` was
   restored byte-identical. A pure core can be extracted later, guarded by these.
 - **8.8** Conductor v2 per §6 — claims by CAS, per-ticket PR, G1–G4, quarantine, fuses.
-  **Blocked on 6.1, and deliberately not started.** Every other item here was buildable because its
-  mechanism was known; the conductor's dispatch call is not, and writing one against a guessed API
-  would produce code whose first contact with the cloud rewrites it. The parts that *are*
+  **Still blocked, and 6.1's answer sharpened the reason rather than clearing it.** The dispatch
+  call is now known by name and known to be unreachable; the in-container conductor is ruled out on
+  credential lifetime, and the CI conductor needs a credential the repository does not have. So
+  8.8 is blocked on a repository action (`inbox/dispatch-needs-a-credential-the-repo-does-not-have.md`),
+  not on a measurement. Two further faults found by ticket 18 must be ruled before any worker runs
+  unattended, and both are invisible until one does: the spawn line
+  (`inbox/the-worker-spawn-line-does-not-run-on-a-cloud-container.md`) and the permission
+  classifier (`inbox/the-permission-classifier-is-a-second-deny-list.md`). The parts that *are*
   mechanism-independent — the claim CAS, the gates, the quarantine policy — are specified in §6
   and cost nothing to hold.
 - **8.9** The per-PR review session (`REVIEW.md` rescoped to one diff, fails closed, files only).
@@ -419,14 +445,55 @@ Then, for the AFK campaign:
 **Measurements owed — each must be taken on the machine it describes, and quoted with its
 `checkup` environment line:**
 
-| # | question | where |
-|---|---|---|
-| 6.1 | What dispatches a cloud session non-interactively, with what credentials and what durability? | cloud |
-| 7.1 | Can *Claude Code Remote*'s MCP schemas be deferred or disabled? What is the resulting startup? | cloud |
-| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud |
-| 6.3 | `pnpm verify` wall time on a cloud container (local: 16.1s at `00c6ce3`; the ~4s in `loop.md` is stale). | cloud |
-| 5.3 | Does a merge queue accept this repo's plan and ruleset shape? | GitHub |
-| 6.4 | Does dispatch width 3 produce zero conflicts after 8.1? Raise only on that evidence. | cloud |
+| # | question | where | status |
+|---|---|---|---|
+| 6.1 | What dispatches a cloud session non-interactively, with what credentials and what durability? | cloud | **Answered, and the answer is "not from here"** — see below |
+| 7.1 | Can *Claude Code Remote*'s MCP schemas be deferred or disabled? What is the resulting startup? | cloud | **Answered** — ADR-0013: denied, not deferred; 29.8k → 22.8k |
+| 6.2 | Turn / wall / cost distribution over ≥10 cloud closes → re-derive both caps. | cloud | **Blocked, and not on effort** — `.loop/` dies with its container, so there is no source. **n=1 banked below.** `inbox/the-loop-log-does-not-survive-the-container.md` |
+| 6.3 | `pnpm verify` wall time on a cloud container. | cloud | **Answered: 43.9s** (n=3, `6c6e001`), `next build` 54% of it. No cold/warm distinction exists — every build is cold by design. `loop.md` corrected |
+| 5.3 | Does a merge queue accept this repo's plan and ruleset shape? | GitHub | Refused by GitHub (§5.3); squash-only landed |
+| 6.4 | Does dispatch width 3 produce zero conflicts after 8.1? Raise only on that evidence. | cloud | **Blocked on 6.1 and on 6.2's log problem** |
+
+**6.1, answered.** The mechanism exists and is named — `mcp__Claude_Code_Remote__create_session`,
+on the session-scoped MCP server the runner writes to `/tmp/mcp-config-<session>.json` — and it is
+unreachable from a session of this repo by three independent controls (this repo's deny list; the
+runner's `"permission_policy": "always_ask"` with no party to ask in an unattended container; a
+model-side permission classifier that refused even reading its schema). Per ticket 18's guardrail
+that was written up and **no workaround was built**.
+
+The finding that decides the design is about credentials rather than permissions: the session's
+OAuth token arrives as an inherited **file descriptor**
+(`CLAUDE_CODE_OAUTH_TOKEN_FILE_DESCRIPTOR=4`), not an env var and not a file, and the MCP endpoint
+is scoped to this session's id. **There is no durable credential in the container.** So §6's first
+candidate — a long-lived container running the conductor and spawning siblings — is not undecided,
+it is **structurally unavailable**: the conductor cannot outlive the credential it would dispatch
+with. The GitHub Actions candidate is ruled in but **unfunded**: `ci.yml` declares
+`permissions: contents: read` and holds no Anthropic credential of any kind. Installing one is a
+repository action and the dispatcher's call —
+`inbox/dispatch-needs-a-credential-the-repo-does-not-have.md`.
+
+**Concurrency limits stay unmeasured**, and deliberately: measuring what happens at the limit means
+dispatching sessions, which none of the three controls permits and which ADR-0011 forbids on
+principle.
+
+**6.2, n=1, banked here because `.loop/` will not keep it.** One build ticket
+(`takeoff/10-the-design-system`) run through the real worker path on a cloud container at
+`6c6e001`, `MAX_TURNS` 150, 30-minute fuse:
+
+| | measured | cap | headroom |
+|---|---|---|---|
+| turns | **118** | 150 | **1.27×** |
+| wall | **20.7 min** | 30 min | **1.45×** |
+| cost | **$5.48** | — | — |
+| `ctxPeak` | **176,003** of a 1,000,000 window | line 150,000 | **over the line** |
+
+The caps are tighter against a cloud build ticket than the local decision tickets they were
+derived from: the interim rule here is *cap ≥ 2× observed max*, and `MAX_TURNS` 150 is 1.27× this
+one observation rather than the 2.05× claimed. **This supports the wall fuse going to 60 minutes
+with a number rather than an intuition, and it puts `MAX_TURNS` back on the list.** One
+observation is not a distribution and this is not a re-derivation — it is the first row, and the
+outcome was a `## Stuck`, not a close (`docs/research/what-fills-a-cloud-session.md` §2 has why,
+and why it is not evidence of context degradation).
 
 **Not decided here, and named so it is not mistaken for done:** whether the boundary review
 survives as a separate arc-level pass once a per-PR review exists (they answer different
