@@ -120,13 +120,30 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const claimed = setClaim(readFileSync(ticketAbs, "utf8"), claim);
   if (claimed.refusal) refuse(`cannot claim ${ticket}: ${claimed.refusal}`, "pick another ticket or clear the state on main first.");
   console.log(`\ndispatch: ${ticket} → Claimed by: ${claim}`);
-  if (!dryRun) writeFileSync(ticketAbs, claimed.text);
 
+  // `dispatch/claim-*` is this tool's namespace, and squash-merge means a landed claim PR never
+  // makes its branch an ancestor of main — so every past dispatch leaves local (and sometimes
+  // remote) branches that look unlanded forever. The discriminator is the PR, not the branch:
+  // an OPEN claim PR is an in-flight dispatch and refuses; no open PR means residue, and
+  // `switch -C` / `push --force` reset it. Measured 2026-08-14: the first re-dispatch after the
+  // reverted experiment refused on exactly this residue.
   const claimBranch = `dispatch/claim-${slugOf(ticket)}`;
   const ticketRel = path.relative(root, ticketAbs).replaceAll("\\", "/");
-  act("claim branch", `git switch -c ${claimBranch}`);
+  const openPr = sh(`gh pr list --state open --head ${claimBranch} --json number --jq length`);
+  if (openPr.ok && Number(openPr.out) > 0) {
+    refuse(
+      `an open claim PR already exists for ${claimBranch}.`,
+      "that dispatch is in flight — click it, or close it, before dispatching this ticket again.",
+    );
+  }
+
+  // The ticket edit lands in the tree only after the branch exists: a refusal above must leave
+  // the checkout exactly as it found it (the first run of this tool left a half-written claim
+  // dirtying main when the branch step refused).
+  act("claim branch", `git switch -C ${claimBranch}`);
+  if (!dryRun) writeFileSync(ticketAbs, claimed.text);
   act("commit claim", `git commit -m ${JSON.stringify(`dispatch: claim ${path.basename(ticket)}`)} -- ${JSON.stringify(ticketRel)}`);
-  act("push claim", `git push -u origin ${claimBranch}`);
+  act("push claim", `git push -u --force origin ${claimBranch}`);
   const pr = act(
     "claim PR",
     `gh pr create --head ${claimBranch} --title ${JSON.stringify(`dispatch: claim ${path.basename(ticket)}`)} ` +
