@@ -1,7 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "env": {
-    "CLAUDE_CODE_INCLUDE_GIT_INSTRUCTIONS": "false",
     "CLAUDE_CODE_SUBPROCESS_ENV_SCRUB": "1",
     "CLAUDE_CODE_NO_FLICKER": "1",
     "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "128000",
@@ -25,6 +24,7 @@
   "attribution": {
     "commit": "Co-Authored-By: Claude <noreply@anthropic.com>"
   },
+  "includeGitInstructions": false,
   "autoMemoryEnabled": false,
   "showTurnDuration": true,
   "enableAllProjectMcpServers": true,
