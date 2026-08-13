@@ -17,7 +17,7 @@ if [ -f ".loop/ACTIVE" ]; then
 fi
 
 # 2. `main` is not a session's to write (ADR-0010): the dispatcher owns branches,
-#    and landing is the human's merge button on a PR whose check has run. Until
+#    and landing is a non-author act on a PR whose check has run. Until
 #    now that was prose in CLAUDE.md, and prose does not survive a session that
 #    mis-reads its instructions at 3am.
 #
@@ -32,7 +32,7 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       fi
       echo "pre-push: refused — this pushes $remote_ref." >&2
       echo "Sessions work on the branch they were given and land through a PR (ADR-0010);" >&2
-      echo "the merge is the human's click. If you are that human and mean it:" >&2
+      echo "you never merge your own work. If you are the dispatcher and mean it:" >&2
       echo "  VEXTRUS_ALLOW_MAIN_PUSH=1 git push ..." >&2
       exit 1
       ;;
