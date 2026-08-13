@@ -36,7 +36,9 @@ is fit, verify whether the tree is green, and a campaign needs both — pre-push
 (`.githooks/pre-push` refuses every push while a campaign is active).
 
 Per iteration: `frontier.mjs` picks the next ticket (open + unclaimed + blockers closed,
-fail-closed) → a worker session runs `scripts/loop/PROMPT.md` against it → the conductor
+fail-closed) → a worker session runs `scripts/loop/PROMPT.md` against it, under the worker
+surface (`scripts/loop/worker-settings.json`: no web, no browser, no planning skills — a
+surface a worker cannot wander into is a worker that stays on its ticket) → the conductor
 gates:
 
 | gate | checks |

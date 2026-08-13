@@ -161,8 +161,13 @@ try {
     // `iterations` array is partial, so neither is a context size (scripts/loop/usage.mjs measures
     // this). The stream carries one usage per message, which is the only way to see the peak — and
     // the peak is what the boundary review's flag pile is made of.
+    // The worker's surface is scripts/loop/worker-settings.json: no web, no browser, no
+    // planning skills — a worker executes one decided ticket and cannot wander (item 4,
+    // docs/specs/execution.md). --disallowedTools is the same denial on the flag path, so the
+    // restriction does not depend on how a given CLI version layers --settings.
     const worker = spawnSync(
-      `claude -p --output-format stream-json --verbose --max-turns ${MAX_TURNS} --permission-mode bypassPermissions`,
+      `claude -p --output-format stream-json --verbose --max-turns ${MAX_TURNS} --permission-mode bypassPermissions` +
+        ` --settings scripts/loop/worker-settings.json --disallowedTools WebSearch WebFetch`,
       {
         cwd: root,
         shell: true,
