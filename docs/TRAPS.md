@@ -76,6 +76,15 @@ with a dated, observed cost — never speculatively.
   `pnpm checkup`'s node line is BROKEN. The cause is the residue: a PATH you did not set, read
   by a shell that sources nothing.
 
+- **`CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` needs `bubblewrap`, which the cloud image does not
+  have.** 2026-08-13, ADR-0013's measurements: any nested `claude` invocation dies with
+  *"bubblewrap is required for subprocess env scrubbing and isolation"* and a page of minified
+  CLI source above it that looks like a crash in the tool. The repo sets the variable in
+  `.claude/settings.json` and the Windows workstation has the binary; a cloud container does
+  not. Diagnose with `command -v bwrap`. For a one-off nested run, prefix
+  `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=0` — that loses subprocess isolation, so scope it to the
+  command, never export it.
+
 ## Verification
 
 - **A pnpm built-in silently beats a package script of the same name.** 2026-08-12, ticket 03:
