@@ -44,6 +44,17 @@ describe("parseWorkerOutput — the stream shape", () => {
     expect(out.ctxWindow).toBe(1_000_000);
   });
 
+  it("reads permission denials off the result, and null when the result never came", () => {
+    // Under the dontAsk spawn line a refusal is data, not a hang. Empty array means "nothing
+    // refused"; null means "no result record", which must never read as a clean bill.
+    const denied = parseWorkerOutput(
+      [assistant(2, 100, 0), result({ permission_denials: [{ tool_name: "WebSearch" }] })].join("\n"),
+    );
+    expect(denied.permissionDenials).toEqual([{ tool_name: "WebSearch" }]);
+    expect(parseWorkerOutput([assistant(2, 100, 0), result()].join("\n")).permissionDenials).toBeNull();
+    expect(parseWorkerOutput(assistant(2, 100, 0)).permissionDenials).toBeNull();
+  });
+
   it("skips non-JSON lines rather than losing the run", () => {
     const out = parseWorkerOutput(["a stray warning on stdout", assistant(2, 500, 0), "", result()].join("\n"));
     expect(out.ctxPeak).toBe(502);

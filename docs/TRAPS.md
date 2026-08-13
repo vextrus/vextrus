@@ -113,6 +113,27 @@ with a dated, observed cost — never speculatively.
   `--output-format stream-json --verbose` and one `usage` per message
   (`scripts/loop/usage.mjs`).
 
+- **A nested worker cannot be spawned with `bypassPermissions`, twice over — and both refusals
+  present as a broken worker.** (1) Under uid 0 the CLI refuses it outright: exit 1, *empty
+  stdout*, so the run parses as a worker that produced nothing — measured on a cloud container
+  at `6c6e001` (every cloud container is root). (2) Since CLI ~2.1.229, any machine where
+  `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB` is set silently *forces the nested session's permission
+  mode to default* — measured on the Windows workstation at `63e088a`, stderr: *"Permission mode
+  forced to default … Declare allowedTools explicitly"*. So the old spawn line was refused on
+  containers and quietly ignored everywhere else. `conduct.mjs` now spawns with
+  `--permission-mode dontAsk --allowedTools …` (the CLI's own named repair), and halts by name
+  on an empty-stdout worker instead of blaming the ticket. Related: an untrusted workspace
+  ignores the *project* allow list ("Ignoring 12 permissions.allow entries"), which is why the
+  worker's allow surface lives on the spawn line, not in `.claude/settings.json`.
+
+- **A nested `claude` writes into its parent's transcript, where it reads as a context collapse
+  that never happened.** It inherits `CLAUDE_CODE_SESSION_ID`, so its records land in a file
+  named for the *parent's* session — measured on a cloud container at `6c6e001` as an apparent
+  fall from 45,620 to 21,486 tokens mid-session. The live stream (`usage.mjs`) is unaffected;
+  anything reading `~/.claude/projects/` must deduplicate assistant records by `requestId` (not
+  doing so overstated output by ~60%) and drop records from foreign session ids. `conduct.mjs`
+  gives every worker its own `--session-id`, which is the documented flag for exactly this.
+
 ## Verification
 
 - **A pnpm built-in silently beats a package script of the same name.** 2026-08-12, ticket 03:

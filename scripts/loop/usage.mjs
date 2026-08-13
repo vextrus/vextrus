@@ -42,7 +42,18 @@ const contextOf = (usage) =>
  * zero would read as "this session used no context" and quietly clear the flag.
  */
 export function parseWorkerOutput(stdout) {
-  const out = { turns: null, costUsd: null, workerResult: null, ctxPeak: null, ctxSeries: [], ctxWindow: null };
+  const out = {
+    turns: null,
+    costUsd: null,
+    workerResult: null,
+    ctxPeak: null,
+    ctxSeries: [],
+    ctxWindow: null,
+    // Refusals the worker met, from the result record. Under the dontAsk spawn line every tool
+    // outside the declared allow surface lands here instead of hanging a prompt nobody answers —
+    // an empty array is "nothing was refused", null is "the result never arrived".
+    permissionDenials: null,
+  };
   if (!stdout || stdout.trim() === "") return out;
 
   const events = [];
@@ -72,6 +83,7 @@ export function parseWorkerOutput(stdout) {
       out.turns = e.num_turns ?? null;
       out.costUsd = e.total_cost_usd ?? null;
       out.workerResult = e.subtype ?? e.type ?? null;
+      out.permissionDenials = e.permission_denials ?? null;
       const model = Object.values(e.modelUsage ?? {})[0];
       out.ctxWindow = model?.contextWindow ?? null;
 

@@ -1,7 +1,7 @@
 # A nested claude writes into its parent's transcript
 
 wayfinder:task
-Status: open
+Status: closed
 Blocked by:
 Claimed by:
 
@@ -44,7 +44,20 @@ every worker it starts would write into the dispatching session's transcript.
 
 ## Acceptance
 
-- [ ] Ruled, and if a spawner must clear the variable, the change carries a preflight or a
+- [x] Ruled, and if a spawner must clear the variable, the change carries a preflight or a
       comment saying why, not a bare assignment.
-- [ ] `docs/TRAPS.md` carries the interleaving, since it presents as a context collapse and is not
+- [x] `docs/TRAPS.md` carries the interleaving, since it presents as a context collapse and is not
       one.
+
+## Resolution
+
+Ruled 2026-08-13 (harness-grounding session, dispatched work item 5).
+
+1. The spawner does not clear the env var — it assigns each worker its own `--session-id`,
+   which is a documented CLI flag rather than an undocumented incantation, and doubles as the
+   correlation handle the log row records (`workerSession`). conduct.mjs carries the comment.
+2. The parent's transcript damage is to readers only — the parent session in the ticket-18
+   measurement continued normally; no further confirmation owed.
+3. Nothing in the repo reads transcripts today; the documented rule for anything that ever does
+   (dedupe by requestId, drop foreign session ids) is in docs/TRAPS.md, which now carries the
+   interleaving as its own entry.
