@@ -110,3 +110,72 @@ press it. **The click is still the human's and still the gate.** The dispatcher 
 branches, tickets and claims; sessions still own neither. The alternative listed above — "a CI
 workflow as the required status check", called *the correct long-run answer and the only one that
 removes trust entirely* — is the one that was taken.
+
+## Amendment #2 — 2026-08-13: the click stops being the gate; landing becomes a non-author act
+
+The first amendment was written the day this ADR was, before any of it had run. It has now run:
+nine branches, nine PRs, merged between 06:00Z and 07:12Z on 2026-08-13. The consequences section
+above says *"not yet exercised with two concurrent sessions … the first real two-session run is the
+test."* This is that test's result, and three clauses change. Evidence throughout:
+`docs/specs/cloud-campaign.md` §1, measured on `main@00c6ce3`.
+
+### The click was not the gate it was described as, and it could not survive being one
+
+The clause held that the dispatcher reads the evidence and then clicks. Amendment #1 already
+retired its *verification* half — CI is better evidence than testimony. What remained was the click
+as a **review** gate, and that is the part the wave refuted:
+
+- `main` carries required check `parity` with `strict: true` and `enforce_admins: true`. The
+  instant PR *n* merges, PRs *n+1…9* are out of date and cannot merge. Every session had already
+  run `pnpm land` and **exited**, so each remaining PR needed a party that did not exist — the
+  system had **no non-author actor capable of re-landing a PR.**
+- The only way forward was to argue the author session out of `CLAUDE.md`'s "you never merge the
+  PR", **2–3 times in 72 minutes**. This ADR's own rejection of a local-only merge rule — *"a rule
+  that gets broken"* — turned out to describe this one.
+- An unattended campaign has no reviewer awake at all, so the clause does not merely slow AFK
+  execution; it forbids it.
+
+**Ruled: the merge is mechanical and non-author.** `CLAUDE.md` now says *"You never merge your own
+PR: landing is not the author's act."* The landing party is the merge queue where one exists, the
+conductor otherwise, and the dispatcher by hand in either case. What this protects is **doer ≠
+judge** (ADR-0008) — not the human's finger, which was only ever that law's implementation for a
+repo with no CI and no second actor. `parity` + `strict` are already out of the author's reach.
+
+*Put and rejected:* deleting the sentence outright, which leaves self-merge unregulated — a session
+that verifies, judges and lands its own work is exactly the configuration the loop is founded
+against. And keeping the click, refuted above by its own reasoning.
+
+### Claims become a compare-and-swap, when there is a conductor to make them
+
+The clause *"the dispatcher sets `Claimed by:` on `main` at dispatch"* has the right intent — a
+claim must live where a second dispatch would look — and no mechanism: it is a human editing a file
+and pushing, which races against itself as soon as dispatch is automated.
+
+**Ruled: the conductor writes claims through the GitHub contents API with the blob `sha` as an
+if-match precondition** — an atomic compare-and-swap, no checkout, no push, no
+`VEXTRUS_ALLOW_MAIN_PUSH`, correct under N concurrent dispatchers. **This takes effect when the
+conductor exists** (`docs/specs/cloud-campaign.md` §6), not when this amendment lands; until then
+the dispatcher claims by hand exactly as the clause above says.
+
+### The arc-directory exemption is retired on the same condition
+
+*"The loop's unit is the arc directory, not the ticket"* exists **only** because there was no
+atomic claim — self-selection was legal inside a boundary no one else was inside. An atomic claim
+removes the premise, and extending the exemption to N parallel cloud workers would be unsound: they
+are not inside one boundary. **When claims become compare-and-swap, the unit returns to the ticket**
+and the exemption goes rather than growing. Until then it stands unchanged.
+
+### Also ruled: squash-only
+
+History is currently mixed — #16–#23 landed as merge commits, #24 and #25 squashed. Squash-only
+makes `main` one commit per ticket, which is what the boundary review's `git diff <arc-start>..HEAD`
+scope assumes and what makes `git log --oneline` a ticket ledger. This ADR's own tree-identity
+argument — a squash of an up-to-date branch produces a byte-identical `main` tree — already assumed
+it. **Disabling merge commits is a repository setting and therefore a human action**, named here so
+it is not mistaken for done, exactly as ADR-0011 named branch protection.
+
+### What does not change
+
+Merge, never rebase. Branch per session, dispatcher-created; a session never creates, renames or
+switches one. A session that finds an unexpected claim stops. The up-to-date requirement — now
+mechanical, and the reason the landed tree is the tested tree.

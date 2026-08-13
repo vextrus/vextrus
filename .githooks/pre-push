@@ -10,6 +10,14 @@
 
 # 1. A loop campaign owns the remote for its duration (ADR-0008). Pushing
 #    mid-campaign publishes unreviewed worker commits.
+#
+#    This is already scoped to the LOCAL sequential conductor and needs no
+#    cloud carve-out: `.loop/` is gitignored and untracked, so `ACTIVE` exists
+#    only in the checkout that conduct.mjs is running in. A cloud worker
+#    container, which owns its own branch and must push it, never has this file
+#    and is never refused by it (docs/specs/cloud-campaign.md §8.10, verified
+#    2026-08-13). Do not "fix" this by adding a branch condition — the scoping
+#    is the file's location, and a condition would weaken it.
 if [ -f ".loop/ACTIVE" ]; then
   echo "pre-push: refused — a loop campaign is active (.loop/ACTIVE)." >&2
   echo "Pushing mid-campaign publishes unreviewed worker commits. Push after the run ends." >&2
@@ -17,7 +25,7 @@ if [ -f ".loop/ACTIVE" ]; then
 fi
 
 # 2. `main` is not a session's to write (ADR-0010): the dispatcher owns branches,
-#    and landing is the human's merge button on a PR whose check has run. Until
+#    and landing is a non-author act on a PR whose check has run. Until
 #    now that was prose in CLAUDE.md, and prose does not survive a session that
 #    mis-reads its instructions at 3am.
 #
@@ -32,9 +40,55 @@ while read -r _local_ref _local_sha remote_ref _remote_sha; do
       fi
       echo "pre-push: refused — this pushes $remote_ref." >&2
       echo "Sessions work on the branch they were given and land through a PR (ADR-0010);" >&2
-      echo "the merge is the human's click. If you are that human and mean it:" >&2
+      echo "you never merge your own work. If you are the dispatcher and mean it:" >&2
       echo "  VEXTRUS_ALLOW_MAIN_PUSH=1 git push ..." >&2
       exit 1
+      ;;
+    *)
+      # 3. A session does not allocate a ticket number (.wayfinder/TRACKER.md).
+      #
+      #    Measured 2026-08-13: two sessions on two branches each minted `23-` and `24-`, and
+      #    because the filenames differed git merged all four WITHOUT A CONFLICT. Nothing in the
+      #    repo could see it. Slugs make that collision visible (same slug = same path = a real
+      #    conflict) and `scripts/wayfinder/promote.mjs` allocates the numbers where every
+      #    existing number is visible. This is the part that makes the rule true rather than
+      #    written down.
+      #
+      #    Only an effort that ALREADY has tickets is guarded: `/wayfinder` charting a new map
+      #    creates its whole numbered set at once, legitimately, and refusing that would make the
+      #    guard something to route around rather than respect.
+      if [ "${VEXTRUS_ALLOW_TICKET_MINT:-}" = "1" ]; then
+        continue
+      fi
+      base=$(git merge-base origin/main "$_local_sha" 2>/dev/null) || base=""
+      if [ -z "$base" ]; then
+        # No origin/main to compare against — `pnpm land` always fetches first, so this is a
+        # hand-rolled push on a fresh clone. Say so rather than passing silently.
+        echo "pre-push: note — no merge-base with origin/main, so the ticket-number guard did not run." >&2
+        continue
+      fi
+      minted=$(git diff --name-only --diff-filter=A "$base" "$_local_sha" -- '.wayfinder/*/tickets/*.md' |
+        while read -r f; do
+          case "${f##*/}" in
+            [0-9]*-*.md)
+              # Charting a new map is exempt: the effort had no tickets at the base.
+              if git rev-parse --quiet --verify "$base:${f%/*}" >/dev/null 2>&1; then echo "$f"; fi
+              ;;
+          esac
+        done)
+      if [ -n "$minted" ]; then
+        echo "pre-push: refused — this push adds numbered tickets to an effort that already has them:" >&2
+        echo "$minted" | sed 's/^/  /' >&2
+        echo "" >&2
+        echo "A session cannot see the numbers other branches are minting, and two branches that" >&2
+        echo "pick the same number merge WITHOUT a conflict — measured 2026-08-13, twice over." >&2
+        echo "Mint into .wayfinder/<effort>/inbox/<slug>.md, no number; the dispatcher runs" >&2
+        echo "  node scripts/wayfinder/promote.mjs .wayfinder/<effort>" >&2
+        echo "on main, which allocates the numbers and rewrites the \`Blocked by:\` edges." >&2
+        echo "If you are charting a new map by hand and mean it:" >&2
+        echo "  VEXTRUS_ALLOW_TICKET_MINT=1 git push ..." >&2
+        exit 1
+      fi
       ;;
   esac
 done

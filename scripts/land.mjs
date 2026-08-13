@@ -20,8 +20,11 @@
  * Node, not bash: this also runs from a Windows workstation, where a bare
  * `bash` from PowerShell resolves to WSL (docs/TRAPS.md, ADR-0008).
  *
- * It does not open, comment on, or merge the PR. The click is the human's and
- * it is the gate (ADR-0010).
+ * It does not merge the PR. Landing is a separate act by a party that is not
+ * the author — the merge queue, the conductor, or the dispatcher (ADR-0010;
+ * docs/specs/cloud-campaign.md §3). What that guards is doer != judge, not the
+ * human's finger: `parity` is required on `main` with `strict: true`, so the
+ * verification gate is already mechanical and already out of the author's reach.
  */
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -120,4 +123,4 @@ await withRetries("git push", () => git("push", "-u", "origin", branch.out));
 
 const head = git("rev-parse", "HEAD");
 console.log(`\nland: pushed ${branch.out} at ${head.out}`);
-console.log("land: CI runs the whole gate on this head; you never merge the PR — the click is the human's.");
+console.log("land: CI runs the whole gate on this head. You never merge your own PR — open it and stop.");

@@ -6,7 +6,11 @@ export default defineConfig({
     environment: "node",
     // *.dbspec.ts (live-Postgres tests) run via `pnpm test:db`, never in verify:
     // a stack-dependent test in the verify lane is a named legacy trap.
-    include: ["src/**/*.spec.{ts,tsx}", "db/**/*.spec.ts"],
+    // `scripts/**` joins the lane with promote.mjs (2026-08-13): it allocates ticket numbers and
+    // rewrites `Blocked by:` edges, so a defect in it corrupts the graph the whole tracker reads.
+    // The harness scripts were untested until then — frontier.mjs still is, and that is a named
+    // gap, not a decision (docs/specs/cloud-campaign.md §8).
+    include: ["src/**/*.spec.{ts,tsx}", "db/**/*.spec.ts", "scripts/**/*.spec.mjs"],
     // A net against a hung test, not an assertion about speed — no test here
     // measures latency, and the ones that do state their own bound.
     //
