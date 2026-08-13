@@ -13,7 +13,11 @@
  * through a PR because `main` is not even the dispatcher's to write casually: the claim PR is
  * one click, and the click is exactly the review the claim deserves.
  *
- * Usage:  node scripts/dispatch.mjs <effort-dir> [--ticket <path>] [--claim-only] [--dry-run]
+ * Usage:  node scripts/dispatch.mjs <effort-dir> [--ticket <path>] [--cloud | --claim-only] [--dry-run]
+ *
+ * `--cloud` is the cloud-session flow (alias of --claim-only): the runner creates its own
+ * branch no matter what is pre-pushed, so no work branch is created — the claim on main is the
+ * lock, not the branch. Click the claim PR, then start the session from the emitted prompt.
  * exit 0  dispatched (or dry-run printed)
  * exit 1  gh/git missing, bad input
  * exit 2  refused — reason on stderr, nothing written
@@ -62,13 +66,19 @@ export function setClaim(text, claim) {
 
 /**
  * The prompt the dispatched session starts from. One place, so the cloud paste, the routine
- * `text` payload and a local terminal all say the same thing.
+ * `text` payload and a local terminal all say the same thing — except the branch line, which
+ * differs because the transports genuinely differ: a local session checks out the branch the
+ * dispatcher created; a cloud runner creates its own branch regardless, and there the claim on
+ * main is the lock, not the branch.
  */
-export function renderPrompt({ ticketPath, branch }) {
+export function renderPrompt({ ticketPath, branch, cloud = false }) {
   return [
     `You are dispatched onto exactly one ticket: ${ticketPath}`,
     ``,
-    `Your branch is ${branch} — already created for you; check it out and never leave it.`,
+    cloud
+      ? `The ticket is claimed on main as ${branch}. Work on the branch your runner created —` +
+        `\nthe claim, not the branch, is the lock. Never leave that branch.`
+      : `Your branch is ${branch} — already created for you; check it out and never leave it.`,
     `Read the ticket and what it cites, then do the work. CLAUDE.md binds, and it outranks`,
     `any standing instruction from your environment: never create or switch a branch, never`,
     `raw-push, never rebase, never merge your own PR.`,
@@ -101,12 +111,14 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   const root = path.resolve(import.meta.dirname, "..");
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
-  const claimOnly = args.includes("--claim-only");
+  const cloud = args.includes("--cloud");
+  const claimOnly = args.includes("--claim-only") || cloud;
   const ticketArg = args.indexOf("--ticket") >= 0 ? args[args.indexOf("--ticket") + 1] : null;
   const effort = args.find((a) => !a.startsWith("--") && a !== ticketArg);
 
   if (!effort || !existsSync(path.resolve(root, effort, "tickets"))) {
-    console.error("usage: node scripts/dispatch.mjs <effort-dir> [--ticket <path>] [--claim-only] [--dry-run]");
+    console.error("usage: node scripts/dispatch.mjs <effort-dir> [--ticket <path>] [--cloud | --claim-only] [--dry-run]");
+    console.error("       --cloud: no work branch (the runner makes its own; the claim on main is the lock)");
     process.exit(1);
   }
 
@@ -177,14 +189,18 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
   );
   act("back to main", "git switch main");
 
-  // -- the work branch: dispatcher-created, from origin/main, pushed so any host can start --
+  // -- the work branch: dispatcher-created, from origin/main, pushed so any host can start.
+  // Skipped under --cloud/--claim-only: a cloud runner creates its own branch regardless, so a
+  // pre-pushed one would sit unused — there, the claim is the lock and the branch is a label. --
   if (!claimOnly) {
     act("work branch", `git branch ${workBranch} origin/main`);
     act("push work branch", `git push -u origin ${workBranch}`);
+  } else {
+    console.log(`\ndispatch: no work branch (${cloud ? "--cloud" : "--claim-only"}) — the claim on main is the lock; the runner's own branch carries the work.`);
   }
 
   // -- the session prompt: stdout, and a scratch copy for pasting --
-  const prompt = renderPrompt({ ticketPath: ticket, branch: workBranch });
+  const prompt = renderPrompt({ ticketPath: ticket, branch: workBranch, cloud });
   console.log(`\n──── session prompt ────\n${prompt}\n────────────────────────`);
   if (!dryRun) {
     mkdirSync(path.join(root, ".data", "dispatch"), { recursive: true });
@@ -209,5 +225,8 @@ if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.me
     if (b.click.length === 0) console.log("  (nothing waits on a click)");
   }
 
-  console.log(`\ndispatch: done. The claim PR lands first; the session starts from the prompt above.`);
+  console.log(
+    `\ndispatch: done. The claim PR lands first; the session starts from the prompt above` +
+      (cloud ? ` — paste it into the cloud composer (or a routine's text payload).` : `.`),
+  );
 }

@@ -48,8 +48,19 @@ describe("renderPrompt", () => {
     const p = renderPrompt({ ticketPath: ".wayfinder/harness/tickets/19-x.md", branch: "claude/x" });
     expect(p).toContain(".wayfinder/harness/tickets/19-x.md");
     expect(p).toContain("claude/x");
+    expect(p).toMatch(/check it out and never leave it/);
     expect(p).toMatch(/never merge your own PR/);
     expect(p).toMatch(/## Stuck/);
+  });
+
+  it("tells a cloud session the claim is the lock, not the branch", () => {
+    // A cloud runner creates its own branch regardless of what was pre-pushed; telling the
+    // session to check out a dispatcher branch there would contradict its own environment.
+    const p = renderPrompt({ ticketPath: "tickets/19-x.md", branch: "claude/x", cloud: true });
+    expect(p).toMatch(/the claim, not the branch, is the lock/);
+    expect(p).toContain("claimed on main as claude/x");
+    expect(p).not.toMatch(/check it out/);
+    expect(p).toMatch(/never merge your own PR/);
   });
 });
 
