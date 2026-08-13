@@ -63,6 +63,12 @@ stages.push({
   before: () => rmSync(path.join(root, verifyDistDir), { recursive: true, force: true }),
 });
 
+// The build's output directory is deleted before the FIRST stage, not only before the build:
+// Next.js auto-includes `<dist>/types/**` in the tsconfig, so a stale `.next-verify` from
+// before a revert makes `typecheck` fail on routes that no longer exist — a tree fault that
+// is actually residue (measured 2026-08-14, first verify after #46 reverted a route).
+rmSync(path.join(root, verifyDistDir), { recursive: true, force: true });
+
 const t0 = Date.now();
 for (const stage of stages) {
   stage.before?.();
