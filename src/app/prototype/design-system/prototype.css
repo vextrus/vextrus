@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/*
+ * PROTOTYPE — ticket 10. A candidate token layer, scoped to the throwaway
+ * route and imported by its page: `src/app/globals.css` stays untouched
+ * because which of these tokens survives is the decision this ticket exists
+ * to put to a human, not one a prototype may land.
+ *
+ * The values below are direction A's ("Drafting Table") proposal. B and C
+ * disagree with several of them on purpose and set their own inline — a
+ * shared token layer the variants could not contradict would decide the
+ * question by construction.
+ */
+@theme {
+  /* ---- Density. A worklist row and a bill row are spreadsheet rows, not
+     cards; consumer spacing wastes a QS's screen and spreadsheet density is
+     hostile to an eight-hour read. Rows below, prose unchanged. ---- */
+  --spacing-row: 1.75rem; /* 28px — a dense bill/queue row */
+  --spacing-row-loose: 2.25rem; /* 36px — a row carrying two lines of citation */
+  --font-size-data: 0.8125rem; /* 13px — quantities, rates, marks, citations */
+  --font-size-label: 0.6875rem; /* 11px — column heads and status marks, uppercase, tracked */
+
+  /* ---- Bilingual type. Bangla hangs its glyphs below the matra and stacks
+     conjuncts vertically, so the same point size that is comfortable in Latin
+     loses conjunct detail and crowds vertically: it steps up one size and runs
+     a looser leading. Figures never step — a quantity keeps the Latin data
+     size in both languages, and numerals stay Western in both (a signed
+     document is read by two parties; a locale-dependent numeral is a second
+     number). ---- */
+  --leading-latin: 1.3;
+  --leading-bangla: 1.7;
+  --font-size-bangla-body: 1rem;
+  --font-bangla: "Noto Sans Bengali", "Hind Siliguri", ui-sans-serif, sans-serif;
+
+  /* ---- Surface. Paper-toned, never pure white or pure black: a #fff panel
+     next to a printed sheet under office light glares, and a dark UI forces a
+     re-adaptation on every glance down at the drawing. ---- */
+  --color-surface: #faf9f6;
+  --color-surface-raised: #fffefb;
+  --color-ink: #1c1a17;
+  --color-ink-muted: #6b6459;
+  --color-rule: #ddd6ca;
+  --color-rule-faint: #e8e2d6;
+
+  /* ---- Status. Every one of these is paired with a glyph and a word in the
+     component that uses it, never swapped for one: quantity-contract.md §6
+     forbids the certificate being carried by colour alone, because a tint dies
+     in greyscale and in print. The prototype's `?mono=1` is the standing
+     test — strip colour and the surface must still read. ---- */
+  --color-status-strong: #1f6f4f; /* MEASURED, TRANSCRIBED, COMPLETE */
+  --color-status-caution: #7a5b12; /* DERIVED, IMPORTED, ENTERED */
+  --color-status-weak: #a34a1f; /* INTERPRETED, PARTIAL_DECLARED */
+  --color-status-refuse: #8a3b3b; /* a refusal, a deferral, a blocking act */
+}
