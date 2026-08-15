@@ -1,7 +1,7 @@
 # The entity index — the artifact stays evidence, the index answers questions
 
 wayfinder:grilling
-Status: open
+Status: closed
 Blocked by:
 Claimed by:
 
@@ -226,3 +226,146 @@ so this session stops here** — the numbers narrow §1 and §5 to near-formalit
 6. **New, forced by §7.** Does the set granularity have to be ruled *before* this ticket, or does
    ruling the index against the per-sheet shape and treating a 500K-entity single file as a
    named refusal (`explode_truncated` already says it out loud) discharge it?
+
+## Resolution
+
+Ruled 2026-08-15, HITL, on the measurements in "What the environment says" above. **The index is
+a viewer-only, derived, id-less spatial cache over `box` + GiST, loaded by `COPY`.** One ruling
+made the other five cheap, and it is the first one.
+
+### 1. The index is viewer-only. Measurement never reads it.
+
+The measuring stages — `views.ts`, `grid.ts`, `placement.ts` — keep reading the **artifact**, in
+memory, as pure functions over the immutable evidence of record. The index is never a
+measurement input.
+
+This is a law, not a phase. The artifact is the evidence a figure traces to; a rebuildable cache
+must never stand between a signed quantity and the evidence for it, and the purity is why
+`pnpm verify` proves the measuring stages without a database at all.
+
+It also disarms the question the ticket called sharpest. §3's fear was `identity.md` §2's
+disqualifying shape — one forgotten `WHERE` over-measuring. Under this ruling a forgotten `WHERE`
+on the index yields **a wrong picture, never a wrong number**. Note the fear was never
+database-shaped anyway: the `src === null` filter is already written at five separate sites
+(`views.ts:357`, `placement.ts:182,381`, `grid.ts:111,120`) and the forgettable thing is a
+`.filter()`, guarded by the `view-law.spec.ts` mould.
+
+*Alternative put and rejected:* migrating the measuring reads onto SQL later. Rejected because it
+buys nothing measured (§1: even the pathological 136 MB artifact parses in 1.01 s — the index's
+warrant was always the query, never the memory) and costs the property that makes the whole
+question above go away.
+
+### 2. One table, discriminated by `source_key` nullability. No `is_original` flag.
+
+66% of rows are derived paint and the viewport always wants both classes, so two tables would
+`UNION ALL` every query for a split that can never be forgotten but is never wanted.
+
+The discriminator is not a boolean. §6 measured that **every original carries a source key and
+zero derived rows do**, so `source_key IS NULL` *is* "derived" — an `is_original` column would be
+a second copy of a fact one column already states, and two copies can disagree. A
+`CHECK (source_key IS NOT NULL OR parent_key IS NOT NULL)` makes a row that is neither
+unrepresentable.
+
+*Rejected:* the physical split, and the redundant flag.
+
+### 3. The table has no surrogate id column at all.
+
+Not a test, not a grant, not an unselectable column — **no column**. `identity.md` §3's hazard
+("row ids re-mint on every partition rebuild") is discharged by there being no row id to re-mint
+or to leak into a minted key. It holds because nothing needs one:
+
+- **Uniqueness** is a *partial* unique index on `(ingest_id, source_key) WHERE source_key IS NOT
+  NULL` — §4 built it violation-free across 1.19M rows, consistent with ticket 02's
+  collapse-on-collision rule. It needs no primary key to exist, and derived rows assert no
+  uniqueness (§6: 3.9 derived per parent).
+- **Deletion** is by `ingest_id`, never row-wise, and the table is never `UPDATE`d. It is `COPY`ed
+  in and dropped whole. A derived index that mutates rows has stopped being derived.
+- **Nothing addresses a derived row.** A disposition says "look here" by citing *source keys*
+  (ticket 15 §3) — originals. Paint is fetched by viewport, painted, discarded; its client render
+  key dies at the next frame and cannot be written anywhere.
+
+Backed by one law test in the `view-law.spec.ts` mould (a source scan that first proves it read
+the repo, so it cannot pass vacuously): the index table's Drizzle schema declares no
+identity/serial/uuid-default column and the query layer's row type exposes none. The test's job is
+to stop such a column being *added* — the guarantee itself is structural.
+
+*Rejected:* a minted id fenced by a test or a grant — that catches the leak after someone writes
+it. Accepted cost: a disposition can never point at a specific piece of derived geometry, only at
+its parent key. `cad-ingestion.md` §3 bars derived geometry from originating anything, so this
+reads as correct rather than as a cost.
+
+### 4. Core `box` + GiST. PostGIS and the tile key both ruled out.
+
+`box` + GiST won **every** viewport in §3 (4.1 ms on one sheet vs PostGIS 8.0 ms and tile key
+27.6 ms; 0.8 ms on a corner), is exact, and adds no dependency.
+
+- **The tile key is disqualified on correctness, not speed.** It silently dropped the 16 gridlines
+  and the slab outline from "a corner" — the widest entities on the sheet, the ones a QS orients
+  by. A mechanism that returns a confident subset is not a candidate here. Its repairs are ×2.96
+  row fan-out or ~123× read amplification, which collapses it to a near-scan.
+- **PostGIS's only live argument was a future op `box` cannot express — and ruling 1 removed it.**
+  Any such op would now be serving a picture, never a measurement: opening deduction,
+  point-in-polygon placement and shoelace area all live in the measuring stages, which read the
+  artifact and will never issue a query. What remains for PostGIS is "what overlaps this
+  rectangle", the query it lost. Against that: 76.6 MB pulling libgdal/libgeos/libproj, a
+  *different compose image* so the two provisioning lanes diverge, and a `CREATE EXTENSION` on the
+  single migration lane (ADR-0002).
+
+Reversal is cheap and deliberately so: if a genuine overlay need ever appears *for the viewer*,
+adopting PostGIS is a new migration against a table that is derived and droppable — no data
+migration, because the artifact rebuilds it.
+
+### 5. Two query shapes, honest capping, no cursor.
+
+60 fps is a client property this ticket cannot measure, so what ticket 15 receives is a contract:
+
+- **Single sheet — ship the sheet.** 29,835 rows, 156 ms, 10 MB pre-compression, fetched once; 15
+  then owns pan/zoom entirely client-side. A per-frame server query can never hold 16 ms, so the
+  60 fps bar is met by removing the server from the interaction loop.
+- **Multi-sheet overview — viewport query with a server-side sub-pixel predicate.** §5's
+  1,491,750 → **7,150** paintable at the whole-set view, computed from `maxx-minx`/`maxy-miny`
+  columns the index already carries. **No decimated copy of anything exists**, so the leak
+  `takeoff-core` 03 caught has no channel — and could not reach a measured value regardless under
+  ruling 1.
+- **A row budget per response, from config, never hardcoded** (`CLAUDE.md`). When it bites the
+  response *says so* — a `capped` count on the envelope, not a short array. A viewport that
+  silently returns 80% of the paint is the drawing-shaped partial faulty estimate.
+- **`ORDER BY` bbox area descending**, so a capped response degrades to the largest features
+  rather than an arbitrary slice. It is explicitly *not* a total order — ruling 3 removed the
+  unique identity a tiebreak would need — and equal-area paint is interchangeable.
+- **No cursor.** It needs the stable total order ruling 3 declined, and pan/zoom re-queries
+  anyway: a cursor pages through an answer for a viewport that has already moved.
+
+### 6. Ruled against the per-sheet shape; the single-file case is a carried refusal.
+
+Set granularity (§7) does **not** block this ticket and this ticket does not rule it — it belongs
+to the sheet lane (05/24). At the per-sheet shape everything fits with headroom; at the
+pathological 500K-original single model space the index is not what breaks. §2 is decisive: the
+extractor's `DERIVED_BUDGET = 50_000` fires first and loses 947,002 entities, and no index
+decision recovers them.
+
+What this ticket owes instead is that the extractor's honesty survives the DB seam:
+**`explode_truncated` and its by-type loss counters ride into the index's per-ingest metadata and
+out to the viewer**, so the canvas renders "this sheet's paint is incomplete — 947,002 entities
+dropped at extraction" instead of painting ~5% of a sheet with full confidence. The counters are
+already written back verbatim (`ingestion.ts`); the failure mode is that dying at the seam, and
+that would be silence.
+
+### 7. `COPY`, not batched inserts.
+
+116,045 rows/s vs 37,469 (3.1×). Both fit the bar — §4 puts the full set at ~3.2 min serial
+against 10 min, with extraction dominating the index ~4× — so this decides headroom, not
+feasibility, and it lands on the ground that it is one code path in one place. Per-sheet load into
+the already-indexed table is 0.67 s serial; **parallelism saturates at 4 workers** (0.33 s/sheet;
+8 workers is worse at 0.36), so the ADR-0009 `FOR UPDATE SKIP LOCKED` queue runs at 4 and there is
+no reason to go wider.
+
+### Carried into implementation
+
+- Every tenant table gets the `db/rls.ts` block (ADR-0004) — an index of drawing contents is
+  tenant data. `pnpm db:replay` before the migration commits.
+- Rebuild is parse + `COPY` from the **artifact**, not the source file: ~0.8 s/sheet, ~40 s for a
+  50-sheet project. Droppable with no ceremony and no data loss, which is what "derived" means
+  here.
+- The artifact's byte-stability and sanity number (`cad-ingestion.md` §12) are untouched: nothing
+  above writes to the artifact, and the CLI stays pure (ADR-0001).
