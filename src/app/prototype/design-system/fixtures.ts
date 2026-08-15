@@ -329,6 +329,50 @@ export const queue: QueueItem[] = [
   },
 ];
 
+/**
+ * The act log: append-only, never edited (`identity.md` §7). Shown by every
+ * shell now rather than only by the docket — whether a QS wants the audit trail
+ * permanently on screen is part of what the shells are being compared on.
+ */
+export interface ActEntry {
+  at: string;
+  actor: string;
+  act: string;
+  actBn: string;
+  subjects: number;
+}
+
+export const actLog: ActEntry[] = [
+  {
+    at: "13 Aug 14:22",
+    actor: "M. Rahman",
+    act: "Affirmed scale 1:100 · foundation-plan family",
+    actBn: "স্কেল ১:১০০ অনুমোদিত · ফাউন্ডেশন-প্ল্যান পরিবার",
+    subjects: 6,
+  },
+  {
+    at: "13 Aug 14:19",
+    actor: "M. Rahman",
+    act: "Declared exclusion · slab × rebar — ENTITY_TYPE_UNHANDLED",
+    actBn: "বর্জন ঘোষিত · slab × rebar — ENTITY_TYPE_UNHANDLED",
+    subjects: 1,
+  },
+  {
+    at: "13 Aug 14:05",
+    actor: "machine",
+    act: "Deferred grid georeference · S-119 detail C — two bubbles, three needed",
+    actBn: "গ্রিড জিওরেফারেন্স স্থগিত · S-119 detail C — দুটি বাবল, তিনটি দরকার",
+    subjects: 1,
+  },
+  {
+    at: "13 Aug 13:58",
+    actor: "M. Rahman",
+    act: "Confirmed discipline structural · S-201, S-202, S-203",
+    actBn: "ডিসিপ্লিন structural নিশ্চিত · S-201, S-202, S-203",
+    subjects: 3,
+  },
+];
+
 /** The absence ledger is the headline, not a footnote — the money is in what has no row. */
 export const absenceSummary = {
   cellsTotal: 63,
