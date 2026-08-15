@@ -1,7 +1,7 @@
 # The scale group and its affirmation
 
 wayfinder:grilling
-Status: open
+Status: closed
 Blocked by:
 Claimed by:
 
@@ -250,3 +250,285 @@ is unreachable history and the reasoning is worth reading.
 
 `git show 1daba61`. **An argument, not a decision.** The AFK reading pass above (`9euvud`) is the
 same ticket worked correctly under the rule — the two make a useful before/after.
+
+## Resolution
+
+Ruled 2026-08-15 in an attended `/grilling` session, one question at a time. The claim was empty
+at dispatch, which needs no ruling (ADR-0015 amendment): attendance is discovered by asking, and
+every question below was answered by a human. The AFK reading pass above (`9euvud`) supplied the
+facts; this session supplied only decisions.
+
+### 1. A scale group is an equivalence class of views over annotation plotted height
+
+Not a drawing, not a view — §5 rules both out, and the ~6–8-acts figure against O(100+) views on
+a 50-sheet set means a group is **cross-sheet**: it is a class over the whole set, not a
+subdivision of a sheet. The QS is affirming *scales* — 1:50, 1:100, 1:20 details — and a building
+set has 6–8 of them.
+
+The relation runs on **body annotation height**, because a draughtsman authors text at a fixed
+*plotted* height, so the same note is drawn 2× as tall at 1:100 as at 1:50. This reuses the family
+of signal `takeoff-core` 05 already proved sound and scale-free.
+
+**Grid spacing is struck as corroboration.** It was proposed and rejected in the same breath: in
+model space a plan is drawn 1:1, so `grid.ts`'s `minSpacing` is the **building's module in native
+units** and carries no scale information at all. Two views at different scales of one grid agree;
+two views at the same scale of different bay grids disagree. Neither necessary nor sufficient.
+
+**Captions are excluded from the signal.** A view title is plotted at a constant height whatever
+the view's scale — that is what a title is for — so caption height would smear every class toward
+one. `views.ts` already isolates the two populations: captions are `anchors` (line 397 medians
+their heights for `bandGap`), everything else is body.
+
+*Alternative put and rejected:* the group is **QS-declared** — the human lassos views into groups.
+It reaches the same act count and needs no detection. Rejected because it makes membership a
+*human* residual: the QS sweeps leftovers into whichever group looks right, which is §5's
+confirm-all degeneration relocated to a lasso tool. A machine that proposes nothing has made the
+human the detector.
+
+### 2. The relation runs on physical plotted height; unnormalisable sheets form island groups
+
+Within a sheet the cluster is a ratio and needs no scale. **Across** sheets it needs a common
+physical referent, and the two lanes differ:
+
+- **PDF is the strong lane.** User space is points (1/72"), fixed by the format, and `/UserUnit`
+  read 1.0 in 14 of 14 files (F5) — so a plotted annotation's height in points *is* its physical
+  height on paper, absolutely, with no header. The lane that lost two ladder ranks is the lane
+  where the partition works best.
+- **DWG normalises through `$INSUNITS`**, which lands the partition on rank 4. With a mapped
+  non-zero code, model space at 1:1 means the scale is already **complete** and the file holds one
+  group trivially; text-height clustering earns its keep on DWG only where rank 4 fails —
+  `INSUNITS=0`, unmapped codes, and legacy files drawn at 5× in model space, which is exactly
+  §5's "one legacy sheet carried three internal scales".
+
+A sheet that cannot supply the normaliser **cannot join the project-wide relation**. Its views
+cluster only among themselves and form their own island group(s), affirmed separately — not an
+error, not a fallback, a smaller partition honestly stated, priced in extra affirmation acts.
+This is the ruling on `INSUNITS=0`, which F5 named as the live instance of the question already
+sitting in the code: a mapped code that supplies no scale is **not** affirmative evidence.
+
+*Alternative put and rejected:* normalise each sheet by its own median height and cluster the
+ratios — lane-uniform, no header needed. Rejected: it assumes every sheet's dominant annotation
+sits at one plotted height, true of a tidy set and false of precisely the legacy sheets this
+mechanism exists to survive, and it fails silently rather than refusing.
+
+### 3. Membership is positive, and the residual case is structurally unrepresentable
+
+A view joins the class whose band contains the dominant mode of its own body-annotation heights.
+Two ways to carry no evidence, one outcome: **no body text** (pure geometry, or the caption is the
+only text), and **no dominant mode** (a flat spread — the view is not internally consistent and
+the machine has no proposal to make). Both are unplaceable, hatched, and measure nothing.
+
+The residual case is unrepresentable **structurally, not by policy**: there is no default group
+and no nearest-group assignment, and downstream `calibration_id NOT NULL` is the enforcement — a
+view in no group yields no calibration, so a quantity line for it cannot be written. There is no
+row shape that expresses the fallback.
+
+Band width and the dominant-mode criterion are **effective-dated config, not constants**
+(`CLAUDE.md`), and belong with the convention profile: what height a set plots its annotation at
+is a draughting convention.
+
+*Alternative put and rejected:* **sheet inheritance** — a view with no body text inherits the
+group of the views it shares a sheet with, as a machine proposal a QS affirms. It rescues real
+views (a small unannotated key plan usually *is* at the sheet's scale). Rejected: it is the
+residual rule in a sheet-shaped costume, and it fails on exactly the legacy multi-scale sheet the
+mechanism exists for. The QS's escape hatch is an explicit act (§9's `SCALE_GROUP_ASSIGNED`), not
+a silent inheritance.
+
+### 4. Rank 2 is struck; the ladder is three ranks and the lanes are uneven
+
+`minSpacing` is not a weak scale observation — per §1 it is **not a scale observation**. Turning it
+into one needs a real-world spacing, whose only sources are a dimension string along the grid
+(rank 3's input) or a QS stating the module (rank 1 in a hat). It was never independent.
+
+| lane | ranks with a real input |
+|---|---|
+| DWG, `$INSUNITS` mapped and non-zero | **rank 4, complete** — model space is 1:1; not a degraded rank 1 |
+| DWG, `INSUNITS=0` or unmapped | rank 3 (only once the extractor widens) or rank 1 |
+| PDF | **rank 1 only** |
+
+Two consequences ruled with it:
+
+- **The arc-fit question dissolves.** It existed only to recover CIRCLE on the PDF lane so bubbles
+  could feed rank 2. Nothing in this ticket needs an arc fit, and the tempting guess never has to
+  be adjudicated. Bubble recovery may still matter to grid georeferencing — not this ticket.
+- **The DWG extractor widens for rank 3** (Q8): DIMENSION defpoints, `measurement`, text override,
+  `DIMLFAC`. These are original attributes of an original entity, which `cad-ingestion.md` §3
+  already permits — `ingest.py:191` emits "provenance fields only" as *scope*, not law, and says so
+  in its own comment. Without it rank 3 has no input on either lane. Filed as
+  `inbox/dwg-dimension-attributes.md`; it is not this ticket's diff.
+
+**Routing.** Striking rank 2 is a `measurement-rules.md` §5 amendment, and the map's Notes are
+explicit that domain-law amendments each get their own ticket and none may be made in passing —
+the exact overreach the prior attempt committed (#44, undone by #52). This ticket rules rank 2
+dead and **files** the amendment as `inbox/measurement-rules-5-strike-the-grid-rank.md`. No domain
+doc is edited here.
+
+*Alternative put and rejected:* keep rank 2 as a **corroborator** that never originates a scale but
+flags an independently-derived scale predicting an absurd grid module (a 47m bay). Cheap, and a
+real check. Rejected *as a rank* — it is a **verification**, not evidence, and belongs with §6's
+agreement test if anywhere. Sitting on the ladder is what made it look like evidence.
+
+### 5. No affirmed calibration ⇒ unplaceable on PDF; no pre-fill from printed scale notes
+
+With one rank and no mechanism behind it yet (F2: no act type; the canvas is ticket 15, blocked on
+10 + 11), a PDF view whose group carries no affirmed calibration is unplaceable, hatched, and
+measures nothing. Stated positively: **on the PDF lane the machine partitions and the human
+calibrates, always, by construction** — and because §2 makes the PDF partition the best one we
+have, a handful of two-point acts covers the whole set, which is what makes 6–8 sufficient.
+
+**Sequencing consequence, written down rather than discovered later: the PDF lane measures nothing
+until ticket 15's canvas lands.** The DWG lane with a mapped non-zero `$INSUNITS` measures without
+any of it, which is what keeps the first vertical slice unblocked.
+
+*Alternative put and rejected:* **pre-fill the affirmation from the title block's printed scale
+note**, offered as the value the QS confirms. Seductive — it is machine-proposes/human-affirms, the
+pattern used everywhere else, and the note is usually right. Rejected: §5 ranks printed scale notes
+nowhere, and pre-filling smuggles them back in at the one place that matters more than evidence.
+It converts a **measurement** into a **confirmation click** — confirm-all re-entering through the
+dialog. A QS who drags two points across a known dimension has measured; a QS who clicks OK on
+"1:100" has read the title block, and the title block is the thing that is wrong on the sheet that
+ruins you. The note may be shown as text on the sheet, never as a value in the field.
+
+### 6. X/Y independence is a property of the rank; never averaged; one shared tolerance
+
+- **Rank 4 is isotropic by construction** — one declared unit for both axes; a header cannot
+  disagree with itself. Stated as isotropic, not as "untested".
+- **Ranks 1 and 3 require both axes.** A two-point drag measures one direction, so rank 1 costs
+  the QS **two drags per group** — 6–8 groups become 12–16 acts. That cost is accepted. A group
+  calibrated on one axis only is **not calibrated**; there is no isotropic fallback.
+- **Never averaged.** Anisotropy means the sheet was non-uniformly scaled — a plot squeezed to fit
+  paper — so every derived length is wrong by a direction-dependent factor and the mean is a number
+  wrong in both directions and right in neither. Beyond tolerance the group is unplaceable.
+- **The anisotropy tolerance and §7's verification tolerance are one effective-dated value**,
+  because they are one test: two observations of a single quantity must agree within ε. Two config
+  keys would invite drift for a reason nobody could state.
+
+**Three new machine-originated refusal causes**, because three remedies differ:
+`SCALE_NOT_AFFIRMED` (group exists, no calibration → affirm it; one act clears many views),
+`SCALE_GROUP_UNRESOLVED` (the view joined no group — §3's case), `SCALE_SELF_DISAGREEING` (two
+observations beyond tolerance → re-measure, or the plot is genuinely distorted). Measured against
+`quantity-contract.md` §2: the doc names members and rules *per-member originator legality*, and
+does not claim a closed list, so members with a stated machine originator fit the existing frame —
+enum additions in `src/core/enums.ts`, no domain amendment.
+
+*Alternative put and rejected:* one `SCALE_UNAVAILABLE` carrying a message. Rejected on the doc's
+own ground — it splits `INGESTION_TRUNCATED` from `ENTITY_TYPE_UNHANDLED` because they have
+"opposite remedies". A cause you must read prose to act on is a log line, not a taxonomy member.
+
+### 7. ±1% holds, as an agreement threshold; `NOT NULL` ships on slice 1 unused
+
+The arithmetic confirms: for scale error `e` entering `n` drawing-derived lengths the quantity errs
+by `(1+e)^n − 1` — at e=1%, **n=1 → +1.00%, n=2 → +2.01%, n=3 → +3.03%**. §5's "scale error cubes
+into a volume" is exact; at n=3 a 1% error consumes the whole ±3% band alone.
+
+But **no formula reaches n=3 today**. `formulas.md` §2's rect prism is `count × L × B × H` with
+L, B from the schedule and H from the level stack; the binding exponent is **2** (`PRISM_POLY`'s
+shoelace × entered depth, `AREA_THICK`'s area × entered thickness), whose honest threshold is
+±1.49%. **±1% is held anyway**, on grounds that carry where the derivation alone does not: n=3
+arrives with excavation and `FRUSTUM_RECT`, and a threshold that loosens now and tightens later is
+one nobody trusts; it is now **one number for two tests** (§6's anisotropy and this one), and one
+number is explainable to a QS; and headroom on a rejection threshold costs a re-measure while slack
+costs a wrong quantity — the governing sentence prices those very differently.
+
+Two precisions carried into the ruling rather than left to inference. **±1% bounds *agreement*
+between two observations, not accuracy against ground truth** — two observations can agree within
+1% and both be biased the same way. And it is **symmetric**, whereas the ±3% band is under-only
+with +0% over (`quantity-contract.md` §5), where any scale error is already a hard block. Different
+quantities; they must not be netted against each other, which is the error the "allocation out of
+the tolerance band" framing invites.
+
+**`calibration_id NOT NULL` ships on slice 1 knowingly, and multiplies nothing there.** RCC column
+concrete is scale-invariant end to end: the formula is n=0, and the count feeding it is scale-free
+because `placement.ts` is ratio-only by construction (every constant a share of `minSpacing`) —
+`takeoff-core` 05's result and this ticket's own guardrail. A nullable column tightened later is a
+backfill against rows that never had a calibration: you either invent one or the migration cannot
+run. Free today, impossible after the first signature.
+
+**Corpus obligation:** slice 1 cannot demonstrate the calibration through arithmetic, so the
+torture corpus asserts it through **refusals** — an unplaceable view measuring nothing, a
+self-disagreeing group refusing, an `INSUNITS=0` sheet forming its own island. Those are testable
+on slice 1 and are what `pnpm verify` holds. The arithmetic assertion waits for the first n≥1 kind.
+
+### 8. The calibration key is derived and content-addressed over the band, not the members
+
+F3 is the binding constraint: `View.id = anchor.handle`, `viewKey = ${type}:${id}`, and ticket 02
+scoped source keys to `(file bytes, extractor identity)` with no cross-version survival. Any
+calibration keyed on its **member set** dies on every re-ingest, including one that redrew nothing —
+which would make every re-issue a recalibration and void every signature under it.
+
+- **Membership is never stored.** It is recomputed from body-annotation heights on every ingest;
+  there is no member-set column to go stale.
+- **The key digests `(project, lane normaliser, quantized nominal plotted height, affirmed X,
+  affirmed Y, evidence rank)`.** An unchanged sheet re-ingests to the same band, resolves to the
+  identical calibration, and voids nothing; a sheet genuinely redrawn at another scale lands in a
+  different band and is a different calibration by construction.
+- **Quantize the band representative; never digest the empirical cluster statistic.** Clustering
+  depends on the population, so an empirical mean shifts when a sheet is added. A config-bucketed
+  nominal height makes **adding sheets free** — a new 1:100 sheet joins the existing 1:100
+  calibration and voids no signature. That digesting the member set would void on mere *growth* is
+  the tell that the member set is the wrong thing to digest.
+
+This lands on `identity.md` §9's split: a calibration is a **row-level semantic** concern and
+re-presents only when the semantic moved; the manifest governs boundary validity independently.
+
+*Alternative put and rejected — and it earned a real hearing:* **affirmation is per set revision by
+design.** No digest, no content addressing; each pinned set gets its own 6–8 acts. Honest, trivial,
+and it makes "recalibration voids signatures scoped to it" true by construction rather than by
+care. Rejected on the map's own destination — *"survives a set revision as a delta, not a
+do-over"*: re-asking every calibration on every re-pin makes the revision a do-over at the
+calibration layer, and §9 explicitly refuses the analogue (partial re-issue of the plumbing sheets
+must not disturb structural rows; under per-revision affirmation it disturbs all of them). It also
+scales wrongly — the cost falls hardest on the client who re-issues most carefully.
+
+### 9. The schema is ruled, not built; 13 inherits the constraint
+
+**This ticket builds nothing.** Wayfinder plans; the prior attempt at this ticket touched 31 files
+and amended domain law, which is what #52 had to undo. F1's fork resolves as *neither builds here*:
+12 rules the shape, and `calibration_id NOT NULL` is a constraint **ticket 13 must honour when it
+first names quantity lines**, citing this ruling. 13 is where a rail's obligations to the spine are
+ruled, and a table created by the ticket that does not own it will be the wrong shape.
+
+**Ordering dependency, stated so it cannot be missed: 13 may not land a quantity-line table without
+that FK.** Adding it afterwards is §7's backfill argument one layer up.
+
+| table | half | contents |
+|---|---|---|
+| `scale_families` | derived | recomputed per ingest, per project: quantized nominal band, lane normaliser, member view keys as **provenance only, never identity** (mirroring `grid.ts`'s `handles`). Enumerable, so the QS sees "7 groups, 3 affirmed, 2 unplaceable" |
+| `calibrations` | affirmed | immutable, content-addressed by §8's digest: affirmed X, affirmed Y, evidence rank, the originating act |
+
+**Quantity lines FK to `calibrations`, never to `scale_families`.** A family is derived and moves
+between ingests; a calibration does not. Pointing the FK at the immutable row is what makes "an
+unchanged sheet voids nothing" hold *at the database* rather than by care. Both are tenant tables
+and take the `db/rls.ts` block (ADR-0004).
+
+**Three act types** (`src/core/enums.ts`), settling F2: `SCALE_AFFIRMED` (the QS supplies or
+confirms a family's number), `SCALE_OVERRIDDEN` (the QS supplies a number contradicting a
+machine-derived one — wins, and is a dip-sample stratum), `SCALE_GROUP_ASSIGNED` (the QS places an
+unplaceable view into a family). The third exists **because of §3**: sheet inheritance was refused
+as a machine proposal, so the escape hatch we pointed at has to be a real act. It changes a
+*partition*, not a *number*, so it is not the same stratum as an override.
+
+*Alternative put and rejected:* one `SCALE_AFFIRMED` act with an `overridden` flag and a nullable
+`assigned_view`. Fewer members, one write path. Rejected on F2's own reasoning — the dip sample is a
+**sampling frame that must be queried**, and a flag makes the stratum a payload dig rather than a
+query on `act_type`.
+
+### Not ruled here
+
+- **F4's "~6–8 acts per project" is still ungrounded in this repo.** The corpus that could measure
+  it is ticket 08's private local-only lane. This ruling makes the figure *plausible* by attaching
+  affirmation to a cross-sheet class rather than to a sheet, but the number itself remains a design
+  intent, not a measurement, and should not be quoted as one.
+- **`pnpm verify` was not run for content reasons** — this ticket changes markdown only — but it is
+  run by `pnpm land` on the merged tree as the session's last act.
+
+### Filed
+
+- `inbox/measurement-rules-5-strike-the-grid-rank.md` — the §5 amendment striking rank 2.
+- `inbox/dwg-dimension-attributes.md` — widen the extractor for rank 3's input.
+
+**Note for whoever promotes the inbox:** `MAP.md`'s Notes say *"Five domain-law amendments are
+forced by this map's destination"*. The first of these two makes it six. That line is not edited
+here — a closing session that edits `MAP.md` is the conflict this layout removed
+(`.wayfinder/TRACKER.md`) — so the count is corrected at promotion, on `main`, by the single writer
+that can see every ticket.
