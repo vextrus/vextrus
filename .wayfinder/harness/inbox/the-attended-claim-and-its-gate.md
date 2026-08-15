@@ -39,6 +39,36 @@ Build what ADR-0015 ruled, and nothing it did not.
    and cannot trip the gate; a HITL close with a `dispatched` base claim refuses; with an
    `attended` base claim passes.
 
+## The gap found on first contact (2026-08-16)
+
+ADR-0015 says an absent or unrecognised **type** counts as HITL, and says nothing about an
+absent **claim**. Those are different axes, and the second one is now live: tickets 10–13 landed
+their AFK reading passes (#55–#58) and every one of them sits `Status: open` with
+`Claimed by:` **empty**, which is precisely the state the next session meets.
+
+Undefined at exactly the moment it is first read. Rule it explicitly, both ways:
+
+- **An empty claim is unattended** — fail-closed, matching every other unknown in this design. A
+  session that finds no claim may read and may not rule.
+- **A session may not infer attendance from its own environment.** Being able to see a terminal
+  is not evidence a human is watching it; the claim on `main` is the only signal, because it is
+  the only one the session cannot write.
+
+**Do not let this fail-closed reading become a trap for attended work.** A human present in a
+live session speaks for themselves — that is what HITL *means*, and no gate should refuse a
+person who is demonstrably in the room. The clean separation, which this ticket should
+implement rather than re-argue:
+
+- **In-session**, the human's presence is self-evidencing. They say they are attending; the
+  session proceeds and rules. Nothing blocks.
+- **At merge**, CI needs proof that outlives the conversation, and the claim on `main` is it.
+
+So the honest consequence: an attended session whose ticket was never claimed `attended` will
+**rule correctly and then fail CI**. That is a real cost and it lands on the human, not the
+agent. Decide whether the refusal names the repair precisely enough to be recoverable after the
+fact (`pnpm dispatch --attended` on the ticket, then re-run), or whether the gate needs a
+documented post-hoc path. Do not answer it by weakening the gate.
+
 ## Open — resolve before or during, do not silently pick
 
 - **The trailer's name and form.** ADR-0015 ruled *that* there is a commit-time positive act and
@@ -70,3 +100,7 @@ Build what ADR-0015 ruled, and nothing it did not.
 - [ ] The trailer is either specified and read, or dropped with the narrowing recorded.
 - [ ] `SKILL.md`'s ADR-0015 reference stops being a forward promise — the sentence
       "enforced in CI" is true when this closes.
+- [ ] An empty `Claimed by:` is ruled — unattended, fail-closed — and `SKILL.md` says so, so a
+      session meeting tickets 10–13 in exactly that state does not have to guess.
+- [ ] The refusal for an attended-but-unclaimed close names its repair, and that path is
+      exercised by a test rather than described in prose.

@@ -6,6 +6,14 @@ Implements: `quantity-contract.md` §6 (the certificate rides every export chann
 carried by colour alone)
 Relates to: ADR-0015 (why an honour-based remedy is not available in this repo)
 
+> **On the number.** 0016 was allocated by hand, on ticket 10's own instruction (*"a new ADR at
+> the next free number"*), because the ADR allocator does not exist yet — that gap is
+> `.wayfinder/harness/inbox/adr-numbers-have-no-allocator.md`, which landed on `main` in the same
+> merge that carried this file. Checked against every ref reachable here at the time of writing
+> and 0016 was unclaimed; that check is exactly the fail-open one the harness ticket describes,
+> and it is disclosed rather than relied upon. If a second 0016 exists on a branch not fetched
+> here, this is the file that moves.
+
 ## Context
 
 `quantity-contract.md` §6 already forbids the certificate being carried by colour alone — a tint

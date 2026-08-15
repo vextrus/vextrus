@@ -149,6 +149,37 @@ constitutional — a new ADR at the next free number (0015 is taken; do not reus
 winner into `globals.css` and `src/core/format.ts` is *implementation*, and per UI.md the losing
 variants and the switcher leave `main` when it happens.
 
+## Prior attempts — read as argument, never as decision
+
+This ticket was executed AFK twice before ADR-0015 existed. Both are unmerged and stay that way.
+Neither is deleted, because the thinking is worth reading and a deleted branch is unreachable
+history:
+
+- **`be827f1`** — landed as #42 (closed ticket, ADR numbered 0015, prototype merged to `main`),
+  reverted wholesale by #46. The variants, fixtures and canvas this ticket's branch started from
+  are recovered from it. **This is the run that ruled**, which no unattended session may do.
+- **`abb4651`** (branch `claude/design-system-k0fpxm`, 2026-08-13 21:25) — a second run, 37
+  files, never opened as a PR. **This one did not rule**, and the correction is worth keeping:
+  its ticket edit left `Status: open` under a heading reading *"Prototype (built, not resolved)"*,
+  and its commit message says so in terms — *"the ticket stays open and stays claimed: the
+  register pick is the live exchange this artifact exists to raise, and the session that built it
+  does not answer its own question."* It stopped exactly where ADR-0015 would later require.
+  (Corrected on merge by the attended session that ruled this ticket; the section as landed said
+  both runs ruled.)
+
+`git show <sha>` reads either. **They are arguments, not decisions**, and the attended session
+that rules this ticket owes them a reading, not deference — ADR-0015 records that the flow had
+no standing, not that the artifact was wrong.
+
+**The reading, discharged.** `abb4651` reached two conclusions independently that the attended
+ruling below also reached, by a different route and from a different artifact: *colour is never
+the only channel*, and *components owned, with **tokens** rather than components as the Genesis F6
+risk*. Convergence from an independent run is not proof, but it is the cheapest corroboration
+available and it is recorded rather than discarded. Where it differs: it proposed a **three-step**
+density scale (relaxed / default / dense) against the two-step scale ruled below, and it put
+compact `L`/`Cr` in one screen-chrome tile — permitted, since `CLAUDE.md` bans it on a *document*,
+but not carried forward.
+
 ## The prototype was rebuilt before it could be ruled (attended, 2026-08-16)
 
 The dispatcher opened the session, looked at the three variants, and could not answer: *"rebuild

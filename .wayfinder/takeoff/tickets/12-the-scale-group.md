@@ -238,3 +238,15 @@ no measurement in this section was executed here, and none should be quoted as i
   dip-sample stratum**.
 - `takeoff-core` 05 proved the view partition needs no affirmed scale at all — it reads only
   ratios of the drawing's own text heights. Do not regress that.
+
+## Prior attempt — read as argument, never as decision
+
+Executed AFK once before ADR-0015 existed, at **`1daba61`** (branch
+`claude/scale-group-ticket-mp8y1i`, 2026-08-13 21:30, 31 files). It **ruled** — set
+`Status: closed`, wrote `## Resolution`, and amended `measurement-rules.md` and
+`quantity-contract.md`, which is the same domain-law overreach #44 committed on ticket 13 and
+#52 had to undo. It is unmerged and stays that way; it is not deleted, because a deleted branch
+is unreachable history and the reasoning is worth reading.
+
+`git show 1daba61`. **An argument, not a decision.** The AFK reading pass above (`9euvud`) is the
+same ticket worked correctly under the rule — the two make a useful before/after.

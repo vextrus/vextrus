@@ -119,3 +119,34 @@ the map is for, and fails more quietly.
 - This ADR was itself ruled in an attended `/grilling` session, one question at a time, on the
   ticket that describes the failure. The session had no claim to clear: the ticket is an
   unnumbered inbox file, and the rule cannot bind the session that wrote it.
+
+---
+
+## Amendment, 2026-08-16 — attendance is discovered, not declared
+
+Decision 1 said an unattended session stops at the first decision; it never said how a session
+knows which it is. The gap was filled in practice by having the human *declare* attendance in
+their first message, which is ceremony: it asks a person who is visibly present to prove it, and
+it is exactly as forgeable as anything else a session can type.
+
+**A session finds out by asking.** On a HITL ticket the first act is a question. Answered, a
+human is here — and that answer *is* the live exchange the type requires, so the session grills
+and rules in one pass. Unanswered, the turn ends and a container with nobody in it has ruled
+nothing. **The enforcement is the waiting, not a flag**, and it cannot be forged: a session
+cannot manufacture an answer it was never given.
+
+This narrows `CLAUDE.md` §5 rather than contradicting it. *"You cannot ask mid-session"* governs
+AFK work, where a question is a container stalling against a prompt nobody will read (ADR-0011).
+On a HITL ticket asking **is** the work, and a session that asks and receives nothing has
+behaved correctly by ruling nothing. `SKILL.md` carries the scoping, per decision 6.
+
+Two consequences, both simplifications:
+
+- **An empty `Claimed by:` needs no ruling.** It was about to be ruled "unattended, fail-closed",
+  which would have made an attended session on an unclaimed ticket refuse to work for a human
+  standing in front of it. Attendance is now answered by the exchange, so the claim's only job is
+  the one decision 4 gave it: telling **CI**, after the conversation is gone. A session must
+  never read it as permission.
+- **`pnpm dispatch` is a concurrency tool, not a mode switch.** Its claim exists so parallel
+  sessions do not collide on `main` (ADR-0010). A dispatcher working one ticket at a time needs
+  neither it nor `pnpm promote`, and requiring them was never this ADR's intent.
