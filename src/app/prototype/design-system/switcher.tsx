@@ -1,52 +1,68 @@
 "use client";
 
 /**
- * PROTOTYPE — ticket 10. The floating switcher. Deliberately ugly and
- * high-contrast so it never reads as part of the design under evaluation, and
- * gated on NODE_ENV so a stray merge cannot ship it.
+ * PROTOTYPE — ticket 10. The floating switcher, rebuilt as an axis panel.
  *
- * Three axes, because this ticket has three questions and flipping between
- * them is the whole method:
- *   ← / →  variant
- *   b      language (English / বাংলা) — the type scale has to survive both
- *   m      mono — colour stripped, proving §6's "never carried by colour alone"
+ * It used to cycle three bundles. That framing is what made the ticket
+ * unanswerable: every bundle decided four things at once, so a reviewer who
+ * wanted one bundle's tone with another's structure had nothing to point at.
+ * Now the presets are shortcuts to coordinates and each axis moves on its own —
+ * and the label reads "off-grid" the moment you leave a named point, which is a
+ * perfectly good answer for this ticket to end on.
+ *
+ * Deliberately ugly and high-contrast so it never reads as part of the design
+ * under evaluation, and gated on NODE_ENV so a stray merge cannot ship it.
+ *
+ *   ← / →  preset          b  language (English / বাংলা)
+ *   s      surface         m  mono — colour stripped (quantity-contract §6)
+ *   h      shell           x  density
+ *   j / k  move the subject · a affirm · d defer (docket shell)
  */
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect } from "react";
-
-export interface VariantInfo {
-  key: string;
-  name: string;
-}
+import {
+  densityOptions,
+  presetAt,
+  presets,
+  shells,
+  surfaceOptions,
+} from "./presets";
+import type { Density, Lang, Shell, Surface } from "./theme";
 
 export function VariantSwitcher({
-  variants,
-  current,
+  surface,
+  shell,
+  density,
   lang,
   mono,
 }: {
-  variants: VariantInfo[];
-  current: string;
-  lang: "en" | "bn";
+  surface: Surface;
+  shell: Shell;
+  density: Density;
+  lang: Lang;
   mono: boolean;
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const index = Math.max(
-    0,
-    variants.findIndex((v) => v.key === current),
-  );
+  const active = presetAt(surface, shell);
 
   useEffect(() => {
-    function set(key: string, value: string) {
+    function set(entries: Record<string, string>) {
       const params = new URLSearchParams(searchParams.toString());
-      params.set(key, value);
+      for (const [k, v] of Object.entries(entries)) params.set(k, v);
       router.replace(`?${params.toString()}`, { scroll: false });
     }
-    function cycle(delta: number) {
-      const next = variants[(index + delta + variants.length) % variants.length];
-      if (next) set("variant", next.key);
+    function cyclePreset(delta: number) {
+      const at = presets.findIndex((p) => p.surface === surface && p.shell === shell);
+      const from = at === -1 ? 0 : at + delta;
+      const next = presets[((from % presets.length) + presets.length) % presets.length];
+      if (next) set({ surface: next.surface, shell: next.shell });
+    }
+    function cycle<T extends string>(list: readonly { key: T }[], current: T, param: string) {
+      const at = list.findIndex((o) => o.key === current);
+      const next = list[(at + 1) % list.length];
+      if (next) set({ [param]: next.key });
     }
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
@@ -56,54 +72,113 @@ export function VariantSwitcher({
       ) {
         return;
       }
-      if (e.key === "ArrowLeft") cycle(-1);
-      if (e.key === "ArrowRight") cycle(1);
-      if (e.key === "b") set("lang", lang === "en" ? "bn" : "en");
-      if (e.key === "m") set("mono", mono ? "0" : "1");
+      if (e.key === "ArrowLeft") cyclePreset(-1);
+      if (e.key === "ArrowRight") cyclePreset(1);
+      if (e.key === "s") cycle(surfaceOptions, surface, "surface");
+      if (e.key === "h") cycle(shells, shell, "shell");
+      if (e.key === "x") cycle(densityOptions, density, "density");
+      if (e.key === "b") set({ lang: lang === "en" ? "bn" : "en" });
+      if (e.key === "m") set({ mono: mono ? "0" : "1" });
     }
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [index, variants, searchParams, router, lang, mono]);
+  }, [searchParams, router, surface, shell, density, lang, mono]);
 
   if (process.env.NODE_ENV === "production") return null;
 
-  const active = variants[index];
-
-  function href(key: string, value: string) {
+  function href(entries: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
-    params.set(key, value);
+    for (const [k, v] of Object.entries(entries)) params.set(k, v);
     return `?${params.toString()}`;
   }
 
-  const step = (delta: number) => {
-    const next = variants[(index + delta + variants.length) % variants.length];
-    return href("variant", next?.key ?? current);
-  };
+  function step(delta: number) {
+    const at = presets.findIndex((p) => p.surface === surface && p.shell === shell);
+    const from = at === -1 ? 0 : at + delta;
+    const next = presets[((from % presets.length) + presets.length) % presets.length];
+    return href({ surface: next?.surface ?? surface, shell: next?.shell ?? shell });
+  }
+
+  const pill = (on: boolean) =>
+    `rounded-full px-2 py-0.5 ${on ? "bg-lime-400 text-black" : "text-white/70 hover:text-lime-400"}`;
 
   return (
-    <nav className="fixed bottom-5 left-1/2 z-50 flex -translate-x-1/2 items-center gap-1 rounded-full border-2 border-lime-400 bg-black px-2 py-1.5 font-mono text-xs text-white shadow-2xl">
-      <a href={step(-1)} aria-label="Previous variant" className="px-2 py-1 hover:text-lime-400">
-        ←
-      </a>
-      <span className="min-w-[15rem] text-center tracking-wide">
-        {active?.key} — {active?.name}
-      </span>
-      <a href={step(1)} aria-label="Next variant" className="px-2 py-1 hover:text-lime-400">
-        →
-      </a>
-      <span className="mx-1 h-4 w-px bg-white/30" />
-      <a
-        href={href("lang", lang === "en" ? "bn" : "en")}
-        className={`rounded-full px-2 py-1 ${lang === "bn" ? "bg-lime-400 text-black" : "hover:text-lime-400"}`}
-      >
-        {lang === "bn" ? "বাংলা" : "EN"} <span className="opacity-60">(b)</span>
-      </a>
-      <a
-        href={href("mono", mono ? "0" : "1")}
-        className={`rounded-full px-2 py-1 ${mono ? "bg-lime-400 text-black" : "hover:text-lime-400"}`}
-      >
-        mono <span className="opacity-60">(m)</span>
-      </a>
+    <nav className="fixed bottom-4 left-1/2 z-50 flex max-w-[min(60rem,95vw)] -translate-x-1/2 flex-col gap-1 rounded-xl border-2 border-lime-400 bg-black px-3 py-2 font-mono text-[11px] text-white shadow-2xl">
+      {/* Row 1 — where you are. */}
+      <div className="flex items-center gap-2">
+        <a href={step(-1)} aria-label="Previous preset" className="px-1 hover:text-lime-400">
+          ←
+        </a>
+        <span className="min-w-[16rem] text-center tracking-wide">
+          {active ? (
+            <>
+              <b>{active.key}</b> — {active.name}
+            </>
+          ) : (
+            <span className="text-lime-400">off-grid — {surface} · {shell}</span>
+          )}
+        </span>
+        <a href={step(1)} aria-label="Next preset" className="px-1 hover:text-lime-400">
+          →
+        </a>
+        <span className="mx-1 h-3 w-px bg-white/30" />
+        <span className="flex-1 truncate text-white/60">
+          {active ? active.claim : "a combination no preset names — which is a legitimate answer"}
+        </span>
+        <a href={href({ lang: lang === "en" ? "bn" : "en" })} className={pill(lang === "bn")}>
+          {lang === "bn" ? "বাংলা" : "EN"} <span className="opacity-60">b</span>
+        </a>
+        <a href={href({ mono: mono ? "0" : "1" })} className={pill(mono)}>
+          mono <span className="opacity-60">m</span>
+        </a>
+      </div>
+
+      {/* Row 2 — the axes, moving independently. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-white/20 pt-1.5">
+        <Axis
+          title="surface (s)"
+          options={surfaceOptions}
+          current={surface}
+          hrefFor={(k) => href({ surface: k })}
+        />
+        <Axis title="shell (h)" options={shells} current={shell} hrefFor={(k) => href({ shell: k })} />
+        <Axis
+          title="density (x)"
+          options={densityOptions}
+          current={density}
+          hrefFor={(k) => href({ density: k })}
+        />
+      </div>
     </nav>
+  );
+}
+
+function Axis<T extends string>({
+  title,
+  options,
+  current,
+  hrefFor,
+}: {
+  title: string;
+  options: readonly { key: T; name: string; note: string }[];
+  current: T;
+  hrefFor: (key: T) => string;
+}) {
+  return (
+    <span className="flex items-center gap-1">
+      <span className="text-white/40">{title}</span>
+      {options.map((o) => (
+        <a
+          key={o.key}
+          href={hrefFor(o.key)}
+          title={o.note}
+          className={`rounded-full px-2 py-0.5 ${
+            o.key === current ? "bg-lime-400 text-black" : "text-white/70 hover:text-lime-400"
+          }`}
+        >
+          {o.name}
+        </a>
+      ))}
+    </span>
   );
 }
