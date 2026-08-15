@@ -92,11 +92,6 @@ no committed index file — that would be the same list one level down.
 
 <!-- in-scope fog: real, but not yet phraseable as a sharp question -->
 
-- **The architectural rail's element vocabulary.** `enums.ts` carries nine *structural* element
-  types. Brick walls measure on the member algebra and finishes on the face algebra off the same
-  sheet — but which element classes the architectural set registers, and whether a wall is one
-  object bearing both kinds or two, is not yet a sharp question. Graduates once ticket 13 rules
-  what a rail owes the spine.
 - **MEP's discipline authority.** `identity.md` §2 gives each kind exactly one authoritative
   discipline, and plumbing/electrical are already in `disciplines`. How a run graph's authority
   interacts with a set revision that re-issues only the plumbing sheets is unclear enough that
@@ -121,13 +116,6 @@ no committed index file — that would be the same list one level down.
   problem before it is a question, and 08's private lane may be where it graduates. **07 sharpens
   the stakes without closing it**: Bangla OCR is refused on measured grounds there, so if BD
   practice also outlines its text, the PDF lane loses the same channel for a different reason.
-- **Curved geometry on the scan lane.** Ticket 07 found that **no permissively-licensed tool emits
-  a bounded arc with endpoints** — `EdgeDrawing::detectEllipses` returns conics, `HoughCircles`
-  returns full circles, and GREC ran an arc-segmentation contest for a decade precisely because
-  this is unsolved. Whether that matters is genuinely unclear: under 07's ruling raster originates
-  no dimension, so an arc it cannot measure anyway may only need to be *located*. The sharp
-  question — what a raster arc owes the register when it can be seen but not measured — waits on
-  13 ruling what a rail owes the spine.
 - **Text/graphics separation.** 07 named it the biggest hole in the raster pipeline (dimension
   strings, hatching and title-block text all reach the line detector as spurious segments) and
   found no permissive implementation — a build, not a dependency. It is not yet a *decision*, so
