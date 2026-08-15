@@ -87,6 +87,24 @@ opposite remedies. A presence recogniser runs strictly one-way: it can say *seen
 act suspends pending re-affirmation. Bill boundary and measurement boundary print separately —
 merging them tells a contractor the unmeasured scope is excluded from the *works*, a worse lie.
 
+**The scope register is a query, never a table** (amended by `.wayfinder/takeoff/tickets/13`):
+denominator from the classes ingestion sighted × the kinds they bear, numerator from published
+lines, cause a `CASE` in which **`NOT_ESTABLISHED` is the fall-through arm with no writer**. A
+machine `INSERT` into a scope table is a filter with no actor — the shape ticket 01 rejected the
+per-project pin for. Because the residue is computed it cannot be forged, §8's *name the evidence
+or lose the cause* degrades automatically, *recomputed per ingestion* is free, and *contradicted
+act suspends* is another arm rather than a column someone must remember to update. The three
+originator classes therefore have three mechanisms and **a rail can reach none**: the human-only
+causes only through the act seam (the sole construct that refuses a non-human actor), the machine
+default through the fall-through, the ingestion-owned pair off the artifact's verbatim fidelity
+counters. **A rail contributes a candidate absence by not offering**, attaching a reason in its
+own vocabulary that rides the queue item as evidence — never a cause, since the cause taxonomy
+carries the originator legality this clause defines. **The one-way valve is the output type's
+shape**: a recogniser returns a list of sightings and there is no `absent()` constructor anywhere,
+so finding nothing returns an empty list, which says nothing rather than denying something. That
+distinction must stay representable — *a channel ran and yielded zero* is `NOT_ESTABLISHED`, *no
+channel ran* is `ENTITY_TYPE_UNHANDLED`.
+
 ## 3. Publishability, per line
 
 | attribute | required |
@@ -128,6 +146,23 @@ Where the system cannot establish that an element belongs to the class and drawi
 measuring under, it refuses to emit at all. (Legacy exemplar: a phantom pile cap read off the
 wrong plan invented money inside a class that read net short.) Prevention sits upstream of the
 signature — an unaffirmed scale *declares*; an unauthorised sighting *never emits*.
+
+**The over-measurement check is scope attribution, not magnitude** (amended by
+`.wayfinder/takeoff/tickets/13`): the gate has neither §5's band against a manual takeoff nor §8's
+sample, so it cannot know a number is too big — it asks only whether the offer establishes its
+object belongs to the class and drawing it measures under, and severs the object from bill reach
+where it does not. Severance making a cell read as an absence is not the disclosure this clause
+bans, because the ban is on telling a reader to **subtract** and severance leaves nothing to
+subtract; where it removes something real it converts an over-measurement into a *disclosed*
+under-measurement, which is the governing sentence exactly.
+
+**A hard block is not silence.** *Nothing publishes* would be the condemned state if a blocked
+line simply vanished; it cannot, because §2's query derives absence from published lines, so a
+blocked line leaves a cell that reports as an absence with a cause. The block discloses itself.
+**Where a domain attribute is missing, §6 governs, not this table**: the rows above are about
+§3's metadata of the reading, and the discriminator is what the defect impugns — rate selection
+publishes **unpriced**, the number keeps the **row with no quantity**, the reading's admissibility
+**hard-blocks**, the scope's existence **hard-blocks and severs**.
 
 **Corroboration is the publishability gate for `INTERPRETED`.** An interpreted line reaches a
 bill only as `AGREED` (`identity.md` §7); uncorroborated interpreted geometry is not a line at

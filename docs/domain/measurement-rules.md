@@ -145,3 +145,22 @@ register, and the document stage; the gate's shape is spine-owned (a rail may no
 own definition of done); **rail is selected per quantity kind, not per drawing** — one
 architectural sheet originates both brick volume and finish area. MEP fittings: **derive,
 never count**; until ingestion fidelity is proven, MEP publishes runs only.
+
+**The gate's shape** (amended by `.wayfinder/takeoff/tickets/13`). A rail is a pure function
+returning **offers** — geometry, attributes each carrying its own basis, the rule id, the
+(drawing, view), the register-row reference — and **the gate is the spine's sole writer of
+quantity lines**. A rail that hands over *lines* has authored the values the gate reads, which
+makes every check advisory and lets a `DEFAULTED` attribute launder into a `MEASURED` line; §1's
+roll-ups are derived and neither stored, so a rail supplying one is a rail authoring done. Done is
+the gate's **return type**, never a helper a rail chooses to call. The rail owns **geometry**; the
+spine owns **arithmetic** — the offer carries the inputs and the expression combining them, and
+the gate evaluates it in decimal, which is what makes §2's deducted sum, ignored sum, counts and
+threshold enforced rather than decorative. The gate does not check that the expression is the
+*right* one: choosing the formula is a §1 method, CI-hashed.
+
+**Selection runs on four code-owned artifacts**: the closed `quantityKinds` enum (§4), a total
+**kind → authoritative discipline** map (`identity.md` §2), a total **kind → algebra** map, and a
+**`bears`** relation on `(element class × kind)`. The two maps are **independent** — collapsing
+them yields discipline → algebra, which is the per-drawing selection this clause bans, spelled
+differently. `bears` carries the kind axis **outside the identity key**: the class is in the key,
+the kind is not, and the kinds a class bears are looked up, never stored on the row.
