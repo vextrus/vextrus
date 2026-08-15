@@ -25,6 +25,21 @@ with a dated, observed cost — never speculatively.
   It then reads `5544  5544  *` in the exclusion list — the `*` is what survives reboots.
   Moving the port instead is the old advice: it works, and you redo it the next time the block
   moves.
+  **Third occurrence, 2026-08-16 — the dev port this time.** `pnpm dev` died with
+  `listen EACCES 0.0.0.0:3210`; **3210 was inside the reserved block 3130–3229**. Same cure, same
+  shape, third port in four days — treat a bare `EACCES` on any of this repo's ports as this
+  fault until the exclusion list says otherwise:
+
+  ```powershell
+  net stop winnat
+  netsh int ipv4 add excludedportrange protocol=tcp startport=3210 numberofports=1 store=persistent
+  net start winnat
+  ```
+
+  **`pnpm checkup` reported `[ok] port 3210 free` on the same machine, minutes before.** It tests
+  whether anything is *listening*, not whether the port can be *bound* — so it called the machine
+  fit for work on a port that could not be opened. Ticketed as
+  `harness/inbox/checkup-calls-a-reserved-port-free.md`.
 - **`bash` from PowerShell can be WSL, not Git Bash** — a second toolchain that limps far, then
   dies with exit 127 on any Windows CLI. Launch scripts with the explicit Git Bash path;
   `Start-Process` bypasses aliases.

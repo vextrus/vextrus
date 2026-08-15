@@ -148,3 +148,19 @@ byte-identical to `main`.
 constitutional — a new ADR at the next free number (0015 is taken; do not reuse it). Folding the
 winner into `globals.css` and `src/core/format.ts` is *implementation*, and per UI.md the losing
 variants and the switcher leave `main` when it happens.
+
+## Prior attempts — read as argument, never as decision
+
+This ticket has been executed AFK twice before ADR-0015 existed. Both runs **ruled**, which no
+unattended session may do; both are unmerged and stay that way. Neither is deleted, because the
+thinking is worth reading and a deleted branch is unreachable history:
+
+- **`be827f1`** — landed as #42 (closed ticket, ADR numbered 0015, prototype merged to `main`),
+  reverted wholesale by #46. The variants, fixtures and canvas on this ticket's branch are
+  recovered from it.
+- **`abb4651`** (branch `claude/design-system-k0fpxm`, 2026-08-13 21:25) — a second run, 37
+  files. Never opened as a PR.
+
+`git show <sha>` reads either. **They are arguments, not decisions**, and the attended session
+that rules this ticket owes them a reading, not deference — ADR-0015 records that the flow had
+no standing, not that the artifact was wrong.
