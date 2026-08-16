@@ -62,7 +62,7 @@ on 3210. Only `pnpm verify` output is evidence; a check run any other way is a c
 - `docs/specs/genesis-ii.md` the founding spec · `docs/adr/` decisions that constrain product
   code, superseded never edited · `docs/CONTEXT.md` commercial truth, glossary, BD rules ·
   `docs/lessons/` one paid-for fault per file — read when something is broken and the code looks
-  right · `docs/research/` the market.
+  right · `docs/research/` the market, and the harness (`harness-2026-08.md`).
 - **Work is tracked in GitHub Issues** — see `docs/tracker.md` for the frontier query, claiming
   by assignee, blocking by sub-issue, labels. Versioned and immutable goes in git; mutable and
   concurrent goes in Issues. Never a ticket, claim or number in the working tree.

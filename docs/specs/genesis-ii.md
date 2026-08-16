@@ -207,22 +207,30 @@ that runs Claude.
   db-migrate, db-drift — four files, ~330 lines) · `docs/`.
 - **Ports:** web 3210, Postgres 5544 native. `pnpm checkup` binds 3210 to prove it bindable, not
   merely unlistened.
-- **Verify:** measured above at founding (3.9 s); re-measured on 2026-08-16 with the five
-  follow-on issues (#64–#68) merged: **13.7 s** (typecheck 2.8 · lint 1.1 · test 2.9 · ruff 0.0
-  · pytest 0.4 · **build 6.5**) on the same machine, once `next build` joined the lane — cold,
-  into its own `distDir` (`.next-verify`), with no env and no daemon — the day the first request
-  path landed and a route could throw during prerender (ADR-0007). On the CI runner
-  (`.github/workflows/ci.yml`, ubuntu-latest, cold) the same run is 34.5 s, and `pnpm test:db`
-  runs there against a `postgres:16` service. Playwright, if ever, outside the lane.
+- **Verify:** 3.9 s at founding; 13.7 s once `next build` joined the lane on 2026-08-16 with
+  #64–#68 merged (cold, into its own `distDir` `.next-verify`, no env, no daemon — the day a route
+  could throw during prerender, ADR-0007). **Re-measured 2026-08-16 after the foundation session
+  (#76–#80, #85): 13.5–14.7 s** across the session's runs (typecheck 2.4 · lint 0.9 · test 2.7–4.1
+  · **schema-drift 0.6** · ruff 0.0 · pytest 0.4 · build 6.2–7.6), the drift probe (#78) being the
+  one stage added: `drizzle-kit generate` into a scratch `out`, no database, tree untouched. `pnpm
+  test:db`: 25 tests, 6 files, ~3.9 s. On the CI runner (`.github/workflows/ci.yml`, ubuntu-latest,
+  cold) `pnpm verify` is 24.2 s and the whole job — checkout, the landed-migration guard (#85),
+  install, verify, migrate, `test:db` against a `postgres:16` service — 77 s. Playwright, if
+  ever, outside the lane.
 - **Guardrails, all lint-enforced with a fail-closed fixture test:** module boundaries; the two
   seams; `localeCompare` (identity sorts by code units); bare `toLocaleString` (lakh/crore, stated
   locale). CLAUDE.md's NEVER list names each rule's enforcement; a NEVER that cannot be enforced
   mechanically is not in the list.
-- **Harness:** `CLAUDE.md` 4.9 KB; `.claude/settings.json` denies the tools this project never
-  calls (the measured lever — `permissions.deny` prunes tool schemas from the startup context, 29.8k
-  → 22.8k on the first founding's cloud measurement), turns off irrelevant bundled skills, sets
-  bash timeouts, keeps the one `SessionStart` checkup hook; `docs/lessons/` one file per
-  paid-for fault; `docs/CONTEXT.md` commercial truth, glossary, BD rules.
+- **Harness:** `CLAUDE.md` 97 lines / 5.4 KB (the docs' target is under 200 lines);
+  `.claude/settings.json` denies by bare name the tools this project never calls (the measured
+  lever — a bare-name `deny` removes the tool schema from context, 29.8k → 22.8k on the first
+  founding's cloud measurement; the server-level MCP names are the documented pruning form), turns
+  off irrelevant bundled skills, sets bash timeouts, keeps auto memory **off** (`docs/lessons/` is
+  the memory surface — dated, reviewed, in git), and keeps the one `SessionStart` checkup hook
+  (0.27 s, one line, ~15 tokens); `docs/CONTEXT.md` commercial truth, glossary, BD rules.
+  Re-examined against Anthropic's August 2026 documentation in `docs/research/harness-2026-08.md`;
+  the session's startup context (`/context all`) is the one number a session cannot take of
+  itself and is recorded here by the founder when next measured.
 - **Tests:** Vitest at seams; golden vectors for construction math; synthetic drawing fixtures
   including a revision pair; competitor-derived drawings never enter this repo.
 
