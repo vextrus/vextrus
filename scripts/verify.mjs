@@ -4,10 +4,11 @@
  * The exit code is the whole contract; only this command's output is evidence.
  *
  * Stages that need a live service (Postgres) are deliberately NOT here — `pnpm test:db` runs on
- * demand — so green never depends on a daemon.
+ * demand — so green never depends on a daemon. `next build` is here (cold, own distDir): it
+ * needs no daemon and no env — every module that reads env does so lazily, at request time.
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, rmSync } from "node:fs";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -26,18 +27,30 @@ const root = path.resolve(import.meta.dirname, "..");
 }
 
 const cad = path.join(root, "cad");
+// The build stage is cold and lands in its own distDir (ADR-0007): no cache can lie, and a
+// running `next dev` keeps its `.next`. A route can throw during prerender since the first request
+// path landed (issue #66), so `next build` is part of the contract.
+const buildDir = ".next-verify";
 const stages = [
   { name: "typecheck", cmd: "pnpm exec tsc --noEmit", cwd: root },
   { name: "lint", cmd: "pnpm exec eslint .", cwd: root },
   { name: "test", cmd: "pnpm exec vitest run", cwd: root },
   { name: "cad:ruff", cmd: "uv run ruff check .", cwd: cad },
   { name: "cad:test", cmd: "uv run pytest -q", cwd: cad },
+  {
+    name: "build",
+    cmd: "pnpm exec next build",
+    cwd: root,
+    env: { VEXTRUS_NEXT_DIST_DIR: buildDir, NEXT_TELEMETRY_DISABLED: "1" },
+    before: () => rmSync(path.join(root, buildDir), { recursive: true, force: true }),
+  },
 ];
 
 const t0 = Date.now();
 for (const stage of stages) {
   const started = Date.now();
-  const result = spawnSync(stage.cmd, { cwd: stage.cwd, stdio: "inherit", shell: true, env: process.env });
+  stage.before?.();
+  const result = spawnSync(stage.cmd, { cwd: stage.cwd, stdio: "inherit", shell: true, env: { ...process.env, ...stage.env } });
   const secs = ((Date.now() - started) / 1000).toFixed(1);
   if (result.status !== 0) {
     console.error(`\nverify: ${stage.name} FAILED in ${secs}s`);

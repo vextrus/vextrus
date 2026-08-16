@@ -1,0 +1,2369 @@
+{
+  "id": "42a030aa-f0c3-4a60-b894-fc73972a1002",
+  "prevId": "78a81c62-02a0-4050-9774-052b16cfb11f",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.accounts": {
+      "name": "accounts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "provider_id": {
+          "name": "provider_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "access_token": {
+          "name": "access_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token": {
+          "name": "refresh_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "id_token": {
+          "name": "id_token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "access_token_expires_at": {
+          "name": "access_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "refresh_token_expires_at": {
+          "name": "refresh_token_expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "scope": {
+          "name": "scope",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "accounts_user_idx": {
+          "name": "accounts_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "accounts_user_id_users_id_fk": {
+          "name": "accounts_user_id_users_id_fk",
+          "tableFrom": "accounts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.acts": {
+      "name": "acts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "type": {
+          "name": "type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_kind": {
+          "name": "subject_kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subject_ids": {
+          "name": "subject_ids",
+          "type": "uuid[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "detail": {
+          "name": "detail",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::jsonb"
+        },
+        "performed_at": {
+          "name": "performed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "acts_project_idx": {
+          "name": "acts_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "acts_tenant_id_tenants_id_fk": {
+          "name": "acts_tenant_id_tenants_id_fk",
+          "tableFrom": "acts",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "acts_project_tenant_fk": {
+          "name": "acts_project_tenant_fk",
+          "tableFrom": "acts",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "acts_actor_membership_fk": {
+          "name": "acts_actor_membership_fk",
+          "tableFrom": "acts",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "tenant_id",
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "tenant_id",
+            "user_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "acts_tenant_isolation": {
+          "name": "acts_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "acts_type_check": {
+          "name": "acts_type_check",
+          "value": "\"type\" in ('CONFIRM_DISCIPLINE', 'RENAME_MARK', 'REPUDIATE')"
+        },
+        "acts_subjects_check": {
+          "name": "acts_subjects_check",
+          "value": "cardinality(\"subject_ids\") >= 1"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.drawing_revisions": {
+      "name": "drawing_revisions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drawing_id": {
+          "name": "drawing_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "drawing_revisions_drawing_idx": {
+          "name": "drawing_revisions_drawing_idx",
+          "columns": [
+            {
+              "expression": "drawing_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "drawing_revisions_tenant_id_tenants_id_fk": {
+          "name": "drawing_revisions_tenant_id_tenants_id_fk",
+          "tableFrom": "drawing_revisions",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_revisions_drawing_project_fk": {
+          "name": "drawing_revisions_drawing_project_fk",
+          "tableFrom": "drawing_revisions",
+          "tableTo": "drawings",
+          "columnsFrom": [
+            "drawing_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_revisions_project_tenant_fk": {
+          "name": "drawing_revisions_project_tenant_fk",
+          "tableFrom": "drawing_revisions",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "drawing_revisions_id_drawing_uq": {
+          "name": "drawing_revisions_id_drawing_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "drawing_id"
+          ]
+        },
+        "drawing_revisions_id_project_uq": {
+          "name": "drawing_revisions_id_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {
+        "drawing_revisions_tenant_isolation": {
+          "name": "drawing_revisions_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.drawing_set_revision_members": {
+      "name": "drawing_set_revision_members",
+      "schema": "",
+      "columns": {
+        "set_digest": {
+          "name": "set_digest",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drawing_id": {
+          "name": "drawing_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drawing_revision_id": {
+          "name": "drawing_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "drawing_set_revision_members_tenant_id_tenants_id_fk": {
+          "name": "drawing_set_revision_members_tenant_id_tenants_id_fk",
+          "tableFrom": "drawing_set_revision_members",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_set_revision_members_set_fk": {
+          "name": "drawing_set_revision_members_set_fk",
+          "tableFrom": "drawing_set_revision_members",
+          "tableTo": "drawing_set_revisions",
+          "columnsFrom": [
+            "set_digest",
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "digest",
+            "project_id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_set_revision_members_drawing_project_fk": {
+          "name": "drawing_set_revision_members_drawing_project_fk",
+          "tableFrom": "drawing_set_revision_members",
+          "tableTo": "drawings",
+          "columnsFrom": [
+            "drawing_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_set_revision_members_revision_drawing_fk": {
+          "name": "drawing_set_revision_members_revision_drawing_fk",
+          "tableFrom": "drawing_set_revision_members",
+          "tableTo": "drawing_revisions",
+          "columnsFrom": [
+            "drawing_revision_id",
+            "drawing_id"
+          ],
+          "columnsTo": [
+            "id",
+            "drawing_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "drawing_set_revision_members_pk": {
+          "name": "drawing_set_revision_members_pk",
+          "columns": [
+            "set_digest",
+            "drawing_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {
+        "drawing_set_revision_members_tenant_isolation": {
+          "name": "drawing_set_revision_members_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.drawing_set_revisions": {
+      "name": "drawing_set_revisions",
+      "schema": "",
+      "columns": {
+        "digest": {
+          "name": "digest",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "drawing_set_revisions_tenant_id_tenants_id_fk": {
+          "name": "drawing_set_revisions_tenant_id_tenants_id_fk",
+          "tableFrom": "drawing_set_revisions",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawing_set_revisions_project_tenant_fk": {
+          "name": "drawing_set_revisions_project_tenant_fk",
+          "tableFrom": "drawing_set_revisions",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "drawing_set_revisions_digest_project_tenant_uq": {
+          "name": "drawing_set_revisions_digest_project_tenant_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "digest",
+            "project_id",
+            "tenant_id"
+          ]
+        }
+      },
+      "policies": {
+        "drawing_set_revisions_tenant_isolation": {
+          "name": "drawing_set_revisions_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "drawing_set_revisions_digest_check": {
+          "name": "drawing_set_revisions_digest_check",
+          "value": "\"digest\" ~ '^[0-9a-f]{64}$'"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.drawings": {
+      "name": "drawings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discipline_proposed": {
+          "name": "discipline_proposed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discipline_confirmed": {
+          "name": "discipline_confirmed",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "drawings_project_idx": {
+          "name": "drawings_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "drawings_tenant_id_tenants_id_fk": {
+          "name": "drawings_tenant_id_tenants_id_fk",
+          "tableFrom": "drawings",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "drawings_project_tenant_fk": {
+          "name": "drawings_project_tenant_fk",
+          "tableFrom": "drawings",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "drawings_id_project_uq": {
+          "name": "drawings_id_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        },
+        "drawings_id_tenant_uq": {
+          "name": "drawings_id_tenant_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "tenant_id"
+          ]
+        }
+      },
+      "policies": {
+        "drawings_tenant_isolation": {
+          "name": "drawings_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "drawings_discipline_proposed_check": {
+          "name": "drawings_discipline_proposed_check",
+          "value": "\"discipline_proposed\" in ('STRUCTURAL', 'ARCHITECTURAL', 'PLUMBING', 'ELECTRICAL')"
+        },
+        "drawings_discipline_confirmed_check": {
+          "name": "drawings_discipline_confirmed_check",
+          "value": "\"discipline_confirmed\" in ('STRUCTURAL', 'ARCHITECTURAL', 'PLUMBING', 'ELECTRICAL')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.ingests": {
+      "name": "ingests",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "drawing_revision_id": {
+          "name": "drawing_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_filename": {
+          "name": "upload_filename",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_ref": {
+          "name": "upload_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "upload_sha256": {
+          "name": "upload_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artifact_ref": {
+          "name": "artifact_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "artifact_sha256": {
+          "name": "artifact_sha256",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "extractor_version": {
+          "name": "extractor_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "extractor_parameters": {
+          "name": "extractor_parameters",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "extractor_parameter_hash": {
+          "name": "extractor_parameter_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "insunits": {
+          "name": "insunits",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "unit_detected": {
+          "name": "unit_detected",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "insunits_unmapped": {
+          "name": "insunits_unmapped",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "original": {
+          "name": "original",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "derived": {
+          "name": "derived",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "explode_truncated": {
+          "name": "explode_truncated",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "lost_by_type": {
+          "name": "lost_by_type",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "unsupported_by_type": {
+          "name": "unsupported_by_type",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "ingests_revision_idx": {
+          "name": "ingests_revision_idx",
+          "columns": [
+            {
+              "expression": "drawing_revision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ingests_tenant_id_tenants_id_fk": {
+          "name": "ingests_tenant_id_tenants_id_fk",
+          "tableFrom": "ingests",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ingests_project_tenant_fk": {
+          "name": "ingests_project_tenant_fk",
+          "tableFrom": "ingests",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "ingests_revision_project_fk": {
+          "name": "ingests_revision_project_fk",
+          "tableFrom": "ingests",
+          "tableTo": "drawing_revisions",
+          "columnsFrom": [
+            "drawing_revision_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "ingests_id_project_uq": {
+          "name": "ingests_id_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {
+        "ingests_tenant_isolation": {
+          "name": "ingests_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "ingests_unit_detected_check": {
+          "name": "ingests_unit_detected_check",
+          "value": "\"unit_detected\" in ('unitless', 'inch', 'foot', 'mm', 'cm', 'm')"
+        },
+        "ingests_upload_sha256_check": {
+          "name": "ingests_upload_sha256_check",
+          "value": "\"upload_sha256\" ~ '^[0-9a-f]{64}$'"
+        },
+        "ingests_artifact_sha256_check": {
+          "name": "ingests_artifact_sha256_check",
+          "value": "\"artifact_sha256\" ~ '^[0-9a-f]{64}$'"
+        },
+        "ingests_extractor_parameter_hash_check": {
+          "name": "ingests_extractor_parameter_hash_check",
+          "value": "\"extractor_parameter_hash\" ~ '^[0-9a-f]{64}$'"
+        },
+        "ingests_counters_check": {
+          "name": "ingests_counters_check",
+          "value": "\"original\" >= 0 and \"derived\" >= 0"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.invitations": {
+      "name": "invitations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "inviter_id": {
+          "name": "inviter_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "invitations_tenant_idx": {
+          "name": "invitations_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invitations_email_idx": {
+          "name": "invitations_email_idx",
+          "columns": [
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invitations_tenant_id_tenants_id_fk": {
+          "name": "invitations_tenant_id_tenants_id_fk",
+          "tableFrom": "invitations",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invitations_inviter_id_users_id_fk": {
+          "name": "invitations_inviter_id_users_id_fk",
+          "tableFrom": "invitations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "inviter_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "invitations_tenant_isolation": {
+          "name": "invitations_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "invitations_auth_access": {
+          "name": "invitations_auth_access",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_auth"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.levels": {
+      "name": "levels",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "label": {
+          "name": "label",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "height": {
+          "name": "height",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "height_basis": {
+          "name": "height_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "levels_project_idx": {
+          "name": "levels_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "levels_tenant_id_tenants_id_fk": {
+          "name": "levels_tenant_id_tenants_id_fk",
+          "tableFrom": "levels",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "levels_project_tenant_fk": {
+          "name": "levels_project_tenant_fk",
+          "tableFrom": "levels",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "levels_id_project_uq": {
+          "name": "levels_id_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {
+        "levels_tenant_isolation": {
+          "name": "levels_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "levels_height_basis_check": {
+          "name": "levels_height_basis_check",
+          "value": "\"height_basis\" in ('TRANSCRIBED', 'DERIVED', 'ENTERED')"
+        },
+        "levels_height_with_basis_check": {
+          "name": "levels_height_with_basis_check",
+          "value": "(\"height\" is null) = (\"height_basis\" is null)"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.memberships": {
+      "name": "memberships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "memberships_tenant_user_uq": {
+          "name": "memberships_tenant_user_uq",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "memberships_tenant_id_tenants_id_fk": {
+          "name": "memberships_tenant_id_tenants_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "memberships_user_id_users_id_fk": {
+          "name": "memberships_user_id_users_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "memberships_tenant_isolation": {
+          "name": "memberships_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        },
+        "memberships_auth_access": {
+          "name": "memberships_auth_access",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_auth"
+          ],
+          "using": "true",
+          "withCheck": "true"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.model_calls": {
+      "name": "model_calls",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "model": {
+          "name": "model",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "purpose": {
+          "name": "purpose",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "request_hash": {
+          "name": "request_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "transport": {
+          "name": "transport",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "input_tokens": {
+          "name": "input_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "output_tokens": {
+          "name": "output_tokens",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "outcome": {
+          "name": "outcome",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "model_calls_tenant_idx": {
+          "name": "model_calls_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "model_calls_tenant_id_tenants_id_fk": {
+          "name": "model_calls_tenant_id_tenants_id_fk",
+          "tableFrom": "model_calls",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "model_calls_project_tenant_fk": {
+          "name": "model_calls_project_tenant_fk",
+          "tableFrom": "model_calls",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "model_calls_tenant_isolation": {
+          "name": "model_calls_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "model_calls_model_check": {
+          "name": "model_calls_model_check",
+          "value": "\"model\" in ('claude-opus-5', 'claude-sonnet-5', 'claude-haiku-4-5-20251001')"
+        },
+        "model_calls_transport_check": {
+          "name": "model_calls_transport_check",
+          "value": "\"transport\" in ('live', 'fixture')"
+        },
+        "model_calls_outcome_check": {
+          "name": "model_calls_outcome_check",
+          "value": "\"outcome\" in ('PROPOSED', 'UNSOURCED', 'SOURCE_UNRESOLVED', 'MALFORMED', 'FIXTURE_MISSING', 'TRANSPORT_FAILED')"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.projects": {
+      "name": "projects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pinned_book_edition": {
+          "name": "pinned_book_edition",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pinned_rule_set": {
+          "name": "pinned_rule_set",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pinned_multiplier_scheme": {
+          "name": "pinned_multiplier_scheme",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "projects_tenant_idx": {
+          "name": "projects_tenant_idx",
+          "columns": [
+            {
+              "expression": "tenant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "projects_tenant_id_tenants_id_fk": {
+          "name": "projects_tenant_id_tenants_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "projects_id_tenant_uq": {
+          "name": "projects_id_tenant_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "tenant_id"
+          ]
+        }
+      },
+      "policies": {
+        "projects_tenant_isolation": {
+          "name": "projects_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
+    "public.refused_sightings": {
+      "name": "refused_sightings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cause": {
+          "name": "cause",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discipline": {
+          "name": "discipline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level_id": {
+          "name": "level_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level_basis": {
+          "name": "level_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "element_type": {
+          "name": "element_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mark": {
+          "name": "mark",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "drawing_revision_id": {
+          "name": "drawing_revision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "source_keys": {
+          "name": "source_keys",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "refused_at": {
+          "name": "refused_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "refused_sightings_project_idx": {
+          "name": "refused_sightings_project_idx",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "refused_sightings_tenant_id_tenants_id_fk": {
+          "name": "refused_sightings_tenant_id_tenants_id_fk",
+          "tableFrom": "refused_sightings",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "refused_sightings_project_tenant_fk": {
+          "name": "refused_sightings_project_tenant_fk",
+          "tableFrom": "refused_sightings",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "refused_sightings_level_project_fk": {
+          "name": "refused_sightings_level_project_fk",
+          "tableFrom": "refused_sightings",
+          "tableTo": "levels",
+          "columnsFrom": [
+            "level_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "refused_sightings_revision_project_fk": {
+          "name": "refused_sightings_revision_project_fk",
+          "tableFrom": "refused_sightings",
+          "tableTo": "drawing_revisions",
+          "columnsFrom": [
+            "drawing_revision_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {
+        "refused_sightings_tenant_isolation": {
+          "name": "refused_sightings_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "refused_sightings_cause_check": {
+          "name": "refused_sightings_cause_check",
+          "value": "\"cause\" in ('DUPLICATE_IDENTITY', 'REPUDIATED')"
+        },
+        "refused_sightings_discipline_check": {
+          "name": "refused_sightings_discipline_check",
+          "value": "\"discipline\" in ('STRUCTURAL', 'ARCHITECTURAL', 'PLUMBING', 'ELECTRICAL')"
+        },
+        "refused_sightings_element_type_check": {
+          "name": "refused_sightings_element_type_check",
+          "value": "\"element_type\" in ('PILE', 'PILE_CAP', 'FOOTING', 'GRADE_BEAM', 'COLUMN', 'SHEAR_WALL', 'BEAM', 'SLAB', 'STAIR', 'WALL')"
+        },
+        "refused_sightings_level_basis_check": {
+          "name": "refused_sightings_level_basis_check",
+          "value": "\"level_basis\" in ('FOUNDATION', 'UNRESOLVED')"
+        },
+        "refused_sightings_level_slot_check": {
+          "name": "refused_sightings_level_slot_check",
+          "value": "(\"level_id\" is null) <> (\"level_basis\" is null)"
+        },
+        "refused_sightings_ordinal_check": {
+          "name": "refused_sightings_ordinal_check",
+          "value": "(\"cause\" = 'REPUDIATED') = (\"ordinal\" is not null)"
+        },
+        "refused_sightings_source_keys_check": {
+          "name": "refused_sightings_source_keys_check",
+          "value": "cardinality(\"source_keys\") >= 1"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.register_objects": {
+      "name": "register_objects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tenant_id": {
+          "name": "tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "discipline": {
+          "name": "discipline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "level_id": {
+          "name": "level_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "level_basis": {
+          "name": "level_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "element_type": {
+          "name": "element_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "mark": {
+          "name": "mark",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ordinal": {
+          "name": "ordinal",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "registered_at": {
+          "name": "registered_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "register_objects_tenant_id_tenants_id_fk": {
+          "name": "register_objects_tenant_id_tenants_id_fk",
+          "tableFrom": "register_objects",
+          "tableTo": "tenants",
+          "columnsFrom": [
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "register_objects_project_tenant_fk": {
+          "name": "register_objects_project_tenant_fk",
+          "tableFrom": "register_objects",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "project_id",
+            "tenant_id"
+          ],
+          "columnsTo": [
+            "id",
+            "tenant_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "register_objects_level_project_fk": {
+          "name": "register_objects_level_project_fk",
+          "tableFrom": "register_objects",
+          "tableTo": "levels",
+          "columnsFrom": [
+            "level_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "id",
+            "project_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "register_objects_identity_uq": {
+          "name": "register_objects_identity_uq",
+          "nullsNotDistinct": true,
+          "columns": [
+            "project_id",
+            "discipline",
+            "level_id",
+            "level_basis",
+            "element_type",
+            "mark",
+            "ordinal"
+          ]
+        },
+        "register_objects_id_project_uq": {
+          "name": "register_objects_id_project_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "project_id"
+          ]
+        }
+      },
+      "policies": {
+        "register_objects_tenant_isolation": {
+          "name": "register_objects_tenant_isolation",
+          "as": "PERMISSIVE",
+          "for": "ALL",
+          "to": [
+            "vextrus_app"
+          ],
+          "using": "tenant_id = current_setting('app.tenant_id')::uuid",
+          "withCheck": "tenant_id = current_setting('app.tenant_id')::uuid"
+        }
+      },
+      "checkConstraints": {
+        "register_objects_discipline_check": {
+          "name": "register_objects_discipline_check",
+          "value": "\"discipline\" in ('STRUCTURAL', 'ARCHITECTURAL', 'PLUMBING', 'ELECTRICAL')"
+        },
+        "register_objects_element_type_check": {
+          "name": "register_objects_element_type_check",
+          "value": "\"element_type\" in ('PILE', 'PILE_CAP', 'FOOTING', 'GRADE_BEAM', 'COLUMN', 'SHEAR_WALL', 'BEAM', 'SLAB', 'STAIR', 'WALL')"
+        },
+        "register_objects_level_basis_check": {
+          "name": "register_objects_level_basis_check",
+          "value": "\"level_basis\" in ('FOUNDATION', 'UNRESOLVED')"
+        },
+        "register_objects_level_slot_check": {
+          "name": "register_objects_level_slot_check",
+          "value": "(\"level_id\" is null) <> (\"level_basis\" is null)"
+        },
+        "register_objects_ordinal_check": {
+          "name": "register_objects_ordinal_check",
+          "value": "\"ordinal\" >= 1"
+        }
+      },
+      "isRLSEnabled": true
+    },
+    "public.sessions": {
+      "name": "sessions",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "token": {
+          "name": "token",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_address": {
+          "name": "ip_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_agent": {
+          "name": "user_agent",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "active_tenant_id": {
+          "name": "active_tenant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "sessions_user_idx": {
+          "name": "sessions_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "sessions_user_id_users_id_fk": {
+          "name": "sessions_user_id_users_id_fk",
+          "tableFrom": "sessions",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "sessions_token_unique": {
+          "name": "sessions_token_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "token"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.tenants": {
+      "name": "tenants",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "logo": {
+          "name": "logo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "metadata": {
+          "name": "metadata",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "tenants_slug_unique": {
+          "name": "tenants_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email_verified": {
+          "name": "email_verified",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "image": {
+          "name": "image",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.verifications": {
+      "name": "verifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "identifier": {
+          "name": "identifier",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "value": {
+          "name": "value",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "verifications_identifier_idx": {
+          "name": "verifications_identifier_idx",
+          "columns": [
+            {
+              "expression": "identifier",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

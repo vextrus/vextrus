@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * The ONLY schema writer (ADR-0002). Ensures the app role exists, then applies db/migrations in
+ * The ONLY schema writer (ADR-0002). Ensures the app and auth roles exist, then applies db/migrations in
  * order as the owner role, each file in one transaction, recorded in the __migrations ledger.
  * Every environment — dev included — gets its schema exactly this way; there is no push lane.
  */
@@ -20,23 +20,30 @@ if (!url) {
   process.exit(2);
 }
 const appRolePassword = process.env.APP_DB_PASSWORD ?? "vextrus_app_dev_password";
+const authRolePassword = process.env.AUTH_DB_PASSWORD ?? "vextrus_auth_dev_password";
 
 const sql = postgres(url, { max: 1, onnotice: () => {} });
 const migrationsDir = path.resolve(import.meta.dirname, "../db/migrations");
 let failure = null;
 
 try {
-  // The app role first: migrations GRANT to it. LOGIN NOBYPASSRLS, non-owner — always subject
-  // to the policies (ADR-0004). Needs CREATEROLE on the owner: on a fresh cluster,
-  // `sudo -u postgres psql -p 5544 -c 'ALTER ROLE vextrus CREATEROLE'` once.
-  await sql.unsafe(`
-    DO $$
-    BEGIN
-      IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'vextrus_app') THEN
-        CREATE ROLE vextrus_app LOGIN NOBYPASSRLS PASSWORD '${appRolePassword}';
-      END IF;
-    END $$;
-  `);
+  // The two constrained roles first: migrations GRANT to them and name them in policies. Both
+  // LOGIN NOBYPASSRLS, non-owner — always subject to the policies (ADR-0004): vextrus_app is the
+  // request path's role, vextrus_auth is better-auth's. Needs CREATEROLE on the owner: on a fresh
+  // cluster, `sudo -u postgres psql -p 5544 -c 'ALTER ROLE vextrus CREATEROLE'` once.
+  for (const [role, password] of [
+    ["vextrus_app", appRolePassword],
+    ["vextrus_auth", authRolePassword],
+  ]) {
+    await sql.unsafe(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '${role}') THEN
+          CREATE ROLE ${role} LOGIN NOBYPASSRLS PASSWORD '${password}';
+        END IF;
+      END $$;
+    `);
+  }
 
   await sql.unsafe(`
     CREATE TABLE IF NOT EXISTS __migrations (

@@ -73,7 +73,13 @@ report(existsSync(path.join(root, ".env")) ? "ok" : "BROKEN", ".env", existsSync
   }
 }
 
-// Postgres: reachable as owner, app role exists, ledger in sync with db/migrations.
+// better-auth (issue #66): its secret and origin are read at first request; missing presents as
+// a 500 on sign-in, so say so here.
+for (const name of ["BETTER_AUTH_SECRET", "BETTER_AUTH_URL", "AUTH_DATABASE_URL"]) {
+  report(process.env[name] ? "ok" : "BROKEN", name, process.env[name] ? "set" : "unset — see .env.example");
+}
+
+// Postgres: reachable as owner, app and auth roles exist, ledger in sync with db/migrations.
 {
   const url = process.env.MIGRATE_DATABASE_URL;
   if (!url) {
@@ -84,8 +90,10 @@ report(existsSync(path.join(root, ".env")) ? "ok" : "BROKEN", ".env", existsSync
       const [{ version }] = await sql`select version()`;
       const [{ encoding }] = await sql`select pg_encoding_to_char(encoding) as encoding from pg_database where datname = current_database()`;
       report("ok", "postgres", `${version.split(",")[0]} · ${new URL(url).host} · ${encoding}`);
-      const roles = await sql`select rolname from pg_roles where rolname in ('vextrus_app')`;
-      report(roles.length === 1 ? "ok" : "note", "app role", roles.length === 1 ? "vextrus_app present" : "vextrus_app absent — pnpm db:migrate creates it");
+      const roles = (await sql`select rolname from pg_roles where rolname in ('vextrus_app', 'vextrus_auth')`).map((r) => r.rolname);
+      for (const role of ["vextrus_app", "vextrus_auth"]) {
+        report(roles.includes(role) ? "ok" : "note", role === "vextrus_app" ? "app role" : "auth role", roles.includes(role) ? `${role} present` : `${role} absent — pnpm db:migrate creates it`);
+      }
       const drift = run("node", ["scripts/db-drift.mjs", "--json"]);
       const d = drift.ok ? { clean: true } : JSON.parse(drift.out.split("\n").at(-1) || "{}");
       report(

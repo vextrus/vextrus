@@ -62,7 +62,7 @@ const NO_TO_LOCALE_STRING = {
 
 export default tseslint.config(
   {
-    ignores: ["node_modules/**", ".next/**", "cad/**", "db/migrations/**", "next-env.d.ts"],
+    ignores: ["node_modules/**", ".next/**", ".next-verify/**", "cad/**", "db/migrations/**", "next-env.d.ts"],
   },
   ...tseslint.configs.recommended,
   {
