@@ -320,7 +320,15 @@ the defect rate of one executor is the baseline against which a second is judged
   schema-drift 0.6 · ruff 0.0 · pytest 0.4 · build 4.1. Was 13.5–14.9 s before #91.
 - `pnpm test:db`: see `genesis-ii.md` §7. Vitest suite: 36 tests, 6 files, 2.4 s.
 - CI (`ubuntu-latest`, cold): whole job ~80 s, of which `pnpm verify` ~24 s.
-- One PR through the protected gate: ~1.5–2 min from push to mergeable.
+- One PR through the protected gate: ~1.5–2 min from push to mergeable. A PR produces **two**
+  `verify` check-runs on one commit, created up to 25 s apart; both gate the merge.
+- **The dispatcher, verified live 2026-08-16** on smoke issue #107, with no Anthropic secret set:
+  run `31941273131` detected `SECRET_MISSING` and could announce none of it (`gh` has no git
+  remote before `actions/checkout` — `docs/lessons/gh-infers-the-repo-from-a-git-remote-that-may-not-exist.md`);
+  run `31941479863`, after the fix, **refused by name, posted the comment, and removed the label**.
+  Three further runs were correctly **skipped** by the `if` guard when an issue was labelled
+  `harness`, `wayfinder:task` and `ready-for-human`. Also measured: re-applying a label already
+  present fires **no** event, which is why a refusal removes it.
 
 ## 8. Metrics watched
 
@@ -334,6 +342,12 @@ Recorded in the PR body of each build ticket (the tracker is mutable state; the 
 | tickets merged per day | GitHub | throughput, against the map's remaining tickets |
 | defects that reach review | `/code-review` findings that changed the diff | the executor's first-pass yield (expect low: the best published figure for issue-driven work is 10–20%) |
 | **defects that reach `main`** | a revert, a follow-up fix, or a new `docs/lessons/` file | the only metric that can fail this spec |
+
+First observations, 2026-08-16 (the harness building itself, so they are a floor rather than a
+sample of real tickets): eight tickets merged in one session; `pnpm verify` 11.2–13.4 s throughout;
+one defect reached `main` — the dispatcher's mute gate (#108), caught by the first smoke run and
+fixed the same session, which is the loop working rather than failing. The dispatcher is live and
+has executed no build ticket: its `SECRET_MISSING` path is the only one exercised.
 
 ## 9. Exit criteria
 
@@ -357,7 +371,9 @@ sessions — that is the honest stop condition, and it is cheaper than any recov
 | 4 | the dispatcher workflow (§5.A1) — `.github/workflows/agent.yml` | A1 **accepted**; built 2026-08-16 by founder direction, inert until a ticket carries the label |
 | 5 | the dispatch section of `docs/tracker.md` — the independence test (§5.A2), how a ticket is dispatched, and the one-line switch from serial to parallel | A2 **accepted**; the switch stays serial until ten tickets have merged |
 
-All five were opened and merged by the session that wrote this spec (issues #95, #97, #99, #104,
-#105). Two operational preconditions remain the founder's, and the workflow refuses by name
-without them: the **Claude GitHub App** installed on the repository, and an **`ANTHROPIC_API_KEY`
-or `CLAUDE_CODE_OAUTH_TOKEN` secret**.
+All five were opened and merged by the session that wrote this spec — issues **#95, #97, #99, #105,
+#110** — together with two the spec did not foresee: **#103**, accepting the amendments, and
+**#108**, the dispatcher's gate being unable to *post* its refusal (found by running it, not by
+reading it). Two operational preconditions remain the founder's, and the workflow refuses
+`SECRET_MISSING` by name without them: the **Claude GitHub App** installed on the repository, and
+an **`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` secret**.
