@@ -230,6 +230,14 @@ sentence above already forecloses.
   closure on the face); the register keeps full precision; the over-measurement block reads the
   **register** value, never the printed one.
 
+*Amendment, 2026-08-16.* The certificate names the **instruments in force** as enumerated fields,
+never prose: the **rule-set edition** — its human string, its digest, and its fork lineage where a
+tenant authored one — and the **catalogue digest** its denominator was enumerated from
+(`identity.md` §8). A reader who cannot name which rules measured the job cannot check the bill.
+Where the bill is unpriced there is no amount, so the amount-in-words is replaced by a **closed
+reason code** — no book edition pinned — rendered by the document formatter with a stated locale.
+Prose there reopens the door this clause shuts; silence is the condemned state.
+
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates

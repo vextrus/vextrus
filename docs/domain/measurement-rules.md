@@ -31,6 +31,10 @@ full storey height floor-to-floor (beam/slab intersections not deducted); beam l
 drawn long-section span with the beam-column junction in the beam; slab–beam junction
 deductions defer **with a reason**, never a silent zero.
 
+*Amendment, 2026-08-16.* "Carried on the project record" is a **reference**, not a column set: the
+project record points at an immutable **rule-set edition** it forked at creation (`identity.md`
+§8). The edition holds the parameter values; the project holds the pin.
+
 ## 2. Openings
 
 - **The opening schedule is the authority; adjacency is a declared cross-check; a face with no
@@ -134,6 +138,10 @@ ordinal **throws**; a tenant with no scheme is a different fact. Storey heights 
 height is declared and dip-sampled, not blocked (no gate can detect present-and-wrong). The
 level stack is the **vertical coverage denominator**, and the certificate prints the stack's
 own basis. Per-floor rollups sort by ordinal — never lexicographic.
+
+*Amendment, 2026-08-16.* The *tenant with no scheme* fact means: **no priced line may be emitted;
+no quantity is affected**. The scheme is a rate-modifier instrument (`quantity-contract.md` §4),
+so it is not a campaign precondition and pins nothing at campaign creation (`identity.md` §8).
 
 ## 8. Algebras and rails
 
