@@ -1,13 +1,9 @@
 import { createHash } from "node:crypto";
 import { and, eq } from "drizzle-orm";
-import {
-  catalogueDigestInForce,
-  insertCampaignGeneration,
-  projectRuleSetEdition,
-  type Campaign,
-} from "./campaigns";
+import { insertCampaignGeneration, readCampaign, type Campaign } from "./campaigns";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
-import { REPIN_CONSEQUENCES, type RepinConsequence } from "./enums";
+import { REPIN_CONSEQUENCES, type RepinConsequence, type RepinRefusal } from "./enums";
+import { pinsInForce, type CampaignPins } from "./freshness";
 import { drawingSetRevisionDigest, type DrawingSetMember } from "./identity";
 import { compareCanonical } from "./order";
 
@@ -23,12 +19,18 @@ import { compareCanonical } from "./order";
  * (reading the campaign, superseding it, opening its successor) is in campaigns.ts.
  */
 
-/** Both of a campaign's snapshots and its pinned set, on one side of the re-pin or the other. */
-export type RepinKeys = {
-  readonly setDigest: string;
-  readonly ruleSetEditionId: string;
-  readonly catalogueDigest: string;
-};
+/**
+ * Both of a campaign's snapshots and its pinned set, on one side of the re-pin or the other. It is
+ * the freshness diff's pin pair plus the manifest key, composed rather than restated, so a third
+ * snapshot added to a campaign lands in one place and both readers of "what a campaign cites"
+ * follow it.
+ */
+export type RepinKeys = CampaignPins & { readonly setDigest: string };
+
+/** A refusal, bound to the closed vocabulary — a mistyped code fails `typecheck`, not a caller. */
+function refuse(reason: RepinRefusal, detail: string): never {
+  throw new Error(`${reason}: ${detail}`);
+}
 
 /** One drawing whose cited revision moved between the two manifests. */
 export type ReRevvedMember = {
@@ -173,7 +175,7 @@ export function repinStatementOf(sides: RepinSides): RepinStatement {
   const diff = { ...sides, changes };
   const consequences = REPIN_CONSEQUENCES.filter((c) => CARRIES[c](diff));
   if (!consequences.some((c) => c !== NOT_A_MOVE)) {
-    throw new Error(`REPIN_NOTHING_MOVED: ${sides.campaignId} already pins ${sides.incoming.setDigest}`);
+    refuse("REPIN_NOTHING_MOVED", `${sides.campaignId} already pins ${sides.incoming.setDigest}`);
   }
   const stated = {
     campaignId: sides.campaignId,
@@ -192,21 +194,8 @@ export function repinStatementOf(sides: RepinSides): RepinStatement {
  * its successor is the generation that advances (§9).
  */
 async function outgoingSide(tx: Tx, tenantId: string, campaignId: string) {
-  const [campaign] = await tx
-    .select({
-      id: schema.campaigns.id,
-      projectId: schema.campaigns.projectId,
-      setDigest: schema.campaigns.setDigest,
-      ruleSetEditionId: schema.campaigns.ruleSetEditionId,
-      catalogueDigest: schema.campaigns.catalogueDigest,
-      state: schema.campaigns.state,
-    })
-    .from(schema.campaigns)
-    .where(and(eq(schema.campaigns.tenantId, tenantId), eq(schema.campaigns.id, campaignId)));
-  if (!campaign) throw new Error(`CAMPAIGN_MISSING: ${campaignId}`);
-  if (campaign.state === "SUPERSEDED") {
-    throw new Error(`REPIN_CAMPAIGN_NOT_CURRENT: ${campaignId} is history`);
-  }
+  const campaign = await readCampaign(tx, tenantId, campaignId);
+  if (campaign.state === "SUPERSEDED") refuse("REPIN_CAMPAIGN_NOT_CURRENT", `${campaignId} is history`);
   const members = await tx
     .select({
       drawingId: schema.drawingSetRevisionMembers.drawingId,
@@ -244,8 +233,7 @@ export async function repinStatementIn(
     outgoingSigned: campaign.state === "SIGNED",
     incoming: {
       setDigest: drawingSetRevisionDigest(args.members),
-      ruleSetEditionId: await projectRuleSetEdition(tx, args.tenantId, campaign.projectId),
-      catalogueDigest: await catalogueDigestInForce(tx),
+      ...(await pinsInForce(tx, args.tenantId, campaign.projectId)),
     },
     incomingMembers: args.members,
   });
@@ -260,8 +248,15 @@ export type RepinCampaignInput = {
   readonly actorUserId: string;
   /**
    * The digest of the statement the caller was shown. Recomputed inside the writing transaction
-   * and refused unless it still matches, so a re-pin whose consequences the caller never saw — or
-   * saw before the catalogue moved underneath it — refuses by name instead of committing.
+   * and refused unless it still matches, so a re-pin against consequences that have since moved —
+   * a `bears` row shipped between the statement and the act — refuses by name instead of
+   * committing the difference.
+   *
+   * It is a **content address, not a nonce**: nothing is stored between the statement and the act,
+   * deliberately, because a stored statement is state that can outlive what it describes. What the
+   * address buys is that a caller cannot produce it without having computed every consequence
+   * exactly — which is what "carried them through" means. What it does not buy is proof a human
+   * read them; that is the surface's job, and the surface is out of this arc.
    */
   readonly acknowledged: string;
 };
@@ -287,9 +282,7 @@ export async function repinCampaign(
       campaignId: input.campaignId,
       members: input.members,
     });
-    if (input.acknowledged !== statement.digest) {
-      throw new Error(`REPIN_CONSEQUENCES_NOT_CARRIED: ${statement.digest}`);
-    }
+    if (input.acknowledged !== statement.digest) refuse("REPIN_CONSEQUENCES_NOT_CARRIED", statement.digest);
     // Supersede first: the successor takes the project's one current slot, and taking it while the
     // outgoing generation still held it is `campaigns_project_current_uq`'s refusal.
     await tx

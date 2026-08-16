@@ -40,7 +40,7 @@ ALTER TABLE "acts" ADD CONSTRAINT "acts_type_check" CHECK ("type" in ('CONFIRM_D
 -- **is** the voiding of a signature — §8 voids whole, never in part). Everything else refuses by
 -- closed name, from the database, because the column-level UPDATE grant on `state` is
 -- bidirectional and the application remembering the direction is not a mechanism.
-CREATE OR REPLACE FUNCTION campaigns_state_is_one_way() RETURNS trigger AS $$
+CREATE FUNCTION campaigns_state_transition() RETURNS trigger AS $$
 BEGIN
   IF NEW."state" = OLD."state" THEN
     RETURN NEW;
@@ -56,8 +56,8 @@ BEGIN
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;--> statement-breakpoint
-ALTER FUNCTION campaigns_state_is_one_way() RENAME TO campaigns_state_transition;--> statement-breakpoint
 DROP TRIGGER "campaigns_state_is_one_way" ON "campaigns";--> statement-breakpoint
+DROP FUNCTION campaigns_state_is_one_way();--> statement-breakpoint
 CREATE TRIGGER campaigns_state_transition BEFORE UPDATE ON "campaigns"
   FOR EACH ROW EXECUTE FUNCTION campaigns_state_transition();
 --> statement-breakpoint

@@ -74,7 +74,7 @@ export async function projectRuleSetEdition(tx: Tx, tenantId: string, projectId:
  * same law. A digest already held by a different project is not silently adopted — the campaign's
  * composite FK refuses it.
  */
-export async function pinDrawingSetRevision(
+async function pinDrawingSetRevision(
   tx: Tx,
   args: { readonly tenantId: string; readonly projectId: string; readonly members: readonly DrawingSetMember[] },
 ): Promise<string> {
@@ -96,6 +96,40 @@ export async function pinDrawingSetRevision(
     )
     .onConflictDoNothing();
   return digest;
+}
+
+/**
+ * One campaign row, read in the caller's transaction — the one reader every path that needs a
+ * campaign's own citations goes through (the freshness diff, the re-pin's outgoing side). A
+ * campaign the caller's tenant cannot see refuses by name rather than being reported as fresh, or
+ * as having nothing to re-pin: `CURRENT` on a row nobody could read, and an empty diff on one, are
+ * both the silent default the governing sentence condemns.
+ */
+export async function readCampaign(
+  tx: Tx,
+  tenantId: string,
+  campaignId: string,
+): Promise<{
+  readonly id: string;
+  readonly projectId: string;
+  readonly setDigest: string;
+  readonly ruleSetEditionId: string;
+  readonly catalogueDigest: string;
+  readonly state: CampaignState;
+}> {
+  const [campaign] = await tx
+    .select({
+      id: schema.campaigns.id,
+      projectId: schema.campaigns.projectId,
+      setDigest: schema.campaigns.setDigest,
+      ruleSetEditionId: schema.campaigns.ruleSetEditionId,
+      catalogueDigest: schema.campaigns.catalogueDigest,
+      state: schema.campaigns.state,
+    })
+    .from(schema.campaigns)
+    .where(and(eq(schema.campaigns.tenantId, tenantId), eq(schema.campaigns.id, campaignId)));
+  if (!campaign) throw new Error(`CAMPAIGN_MISSING: ${campaignId}`);
+  return campaign;
 }
 
 /**

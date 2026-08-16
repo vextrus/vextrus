@@ -229,6 +229,27 @@ describe("a re-pin cannot be performed blind (identity.md §9)", () => {
     expect(await repinActsOfProject(projectId)).toHaveLength(0);
   });
 
+  it("refuses a statement addressing a different re-pin — the address is of this act, not of any", async () => {
+    const { projectId, first, second, campaignId } = await newCase("Rampura mismatch");
+    const third = await newMember(projectId, "Rampura mismatch S-03");
+    // A perfectly well-formed statement, honestly obtained — for the re-pin that adds two sheets.
+    const forThree = await campaignRepinStatement(ctx(), { campaignId, members: [first, second, third] });
+    expect(forThree.consequences).toEqual(["DENOMINATOR_WIDENS"]);
+    // Carried into the re-pin that adds one: same consequence vocabulary, different act, refused.
+    expect(
+      await refusal(() =>
+        repinCampaign(ctx(), {
+          campaignId,
+          members: [first, second],
+          actorUserId: userId,
+          acknowledged: forThree.digest,
+        }),
+      ),
+    ).toMatch(/REPIN_CONSEQUENCES_NOT_CARRIED/);
+    expect((await campaignRow(campaignId)).state).toBe("LIVE");
+    expect(await campaignsOfProject(projectId)).toHaveLength(1);
+  });
+
   it("refuses a statement the world outran — the consequences are recomputed at the act", async () => {
     const { projectId, first, second, campaignId } = await newCase("Banani outrun");
     const statement = await campaignRepinStatement(ctx(), { campaignId, members: [first, second] });

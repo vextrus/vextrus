@@ -1,6 +1,5 @@
-import { and, eq } from "drizzle-orm";
-import { catalogueDigestInForce, projectRuleSetEdition } from "./campaigns";
-import { forTenant, schema, type TenantCtx, type Tx } from "./db";
+import { catalogueDigestInForce, projectRuleSetEdition, readCampaign } from "./campaigns";
+import { forTenant, type TenantCtx, type Tx } from "./db";
 import {
   CAMPAIGN_PINS,
   type CampaignFreshnessRefusal,
@@ -66,8 +65,11 @@ export function campaignFreshnessOf(pinned: CampaignPins, inForce: CampaignPins)
  * What is in force for a project right now: the rule-set edition the project pins (a project re-pin
  * moves it) and the digest of the catalogue as deployed (a shipped kind or `bears` row moves it).
  * Both read in the caller's transaction, so the two halves of a verdict are one consistent read.
+ *
+ * Exported because the re-pin act snapshots exactly what this returns (repin.ts): if the two ever
+ * read "in force" differently, a re-pin would leave behind the staleness it was authored to clear.
  */
-async function pinsInForce(tx: Tx, tenantId: string, projectId: string): Promise<CampaignPins> {
+export async function pinsInForce(tx: Tx, tenantId: string, projectId: string): Promise<CampaignPins> {
   return {
     ruleSetEditionId: await projectRuleSetEdition(tx, tenantId, projectId),
     catalogueDigest: await catalogueDigestInForce(tx),
@@ -76,20 +78,12 @@ async function pinsInForce(tx: Tx, tenantId: string, projectId: string): Promise
 
 /**
  * The verdict for one campaign, through the seam. A campaign the caller's tenant cannot see is
- * refused by name rather than reported fresh: an invisible campaign has no verdict, and `CURRENT`
- * on a row nobody could read is the silent default the governing sentence condemns.
+ * refused by name by the campaign reader it shares with the re-pin act: an invisible campaign has
+ * no verdict, and `CURRENT` on a row nobody could read is a silent default.
  */
 export async function campaignFreshness(ctx: TenantCtx, campaignId: string): Promise<CampaignFreshness> {
   return forTenant(ctx, async (tx) => {
-    const [campaign] = await tx
-      .select({
-        projectId: schema.campaigns.projectId,
-        ruleSetEditionId: schema.campaigns.ruleSetEditionId,
-        catalogueDigest: schema.campaigns.catalogueDigest,
-      })
-      .from(schema.campaigns)
-      .where(and(eq(schema.campaigns.tenantId, ctx.tenantId), eq(schema.campaigns.id, campaignId)));
-    if (!campaign) throw new Error(`CAMPAIGN_MISSING: ${campaignId}`);
+    const campaign = await readCampaign(tx, ctx.tenantId, campaignId);
     return campaignFreshnessOf(campaign, await pinsInForce(tx, ctx.tenantId, campaign.projectId));
   });
 }
