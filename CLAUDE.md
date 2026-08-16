@@ -73,6 +73,9 @@ on 3210. Only `pnpm verify` output is evidence; a check run any other way is a c
 - Delegate only wide, independent investigation; never to check your own work.
 - Where a reading is ambiguous, take the most defensible one, name the assumption in the issue
   or PR, and finish. Unfinished and said so beats a guess reported as done.
+- Before reporting progress, audit each claim against a tool result from this session; report
+  only what you can point to evidence for. When the founder is describing a problem or thinking
+  out loud, the deliverable is your assessment — report and stop; fix when asked.
 - A lesson is recorded only with a dated, observed cost — one file, named for the fault. Update
   rather than duplicate; delete what turns out wrong.
 
