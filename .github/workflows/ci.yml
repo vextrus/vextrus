@@ -46,6 +46,23 @@ jobs:
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Full history so the landed-migration guard below can diff against the PR base.
+          fetch-depth: 0
+      # A landed migration is never edited — it is superseded (ADR-0002; issue #85). "Landed" = present on
+      # the PR's base. Modifying or deleting a migration file or its snapshot that the base already
+      # has fails the run; adding files and appending to _journal.json stay free.
+      - name: landed migrations are immutable
+        if: github.event_name == 'pull_request'
+        run: |
+          base="${{ github.event.pull_request.base.sha }}"
+          changed="$(git diff --no-renames --diff-filter=MD --name-only "$base"...HEAD -- 'db/migrations/*.sql' 'db/migrations/meta/*_snapshot.json')"
+          if [ -n "$changed" ]; then
+            echo "::error::a landed migration was modified or deleted — supersede it with a new one (ADR-0002):"
+            echo "$changed"
+            exit 1
+          fi
+          echo "landed migrations untouched"
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
