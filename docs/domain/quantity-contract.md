@@ -276,6 +276,54 @@ classes as the vector path and may never borrow the vector path's validation. Th
 unchanged — a relaxed `+0%` for scan-derived lines is a basis-difference excuse, which the
 sentence above already forecloses.
 
+*Amendment, 2026-08-17 (issue #138).* **The validation ledger as data — and what "never reaches a
+certificate" means.** This clause's two sentences on validation were read strictly and the strict
+reading is dead law: §4 and §8 both make an unvalidated engine class a **mandatory Part A stratum
+reviewed in full**, which is unreachable if such a class never reaches a bill. Worse, condition 2
+above binds the band to `COMPLETE` coverage, so a class whose rows are `PARTIAL_DECLARED` (§6, issue
+#134) could never be validated and therefore never be certified — a permanent refusal where the
+governing sentence asks for *measure less, completely, and say so*. The clause is read as follows.
+
+- **An unvalidated class never reaches a certificate *as validated scope*.** It certifies under a
+  named `UNVALIDATED` disclosure (§6) and pays for it with full Part A review. It is not withheld.
+- **The ledger's key is `(engine, class, kind)`, not `(engine, class)`.** Column concrete and column
+  formwork come off one object through unrelated formulas with unrelated error modes; a class-grain
+  ledger would hand a later kind the earlier kind's validation, which is an over-measurement path.
+  §8's stratum is already `(class × kind)`, and a ledger keyed coarser than the stratum it feeds
+  cannot compute that stratum.
+- **A row is an observation, never a status.** The ledger holds observations only; the set of cells
+  that ought to be validated is `bears(class, kind)` from the work-item catalogue
+  (`measurement-rules.md` §8), so *unvalidated* is the query `NOT EXISTS (a live passing observation)`
+  over that grid. A registry row carrying a status was put and rejected — it goes stale against the
+  catalogue exactly as a remembered `is_validated` flag goes stale against the pins.
+- **An observation is outlived, never deleted or flagged.** It cites the same instruments a signature
+  does — **rule-set edition, method hash, converter version** (`cad-ingestion.md` §12's sanity number)
+  — and ceases to count when any cited instrument leaves force. Liveness is a query, in the shape
+  `identity.md` §8 already uses for `PIN_STALE`.
+- **The drawing set is evidence, not key.** Keying a validation to the set it was proved on makes
+  every project start unvalidated forever and the gate never fires; keying it to nothing lets a
+  nine-column fixture claim validation for a five-hundred-column tower. The set revision, the band's
+  inputs and its verdict ride the observation as recorded evidence. **A class is validated on one
+  live passing observation** — there is no quorum, which would be an unsourced measurement threshold;
+  overclaiming is fought by printing the evidence.
+- **Provenance is a field on the observation, closed:** `HAND_FROM_RENDER` · `HAND_FROM_AUTHORED_SOURCE`
+  · `INDEPENDENT_HUMAN_TAKEOFF`. A golden derived from a synthetic fixture's authoring script does not
+  breach the back-solving ban — the generator is upstream of the engine, not derived from its output —
+  but it validates the **engine** and never the **domain**, because drawing and golden share one
+  author. The enum is what keeps that visible on the certificate's face rather than equal to a real
+  takeoff.
+- **Every published line carries the `engine` that read the drawing**, non-null, from a closed enum
+  (`VECTOR`, `RASTER`); the certificate joins line → ledger on the line's own engine, so *the raster
+  path may never borrow the vector path's validation* is unrepresentable rather than merely forbidden,
+  and admitting a second engine adds values and rows without re-keying a landed one. `engine` is
+  **orthogonal to basis**: basis says how a value was known, `engine` says which reader produced the
+  drawing-side inputs. A line with a human-entered input keeps its engine — a nullable engine would
+  unbind the ledger the moment entered attributes appear, and human entry already has its own
+  instrument in §8's Part A.
+- **The band's two arms fail differently at the build.** A missing or unparseable golden, or a trip of
+  the **over** arm, is a hard failure — `+0% over` admits no qualification door (§8). An **under** miss
+  records a *failing observation*, leaves the class unvalidated, and the certificate says so.
+
 ## 6. Declaring the boundary
 
 - **One coverage statement, computed at publish**, from the scope register. The **Certificate
@@ -343,6 +391,15 @@ one storey short would certify the cell measured and say nothing. The enumerated
 the quantity itself with its named cause. `PARTIAL_UNDECLARED` is unrepresentable and `COMPLETE` on a
 row with no number is the same lie by a shorter route; this also suppresses the grand total by this
 section's own rule rather than by anyone remembering to.
+
+*Amendment, 2026-08-17 (issue #138).* **The `UNVALIDATED` disclosure is a third statement, at the
+ledger's own grain.** Where a published line's `(engine, class, kind)` has no live passing observation
+(§5), the certificate prints a statement naming that cell as measured by an unvalidated engine, with
+the observation's provenance where one exists. It is **not** a value in the measurement-boundary cause
+enum and **not** a third axis on the residue's grid: nothing is absent, and the cause taxonomy is about
+why a cell is missing — folding confidence into it makes `COMPLETE` mean two incomparable things again,
+which is what the amendment above spent its length preventing. Grain is `(engine, class, kind)`, so the
+statement prints correctly when the class is sound and only the *engine* is new.
 
 *Amendment, 2026-08-17 (issue #136).* **The certificate's face: a left join from the catalogue, two
 statements, enumerations never cardinalities.** This clause makes the certificate a query over
@@ -483,3 +540,14 @@ is a machine-enumerable declared disagreement and therefore a **Part A** row, ch
 not a Part B stratum (the cell has lines, which Part B already samples) and it is not a certificate
 line (the boundary is right; a human's belief about it is not). The absence census is unaffected: it
 runs over human-authored declarations still in force, and a contradicted act is not.
+
+*Amendment, 2026-08-17 (issue #138).* **Part A enumerates the entered attribute, never its
+derivations — and a failure's reach is that attribute's closure.** A storey height is authored once
+per level and every column row on that level derives from it (`identity.md` §8's level stack; issue
+#134 put the `DERIVED` on the geometry precisely so the entered value stays distinguishable).
+Enumerating the derived rows would put fifty-four rows into Part A on a six-storey job and breach
+*Part A ≤ Part B* on the first realistic project, while enumerating six storey heights is the review
+actually worth asking a QS for. So this clause's `ENTERED` heights stratum is read at the grain of the
+**entered attribute**. It follows that **the error's reach — which this clause condemns instead of the
+draw's cell — resolves to the transitive closure of the rows derived from the failed input**: a wrong
+storey height condemns every column row on that level, not the drawn cell and not the building.
