@@ -59,6 +59,19 @@ Two, because they fail differently: a wrong determining attribute is a wrong **n
 wrong selecting attribute is a right number at the **wrong rate** — the measured 20.2×
 overcharge class, which no quantity tolerance can catch.
 
+*Amendment, 2026-08-17 (issue #134).* **An expanded object's geometry carries basis `DERIVED`.** Where
+`cad-ingestion.md` §9 replicates a vertical member across a level stack, the outline on the seventh
+floor was not read from the seventh floor's drawing — a named rule produced it — so the geometry term
+of the `quantityBasis` roll-up is `DERIVED` under that rule's `(rule id, version)`, and only the level
+the caption anchors keeps `MEASURED`. Without this the distinction states nothing: the roll-up is
+weakest-wins, an expanded column's determining attributes are section dimensions (`MEASURED`) and a
+storey height (`TRANSCRIBED`), and `TRANSCRIBED` outranks `DERIVED` — so every expanded line would
+publish exactly what the drawn level publishes. Basis stays per attribute; the geometry was always a
+term of the roll-up and always able to vary (`INTERPRETED` is a geometry basis). The rejected
+alternative was a synthetic `levelMembership` attribute, which names no physical fact, buys a
+corroboration axis promotion already covers (`identity.md` §2), and would have to be hand-excluded from
+§4's content signature there.
+
 ## 2. Coverage's two denominators
 
 1. **Within a line: the item description.** Bangladesh has no named method of measurement, so
@@ -252,6 +265,16 @@ correctly, one emits it — so this clause selects the renderer, which ADR-0008 
 round-trip is asserted mechanically; a document whose Bengali does not survive it is a failed
 build, never a shipped bill. It is **not** a shaping test — measured, a round-trip passes the
 visibly broken document and fails the correct one, so the two gates are separate and both are owed.
+
+*Amendment, 2026-08-17 (issue #134).* **A row kept with no quantity is `PARTIAL_DECLARED`, never
+`COMPLETE`.** The exemplar is a storey height the drawing never states: quantity-determining,
+`DEFAULTED` barred (`measurement-rules.md` §7), so the line keeps its row and publishes no number,
+deferred `STOREY_HEIGHT_UNSTATED`. Coverage has to follow, because the residue is `(class × kind)`
+grained and that cell is not absent — the column class produced lines on every other level, so a bill
+one storey short would certify the cell measured and say nothing. The enumerated omitted component is
+the quantity itself with its named cause. `PARTIAL_UNDECLARED` is unrepresentable and `COMPLETE` on a
+row with no number is the same lie by a shorter route; this also suppresses the grand total by this
+section's own rule rather than by anyone remembering to.
 
 ## 7. The gates
 
