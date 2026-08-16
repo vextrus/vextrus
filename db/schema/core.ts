@@ -17,6 +17,8 @@ import {
 } from "drizzle-orm/pg-core";
 import {
   ACT_TYPES,
+  CAMPAIGN_STATES,
+  type CampaignState,
   DISCIPLINES,
   ELEMENT_TYPES,
   LEVEL_BASES,
@@ -548,6 +550,68 @@ export const drawingSetRevisionMembers = pgTable(
       foreignColumns: [drawingRevisions.id, drawingRevisions.drawingId],
     }),
     tenantIsolation("drawing_set_revision_members"),
+  ],
+).enableRLS();
+
+/**
+ * A campaign (identity.md §8 and its amendment of 2026-08-16, §9): one measurement effort against
+ * a pinned drawing-set revision, producing at most one issued bill. Three citations, all NOT NULL
+ * and all composite with the tenant: the project, the set revision **of that project** (so the
+ * manifest it cites is its own scope, refused by `campaigns_set_revision_project_fk` otherwise),
+ * and the rule-set edition **snapshotted from the project at creation**.
+ *
+ * The snapshot is the point: a project re-pin tomorrow can never move an in-flight campaign
+ * underneath the person measuring it, and staleness is a diff against this row, never a flag. It
+ * is insert-only **by grant** — the app role may update `state` and nothing else, so a cited rule
+ * set cannot be rewritten after the fact and a campaign cannot be deleted out of the log's sight.
+ *
+ * **One live campaign per project**, structurally: the partial unique index below. Two campaigns
+ * over one project scope reopen the double-count door §2 closes at the register, and two lineages
+ * would both claim first registration for one ordinal. A superseded campaign stays readable, and
+ * stays superseded: `state` moves one way, held by the `campaigns_state_is_one_way` trigger the
+ * migration carries (drizzle models no trigger), because the column-level UPDATE grant is
+ * bidirectional and reviving a superseded pin would make an older set revision and an older
+ * snapshot the project's live scope with no act naming it — CAMPAIGN_STATE_NOT_REVERSIBLE.
+ *
+ * The catalogue digest is the campaign's second snapshot (§8, amended); it lands with the
+ * freshness diff that reads it.
+ */
+export const campaigns = pgTable(
+  "campaigns",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
+    setDigest: text("set_digest").notNull(),
+    ruleSetEditionId: uuid("rule_set_edition_id").notNull(),
+    state: text("state").$type<CampaignState>().notNull().default("LIVE"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("campaigns_project_idx").on(t.projectId),
+    // pair target for the rows that will hang off a campaign
+    unique("campaigns_id_tenant_uq").on(t.id, t.tenantId),
+    // One live campaign per project — the refusal is a unique violation, not a service check.
+    uniqueIndex("campaigns_project_live_uq").on(t.projectId).where(sql`"state" = 'LIVE'`),
+    foreignKey({
+      name: "campaigns_project_tenant_fk",
+      columns: [t.projectId, t.tenantId],
+      foreignColumns: [projects.id, projects.tenantId],
+    }),
+    foreignKey({
+      name: "campaigns_set_revision_project_fk",
+      columns: [t.setDigest, t.projectId, t.tenantId],
+      foreignColumns: [drawingSetRevisions.digest, drawingSetRevisions.projectId, drawingSetRevisions.tenantId],
+    }),
+    foreignKey({
+      name: "campaigns_rule_set_edition_tenant_fk",
+      columns: [t.ruleSetEditionId, t.tenantId],
+      foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
+    }),
+    enumCheck("campaigns_state_check", "state", CAMPAIGN_STATES),
+    tenantIsolation("campaigns"),
   ],
 ).enableRLS();
 
