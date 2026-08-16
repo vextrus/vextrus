@@ -21,12 +21,16 @@ import {
   ELEMENT_TYPES,
   LEVEL_BASES,
   LEVEL_HEIGHT_BASES,
+  QUANTITY_DIMENSIONS,
+  QUANTITY_KINDS,
   REFUSED_SIGHTING_CAUSES,
+  SI_UNITS,
 } from "../../src/core/enums";
 import { detectedUnitSchema } from "../../src/core/entitygraph";
 import { INGEST_PARAMETER_KEYS } from "../../src/core/ingest-contract";
 import { MODEL_IDS, REFUSAL_CAUSES } from "../../src/core/model";
 import { RULE_SET_EDITION_SCOPES, RULE_SET_PARAMETER_KEYS, RULE_SET_SEED_IDS } from "../../src/core/rule-set";
+import { DIMENSION_SI_UNIT, DOCUMENT_PRECISIONS } from "../../src/core/work-items";
 import { authAccess, tenantIsolation } from "./rls";
 
 /**
@@ -756,3 +760,80 @@ export const ingests = pgTable(
     tenantIsolation("ingests"),
   ],
 ).enableRLS();
+
+// ---------------------------------------------------------------------------------------------
+// The platform-owned reference tables (measurement-rules.md §4, amended 2026-08-16). Every table
+// above is either tenant-owned with an isolation policy or an auth table; these two are neither.
+// Nothing about the vocabulary is tenant-scoped, so they carry NO tenant column and NO RLS
+// policy, and the app role is granted SELECT and nothing else in the migration — **the read-only
+// grant is the whole of their protection**, so no request path can widen a coverage denominator
+// at runtime. The consts in src/core/ stay the declaration site; these tables are their emission,
+// forced because the residue is a query (quantity-contract.md §2.2) and the certificate a query
+// over catalogue × residue (§6), so both denominator axes must be reachable in SQL.
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * The work-item catalogue — the coverage denominator (quantity-contract.md §6), keyed on the
+ * kind value, which is what makes *a kind with no catalogue row* unrepresentable rather than
+ * merely tested. Rate-free by law: a book item joins **up** to this on the kind with the unit as
+ * the dimension veto, and no rate column lands here. Seed rows arrive with the migration and are
+ * guarded by db/__tests__/catalogue-seed.spec.ts.
+ */
+export const workItemCatalogue = pgTable(
+  "work_item_catalogue",
+  {
+    kind: text("kind").primaryKey(),
+    descriptionEn: text("description_en").notNull(),
+    /** A string nobody has read is a claim until someone has (docs/CONTEXT.md): the flag says so. */
+    descriptionEnNativelyReviewed: boolean("description_en_natively_reviewed").notNull(),
+    descriptionBn: text("description_bn").notNull(),
+    descriptionBnNativelyReviewed: boolean("description_bn_natively_reviewed").notNull(),
+    dimension: text("dimension").notNull(),
+    unit: text("unit").notNull(),
+    /** The fixed per-kind document rounding precision §6 requires; the register keeps full precision. */
+    documentPrecision: integer("document_precision").notNull(),
+  },
+  () => [
+    enumCheck("work_item_catalogue_kind_check", "kind", QUANTITY_KINDS),
+    enumCheck("work_item_catalogue_dimension_check", "dimension", QUANTITY_DIMENSIONS),
+    enumCheck("work_item_catalogue_unit_check", "unit", SI_UNITS),
+    check(
+      "work_item_catalogue_document_precision_check",
+      sql.raw(`"document_precision" in (${DOCUMENT_PRECISIONS.join(", ")})`),
+    ),
+    // The dimension lock, in SQL (bd-authority.md §3: one canonical SI unit per dimension). It is
+    // the unit that vetoes a book item of the wrong dimension, so a row whose unit is not its
+    // dimension's canonical one would veto with a lie. Not a UNIQUE: two kinds may lawfully share
+    // a dimension — today's three happen not to.
+    check(
+      "work_item_catalogue_dimension_unit_check",
+      sql.raw(
+        `("dimension", "unit") in (${Object.entries(DIMENSION_SI_UNIT)
+          .map(([dimension, unit]) => `('${dimension}', '${unit}')`)
+          .join(", ")})`,
+      ),
+    ),
+  ],
+);
+
+/**
+ * `bears` — what an element class lawfully bears (measurement-rules.md §8), the other axis of the
+ * residue denominator. The kind axis lives here, **outside the identity key**: the class is in
+ * the key, the kind is not, so the kinds a class bears are looked up and never stored on a
+ * register row. The FK to the catalogue is what makes a `bears` row for a kind the catalogue does
+ * not hold unrepresentable; the converse — every catalogued kind borne — is a property of the
+ * consts, asserted live in db/__tests__/catalogue.dbspec.ts.
+ */
+export const bears = pgTable(
+  "bears",
+  {
+    elementType: text("element_type").notNull(),
+    kind: text("kind")
+      .notNull()
+      .references(() => workItemCatalogue.kind),
+  },
+  (t) => [
+    primaryKey({ name: "bears_pk", columns: [t.elementType, t.kind] }),
+    enumCheck("bears_element_type_check", "element_type", ELEMENT_TYPES),
+  ],
+);
