@@ -129,6 +129,23 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm db:migrate
 
+      # The executor needs a branch to exist. `actions/checkout` on an `issues` event lands on the
+      # default branch, and the action creates no branch in automation mode — its `branch_name`
+      # output was empty on both of the first two dispatches, so the executor worked on `main` and
+      # its push met branch protection (issue #119). Create it here, deterministically, and name it
+      # in the prompt.
+      - name: the branch the ticket is built on
+        id: branch
+        run: |
+          set -euo pipefail
+          name="issue-${{ github.event.issue.number }}-${{ steps.gate.outputs.slug }}"
+          git config user.name "claude[bot]"
+          git config user.email "41898282+claude[bot]@users.noreply.github.com"
+          git checkout -b "$name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "branch: $name"
+
+
       # Automation mode: the `prompt` input means Claude runs without waiting for a mention. It
       # reads CLAUDE.md on the runner, which routes it to docs/tracker.md for the build-session
       # flow and to docs/domain/ for the clause. `github_token` is deliberately NOT passed, so the
@@ -138,8 +155,6 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          branch_prefix: issue-
-          branch_name_template: "{{prefix}}{{entityNumber}}-${{ steps.gate.outputs.slug }}"
           prompt: |
             Build the ticket in issue #${{ github.event.issue.number }} of ${{ github.repository }}.
 
@@ -147,11 +162,14 @@ jobs:
             then the domain clause the ticket's `## Clause` section names. Follow the build session
             in docs/tracker.md, with these differences because you are running unattended:
 
-            - You are already on a branch and the ticket is already claimed. Do not re-assign it.
-            - Your branch is named for the issue, so an earlier failed dispatch of this same
-              ticket would have left its commits on it. Run `git log main..HEAD` first: if it is
-              not empty, read what is there and say so in the PR body — never build on top of a
-              half-finished commit without naming it.
+            - You are on branch `${{ steps.branch.outputs.name }}`, created for you, and the
+              ticket is already claimed. Do not re-assign it. Commit there and push with
+              `git push -u origin ${{ steps.branch.outputs.name }}` — never to `main`, which is
+              protected and will refuse you.
+            - An earlier failed dispatch of this ticket may have left commits on the remote branch
+              of the same name. Run `git log main..HEAD` and `git log main..origin/${{ steps.branch.outputs.name }}`
+              first: if either is non-empty, read what is there and say so in the PR body — never
+              build on top of a half-finished commit without naming it.
             - Implement only what `## What to build` describes; leave everything under
               `## Out of scope` alone. Never edit `.github/workflows/` — the dispatcher does not
               modify itself.
