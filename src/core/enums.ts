@@ -60,19 +60,36 @@ export type LevelHeightBasis = (typeof LEVEL_HEIGHT_BASES)[number];
  * never automatic detection. REPUDIATE — §7, "that is not a column" moves the object to the
  * refused-sightings table; human-only. PIN_DRAWING_SET — §9, opening a campaign pins a set
  * revision and snapshots the rules that will measure it; the act is minted, the scope it names is
- * derived. Acts that need tables not yet built (re-pin, deferral, transcription, corroboration)
- * land with those tables.
+ * derived. REPIN_DRAWING_SET — §9, the only way a campaign's pins advance: one act naming the
+ * outgoing and incoming keys, the member changes between them, and the consequences stated before
+ * it commits. Acts that need tables not yet built (deferral, transcription, corroboration) land
+ * with those tables.
  */
-export const ACT_TYPES = ["CONFIRM_DISCIPLINE", "RENAME_MARK", "REPUDIATE", "PIN_DRAWING_SET"] as const;
+export const ACT_TYPES = [
+  "CONFIRM_DISCIPLINE",
+  "RENAME_MARK",
+  "REPUDIATE",
+  "PIN_DRAWING_SET",
+  "REPIN_DRAWING_SET",
+] as const;
 export type ActType = (typeof ACT_TYPES)[number];
 
 /**
- * A campaign's state (identity.md §8, §9): one live measurement effort per project — two lineages
- * over one project scope would both claim first registration for one ordinal — and a superseded
- * campaign that stays readable, because a superseded pin is history, like a superseded placement.
- * Not a status flag standing in for a fact: it is the slot the partial unique index keys on.
+ * A campaign's state (identity.md §8, §9): one **current** measurement effort per project — two
+ * lineages over one project scope would both claim first registration for one ordinal — and a
+ * superseded campaign that stays readable, because a superseded pin is history, like a superseded
+ * placement. Not a status flag standing in for a fact: it is the slot the partial unique index
+ * keys on, and the slot the state-transition trigger walks.
+ *
+ * SIGNED is the campaign-level fact §8 states in its own words — *one edition, two consequences:
+ * unsigned → stale (freshness gate); signed → voids whole*. The signature's own row (credential,
+ * verdict, boundary) belongs to the signature arc and is not here; what is here is the slot the
+ * re-pin act must read to know whether it voids something, because §9 forbids a re-pin under a
+ * signature from being silently blocked or silently applied. A signed campaign is still current —
+ * it holds the project's one lineage slot — and a re-pin moves it to SUPERSEDED, which **is** the
+ * voiding: the void is a transition in the log, never a flag somebody must remember to set.
  */
-export const CAMPAIGN_STATES = ["LIVE", "SUPERSEDED"] as const;
+export const CAMPAIGN_STATES = ["LIVE", "SIGNED", "SUPERSEDED"] as const;
 export type CampaignState = (typeof CAMPAIGN_STATES)[number];
 
 /**
@@ -103,6 +120,52 @@ export type CampaignFreshnessVerdict = (typeof CAMPAIGN_FRESHNESS_VERDICTS)[numb
  */
 export const CAMPAIGN_FRESHNESS_REFUSALS = ["PIN_STALE"] as const;
 export type CampaignFreshnessRefusal = (typeof CAMPAIGN_FRESHNESS_REFUSALS)[number];
+
+/**
+ * What a re-pin does to the work already done — the consequences identity.md §9 requires stated
+ * **at the act, before it commits**, so a QS learns that a signature is about to void before
+ * voiding it. Closed, and canonically ordered: the consequence list is content-addressed into the
+ * statement the caller must carry back, so its order is part of an identity, not a display choice.
+ *
+ * - CATALOGUE_MOVES — the campaign's catalogue snapshot advances, so the coverage denominator
+ *   `quantity-contract.md` §6 enumerates is a different denominator (§8, amended 2026-08-16).
+ * - DENOMINATOR_WIDENS — a member was **added** to the manifest, widening the scope register's
+ *   denominator (`quantity-contract.md` §2.2), so a line that was COMPLETE may become
+ *   PARTIAL_DECLARED. §9 names this one alone as what forbids an implicit re-pin.
+ * - EVIDENCE_MOVED — a member was removed or re-revved, so rows whose cited evidence moved
+ *   re-present for disposition (§5).
+ * - RULE_SET_EDITION_MOVES — the campaign's rule-set snapshot advances: different thresholds and
+ *   methods measure from here on.
+ * - SIGNATURE_VOIDS_WHOLE — the outgoing campaign is signed, and §8 voids a signature **whole**.
+ *   Partial invalidation is not on offer; a re-pin under a signature is permitted and voids it.
+ */
+export const REPIN_CONSEQUENCES = [
+  "CATALOGUE_MOVES",
+  "DENOMINATOR_WIDENS",
+  "EVIDENCE_MOVED",
+  "RULE_SET_EDITION_MOVES",
+  "SIGNATURE_VOIDS_WHOLE",
+] as const;
+export type RepinConsequence = (typeof REPIN_CONSEQUENCES)[number];
+
+/**
+ * Why a re-pin refuses (identity.md §9). Closed codes, never prose.
+ *
+ * - REPIN_CAMPAIGN_NOT_CURRENT — the campaign named is superseded. History is read, never
+ *   re-pinned; its successor is the campaign that advances.
+ * - REPIN_CONSEQUENCES_NOT_CARRIED — the caller did not carry back the statement it was given, or
+ *   the world moved between the statement and the act. A re-pin cannot be performed blind: the
+ *   consequences are recomputed inside the writing transaction and must still address what the
+ *   caller acknowledged.
+ * - REPIN_NOTHING_MOVED — the incoming set revision and both pins are the outgoing ones. §9's
+ *   reason exactly: *re-pinning an unchanged set would void a signature that nothing invalidated*.
+ */
+export const REPIN_REFUSALS = [
+  "REPIN_CAMPAIGN_NOT_CURRENT",
+  "REPIN_CONSEQUENCES_NOT_CARRIED",
+  "REPIN_NOTHING_MOVED",
+] as const;
+export type RepinRefusal = (typeof REPIN_REFUSALS)[number];
 
 /**
  * Why a sighting sits in the refused-sightings table instead of the register (identity.md §2,

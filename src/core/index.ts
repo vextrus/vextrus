@@ -18,6 +18,8 @@ export {
   QUANTITY_DIMENSIONS,
   QUANTITY_KINDS,
   REFUSED_SIGHTING_CAUSES,
+  REPIN_CONSEQUENCES,
+  REPIN_REFUSALS,
   SI_UNITS,
   type ActType,
   type Basis,
@@ -33,6 +35,8 @@ export {
   type QuantityDimension,
   type QuantityKind,
   type RefusedSightingCause,
+  type RepinConsequence,
+  type RepinRefusal,
   type SiUnit,
 } from "./enums";
 export {
@@ -87,6 +91,17 @@ export {
   type Campaign,
   type OpenCampaignInput,
 } from "./campaigns";
+export {
+  campaignRepinStatement,
+  manifestChangesOf,
+  repinCampaign,
+  repinStatementDigest,
+  repinStatementOf,
+  type ManifestChanges,
+  type RepinCampaignInput,
+  type RepinKeys,
+  type RepinStatement,
+} from "./repin";
 export {
   campaignFreshness,
   campaignFreshnessOf,

@@ -567,13 +567,22 @@ export const drawingSetRevisionMembers = pgTable(
  * is insert-only **by grant** — the app role may update `state` and nothing else, so a cited rule
  * set cannot be rewritten after the fact and a campaign cannot be deleted out of the log's sight.
  *
- * **One live campaign per project**, structurally: the partial unique index below. Two campaigns
+ * **One current campaign per project**, structurally: the partial unique index below. Two campaigns
  * over one project scope reopen the double-count door §2 closes at the register, and two lineages
  * would both claim first registration for one ordinal. A superseded campaign stays readable, and
- * stays superseded: `state` moves one way, held by the `campaigns_state_is_one_way` trigger the
+ * stays superseded: `state` walks one way, held by the `campaigns_state_transition` trigger the
  * migration carries (drizzle models no trigger), because the column-level UPDATE grant is
  * bidirectional and reviving a superseded pin would make an older set revision and an older
- * snapshot the project's live scope with no act naming it — CAMPAIGN_STATE_NOT_REVERSIBLE.
+ * snapshot the project's current scope with no act naming it — CAMPAIGN_STATE_NOT_REVERSIBLE.
+ *
+ * **The lineage is the row chain** (§9: *a campaign advances only by an authored re-pin*, and *a
+ * superseded pin is history, like a superseded placement*). Because every snapshot here is
+ * insert-only by grant, advancing a campaign is superseding this row and inserting its successor
+ * with the new pins, linked by `supersedes_id` — so the outgoing snapshot stays readable rather
+ * than being overwritten, and no `UPDATE` privilege has to be handed out to move a pin. A campaign
+ * never **forks**: `campaigns_supersedes_uq` admits one successor per generation, the composite FK
+ * holds the chain inside one project of one tenant, and the partial unique index admits one
+ * non-superseded generation at a time.
  *
  * The catalogue digest is the campaign's second snapshot (§8, amended): a content address over
  * `bears` (src/core/kinds.ts), pinned so a kind or a `bears` row shipped after a signature cannot
@@ -592,6 +601,8 @@ export const campaigns = pgTable(
     setDigest: text("set_digest").notNull(),
     ruleSetEditionId: uuid("rule_set_edition_id").notNull(),
     catalogueDigest: text("catalogue_digest").notNull(),
+    /** The generation this one advanced from — null on the first campaign of a lineage (§9). */
+    supersedesId: uuid("supersedes_id"),
     state: text("state").$type<CampaignState>().notNull().default("LIVE"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -599,8 +610,15 @@ export const campaigns = pgTable(
     index("campaigns_project_idx").on(t.projectId),
     // pair target for the rows that will hang off a campaign
     unique("campaigns_id_tenant_uq").on(t.id, t.tenantId),
-    // One live campaign per project — the refusal is a unique violation, not a service check.
-    uniqueIndex("campaigns_project_live_uq").on(t.projectId).where(sql`"state" = 'LIVE'`),
+    // pair target for the lineage FK: a successor cites a generation of its own project.
+    unique("campaigns_id_project_tenant_uq").on(t.id, t.projectId, t.tenantId),
+    // One successor per generation: a lineage advances, it never forks (§9).
+    unique("campaigns_supersedes_uq").on(t.supersedesId),
+    // One current campaign per project — the refusal is a unique violation, not a service check.
+    // The predicate is `<> 'SUPERSEDED'` rather than a list of the current states: a state added
+    // to the vocabulary later then occupies the project's one slot until somebody says otherwise,
+    // which refuses a second lineage rather than quietly admitting one.
+    uniqueIndex("campaigns_project_current_uq").on(t.projectId).where(sql`"state" <> 'SUPERSEDED'`),
     foreignKey({
       name: "campaigns_project_tenant_fk",
       columns: [t.projectId, t.tenantId],
@@ -616,7 +634,13 @@ export const campaigns = pgTable(
       columns: [t.ruleSetEditionId, t.tenantId],
       foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
     }),
+    foreignKey({
+      name: "campaigns_supersedes_project_fk",
+      columns: [t.supersedesId, t.projectId, t.tenantId],
+      foreignColumns: [t.id, t.projectId, t.tenantId],
+    }),
     check("campaigns_catalogue_digest_check", sql.raw(`"catalogue_digest" ~ '^[0-9a-f]{64}$'`)),
+    check("campaigns_supersedes_not_self_check", sql.raw(`"supersedes_id" is distinct from "id"`)),
     enumCheck("campaigns_state_check", "state", CAMPAIGN_STATES),
     tenantIsolation("campaigns"),
   ],
