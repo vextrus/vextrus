@@ -64,7 +64,7 @@ selects the toolchain.
 |---|---|---|
 | **pdfkit + fontkit** (Node, in-process) | MIT | shapes correctly, but extraction returns **visual order**; `text()` ignores its own `actual` option, so `/ActualText` means hand-writing the tagged-PDF `doc.struct` API |
 | **ReportLab 5 + uharfbuzz** | BSD-3 | shapes correctly; conjuncts extract as **private-use codepoints** |
-| **WeasyPrint** | BSD-3 (Pango/HarfBuzz via `dlopen`) | no `/ActualText`; adds an LGPL posture question this ruling avoids entirely |
+| **WeasyPrint** | BSD-3 (Pango/HarfBuzz via `dlopen`) | extraction is corrupted where GSUB substituted — a **ToUnicode CMap with empty `bfchar` entries**, open upstream issue #2841 with its fix PR closed unmerged; shaping read-verified through the dependency graph, not measured here. Also carries an LGPL posture question this ruling avoids entirely |
 | **headless Chromium** | Apache-2.0/BSD-3 | the reference renderer and the heaviest dependency (~280 MB); §6's "a browser print cannot guarantee the certificate travels" reads as a definition to one eye and a reason to the other — not a parenthesis to litigate for a dependency this size |
 | **fpdf2** | **LGPL-3.0-only** | pure-Python, so `import` is the only linking mechanism — a harder copyleft argument than `dlopen`, not an easier one |
 | **`@vivliostyle/cli`** | **AGPL-3.0** | banned outright by `cad-ingestion.md` §1 |
