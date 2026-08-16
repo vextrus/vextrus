@@ -2,11 +2,33 @@ import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, readFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { mintTenantCtx } from "@/core/db";
 import { INGEST_PARAMETERS, ingestParameterHash } from "@/core/ingest-contract";
 import { sourceKeysOf } from "@/core/model";
-import { extractUpload } from "../ingest";
+import { extractUpload, INGEST_REFUSAL_CAUSES } from "../ingest";
+
+/**
+ * The ingest lane's half of the refusal register (issue #99; the model seam's half is
+ * `src/core/__tests__/model.spec.ts`). Every member of INGEST_REFUSAL_CAUSES is either driven by
+ * a test below — which adds it to `observed` — or declared in `deferred` with the reason it is
+ * not and where it is instead. The `afterAll` at the foot of this file compares the union with
+ * the enum both ways, so a cause added with neither turns verify red, and so does a deferral for
+ * a cause that no longer exists. A declared deferral with a named reason is lawful
+ * (`quantity-contract.md` §4); a silent gap is the one condemned state.
+ */
+const observed = new Set<string>();
+const deferred: Readonly<Record<string, string>> = {
+  // Needs a live drawing revision to be absent, so it is the seam test's:
+  DRAWING_REVISION_NOT_FOUND: "db/__tests__/ingest.dbspec.ts — refuses an unknown revision id",
+  // Boundary arms over the extractor's output. `cad/` writes a conforming artifact citing the
+  // bytes it read, by construction, so neither can fire while it is the only extractor: there is
+  // no seam to inject an artifact. They become drivable the day a second extractor or a
+  // recorded-artifact seam lands, and this entry is what will fail then — a deferral with a
+  // named reason, never an exemption.
+  ARTIFACT_MALFORMED: "unreachable while cad/ is the only extractor — no artifact-injection seam",
+  SOURCE_MISMATCH: "unreachable while cad/ is the only extractor — no artifact-injection seam",
+};
 
 /**
  * Ingest through the real subprocess (cad-ingestion.md §2–§3, §12; ADR-0001), against the
@@ -82,9 +104,16 @@ describe("extractUpload", () => {
   it("refuses by name: a file type the lane cannot ingest, and a file the extractor rejects", async () => {
     const dwg = await extractUpload(ctx, revisionId, { filename: "plan.dwg", bytes: r1.bytes });
     expect(dwg).toMatchObject({ ok: false, cause: "UNSUPPORTED_FILE_TYPE" });
+    observed.add("UNSUPPORTED_FILE_TYPE");
     const junk = await extractUpload(ctx, revisionId, { filename: "junk.dxf", bytes: new Uint8Array(Buffer.from("not a drawing")) });
     expect(junk).toMatchObject({ ok: false, cause: "EXTRACTOR_FAILED" });
     if (!("ok" in junk) || junk.ok) throw new Error("expected refusal");
     expect(junk.detail.length).toBeGreaterThan(0);
+    observed.add("EXTRACTOR_FAILED");
   });
+});
+
+// Runs after every test above, so it is independent of their order (cad-ingestion.md §2).
+afterAll(() => {
+  expect([...observed, ...Object.keys(deferred)].sort()).toEqual([...INGEST_REFUSAL_CAUSES].sort());
 });

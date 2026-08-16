@@ -1,10 +1,11 @@
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it } from "vitest";
 import { z } from "zod";
 import { mintTenantCtx } from "../db";
 import {
   callModel,
   fixtureTransport,
+  REFUSAL_CAUSES,
   requestHash,
   sourceKeysOf,
   type ModelCallRecord,
@@ -125,5 +126,41 @@ describe("the model seam", () => {
     const b = requestHash({ model: "claude-sonnet-5", system: "s", input: "i " });
     const c = requestHash({ model: "claude-opus-5", system: "s", input: "i" });
     expect(new Set([a, b, c]).size).toBe(3);
+  });
+});
+
+/**
+ * The refusal register (issue #99). CLAUDE.md's "refuses or defers with a named reason. Reason
+ * codes are closed enums, never prose" is the one NEVER whose enforcement was review; this makes
+ * it mechanical. Every member of REFUSAL_CAUSES is driven here and the observed set is compared
+ * with the enum both ways, so **a cause added without a case turns verify red** — and so does a
+ * case for a cause that no longer exists. This is Anthropic's eval recipe applied to our own
+ * taxonomy: tasks drawn from real failure modes, each with a verdict two readers would agree on.
+ */
+describe("every refusal cause fires by name (ADR-0006)", () => {
+  const observed = new Set<string>();
+  const drive = async (transport: ModelTransport) => {
+    const out = await call("register", transport, []);
+    expect(out.ok).toBe(false);
+    if (!out.ok) observed.add(out.cause);
+    return out;
+  };
+  /** A transport that fails rather than replies; the prefix is what `causeOfTransportError` reads. */
+  const failing = (error: string): ModelTransport => ({ kind: "live", complete: async () => ({ error }) });
+  const sourced = (sources: readonly string[]) =>
+    canned(JSON.stringify({ payload: { viewClass: "schedule" }, sources }));
+
+  it("UNSOURCED — a proposal citing nothing", () => drive(sourced([])));
+  it("SOURCE_UNRESOLVED — a key the artifact does not hold", () => drive(sourced(["DXF_HANDLE:DEADBEEF"])));
+  it("MALFORMED — a reply that is not the schema", () => drive(canned("I think it is a plan.")));
+  it("FIXTURE_MISSING — no recorded reply, and verify never reaches a network", () =>
+    drive(fixtureTransport(fixtures)));
+  it("TRANSPORT_FAILED — the transport's own fault, which retry may remedy", () =>
+    drive(failing("HTTP 529: overloaded")));
+  it("MODEL_REFUSED — the model declining, which retry never remedies", () =>
+    drive(failing("REFUSAL:unspecified")));
+
+  afterAll(() => {
+    expect([...observed].sort()).toEqual([...REFUSAL_CAUSES].sort());
   });
 });
