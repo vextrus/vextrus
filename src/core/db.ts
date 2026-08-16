@@ -1,3 +1,4 @@
+import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { drizzle, type PostgresJsDatabase } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
@@ -30,6 +31,7 @@ export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
 let appDb: Db | undefined;
 let systemDb: Db | undefined;
+let authDb: Db | undefined;
 
 function getAppDb(): Db {
   appDb ??= drizzle(postgres(requireEnv("DATABASE_URL"), { max: 10 }), { schema });
@@ -39,6 +41,47 @@ function getAppDb(): Db {
 function getSystemDb(): Db {
   systemDb ??= drizzle(postgres(requireEnv("MIGRATE_DATABASE_URL"), { max: 2 }), { schema });
   return systemDb;
+}
+
+function getAuthDb(): Db {
+  authDb ??= drizzle(postgres(requireEnv("AUTH_DATABASE_URL"), { max: 5 }), { schema });
+  return authDb;
+}
+
+/**
+ * better-auth's model names → our tables (ADR-0004: organization → tenants, member →
+ * memberships). One declaration: the auth instance uses these as `modelName`s and the adapter
+ * below resolves them to table objects, so the two cannot drift.
+ */
+export const AUTH_MODELS = {
+  user: "users",
+  session: "sessions",
+  account: "accounts",
+  verification: "verifications",
+  organization: "tenants",
+  member: "memberships",
+  invitation: "invitations",
+} as const;
+
+/**
+ * The auth lane (issue #66): better-auth's database adapter over the `vextrus_auth` connection.
+ * The handle stays inside this file — what leaves is better-auth's adapter, which reads and
+ * writes only the seven tables the role is granted, under its own named RLS policies. Never the
+ * owner on a request path.
+ */
+export function authAdapter() {
+  return drizzleAdapter(getAuthDb(), {
+    provider: "pg",
+    schema: {
+      [AUTH_MODELS.user]: schema.users,
+      [AUTH_MODELS.session]: schema.sessions,
+      [AUTH_MODELS.account]: schema.accounts,
+      [AUTH_MODELS.verification]: schema.verifications,
+      [AUTH_MODELS.organization]: schema.tenants,
+      [AUTH_MODELS.member]: schema.memberships,
+      [AUTH_MODELS.invitation]: schema.invitations,
+    },
+  });
 }
 
 /** Run `fn` inside a transaction with the tenant GUC set; RLS backstops it. */

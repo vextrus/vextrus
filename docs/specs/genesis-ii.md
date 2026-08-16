@@ -200,8 +200,11 @@ that runs Claude.
   db-migrate, db-drift — four files, ~330 lines) · `docs/`.
 - **Ports:** web 3210, Postgres 5544 native. `pnpm checkup` binds 3210 to prove it bindable, not
   merely unlistened.
-- **Verify:** measured above; recorded here with its machine. `next build` joins the lane the
-  day a route can throw during static generation. Playwright, if ever, outside the lane.
+- **Verify:** measured above at founding; re-measured **13.3 s** on 2026-08-16 (typecheck 2.3 ·
+  lint 0.8 · test 2.7 · ruff 0.0 · pytest 0.4 · **build 7.1**) on the same machine once `next
+  build` joined the lane — cold, into its own `distDir` (`.next-verify`), with no env and no
+  daemon — the day the first request path landed and a route could throw during prerender
+  (issue #66, ADR-0007). Playwright, if ever, outside the lane.
 - **Guardrails, all lint-enforced with a fail-closed fixture test:** module boundaries; the two
   seams; `localeCompare` (identity sorts by code units); bare `toLocaleString` (lakh/crore, stated
   locale). CLAUDE.md's NEVER list names each rule's enforcement; a NEVER that cannot be enforced

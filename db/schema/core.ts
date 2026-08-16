@@ -26,7 +26,7 @@ import {
 import { detectedUnitSchema } from "../../src/core/entitygraph";
 import { INGEST_PARAMETER_KEYS } from "../../src/core/ingest-contract";
 import { MODEL_IDS, REFUSAL_CAUSES } from "../../src/core/model";
-import { tenantIsolation } from "./rls";
+import { authAccess, tenantIsolation } from "./rls";
 
 /**
  * The spine, skeleton grade (ADR-0005). Tenancy lands here because the seam and RLS must exist
@@ -47,22 +47,32 @@ function enumCheck(name: string, column: string, values: readonly string[]) {
   return check(name, sql.raw(`"${column}" in (${values.map((v) => `'${v}'`).join(", ")})`));
 }
 
+/** A tenant is better-auth's `organization` (ADR-0004; issue #66): `logo` and `metadata` are its columns. */
 export const tenants = pgTable("tenants", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
   slug: text("slug").notNull().unique(),
+  logo: text("logo"),
+  metadata: text("metadata"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+/** better-auth's `user` model (issue #66): `image` and `updated_at` are its columns; the id is ours (uuid, DB-generated). */
 export const users = pgTable("users", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   email: text("email").notNull().unique(),
   name: text("name").notNull(),
   emailVerified: boolean("email_verified").notNull().default(false),
+  image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-/** A B2C user is a single-member tenant: one model, no special cases (ADR-0004). */
+/**
+ * A B2C user is a single-member tenant: one model, no special cases (ADR-0004). This is
+ * better-auth's `member` model (`organizationId` → `tenantId`), so the auth role has its own
+ * explicit policy beside the tenant isolation policy (issue #66).
+ */
 export const memberships = pgTable(
   "memberships",
   {
@@ -76,7 +86,96 @@ export const memberships = pgTable(
     role: text("role").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("memberships_tenant_user_uq").on(t.tenantId, t.userId), tenantIsolation("memberships")],
+  (t) => [
+    uniqueIndex("memberships_tenant_user_uq").on(t.tenantId, t.userId),
+    tenantIsolation("memberships"),
+    authAccess("memberships"),
+  ],
+).enableRLS();
+
+// ---------------------------------------------------------------------------------------------
+// better-auth's own tables (issue #66; ADR-0004): sessions, accounts, verifications are per user,
+// not per tenant — no tenant_id, no RLS; only the auth role is granted on them. Invitations are
+// per tenant: RLS with the tenant policy for the app role and the explicit auth policy.
+// ---------------------------------------------------------------------------------------------
+
+export const sessions = pgTable(
+  "sessions",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    token: text("token").notNull().unique(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    /** better-auth's `activeOrganizationId`: the tenant a request's TenantCtx is minted for. */
+    activeTenantId: uuid("active_tenant_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("sessions_user_idx").on(t.userId)],
+);
+
+export const accounts = pgTable(
+  "accounts",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("accounts_user_idx").on(t.userId)],
+);
+
+export const verifications = pgTable(
+  "verifications",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    identifier: text("identifier").notNull(),
+    value: text("value").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("verifications_identifier_idx").on(t.identifier)],
+);
+
+/** better-auth's `invitation` model (`organizationId` → `tenantId`), tenant-owned. */
+export const invitations = pgTable(
+  "invitations",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    email: text("email").notNull(),
+    role: text("role"),
+    status: text("status").notNull().default("pending"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    inviterId: uuid("inviter_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("invitations_tenant_idx").on(t.tenantId),
+    index("invitations_email_idx").on(t.email),
+    tenantIsolation("invitations"),
+    authAccess("invitations"),
+  ],
 ).enableRLS();
 
 /**
