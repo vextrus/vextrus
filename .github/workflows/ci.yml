@@ -42,7 +42,7 @@ jobs:
       AUTH_DATABASE_URL: postgres://vextrus_auth:vextrus_auth_dev_password@localhost:5544/vextrus
       BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
       BETTER_AUTH_URL: http://localhost:3210
-      VEXTRUS_STORAGE_ROOT: ${{ runner.temp }}/vextrus-storage
+      VEXTRUS_STORAGE_ROOT: ${{ github.workspace }}/.data
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
       - uses: actions/checkout@v7
