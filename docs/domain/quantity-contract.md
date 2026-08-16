@@ -238,6 +238,21 @@ Where the bill is unpriced there is no amount, so the amount-in-words is replace
 reason code** — no book edition pinned — rendered by the document formatter with a stated locale.
 Prose there reopens the door this clause shuts; silence is the condemned state.
 
+*Amendment, 2026-08-16.* The document's Bengali is **machine-readable**, not merely legible: for
+every shaped run the emitted PDF carries text that extracts back to the **logical** string. This is
+a requirement on the producer, because shaping merges and reorders clusters and a `/ToUnicode` CMap
+alone cannot describe that merge — Bengali then extracts in visual order with holes in it, from a
+document that looks perfect. Three reasons, each already in this file: a signed bill is later
+**searched, indexed and read by a machine** — a procuring entity's as much as ours; a document only
+a human can read back can only be **checked** by a human, and the governing sentence is about output
+nobody can check; and the native-Bengali review this product owes its first client
+(`docs/CONTEXT.md`) reviews **strings**, not pixels. Measured 2026-08-16
+(`docs/research/pdf-bengali-2026-08.md`): of the permissive toolchains that shape Bengali
+correctly, one emits it — so this clause selects the renderer, which ADR-0008 names and pins. The
+round-trip is asserted mechanically; a document whose Bengali does not survive it is a failed
+build, never a shipped bill. It is **not** a shaping test — measured, a round-trip passes the
+visibly broken document and fails the correct one, so the two gates are separate and both are owed.
+
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates
