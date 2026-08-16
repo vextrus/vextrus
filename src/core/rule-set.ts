@@ -81,14 +81,19 @@ const SEED_PARAMETERS = [
 ] as const satisfies readonly (RuleSetParameter & { readonly clause: string })[];
 
 /**
- * The methods in force: **none yet**. A method is code (measurement-rules.md §1), enumerated by
+ * The methods in force. A method is code (measurement-rules.md §1), enumerated by
  * `(rule id, version)` with CI asserting the version against a content hash of the implementation
- * — so a method enters this list the day its implementation lands, with that hash, and not before.
- * Nothing in this tree measures anything yet, and a `(rule id, version)` pair naming code that
- * does not exist would be a fiction the edition key then certifies. Adding one moves the seed's
- * key, which is the governed event identity.md §8 describes.
+ * — so a method enters this list the day its implementation lands, with that hash, and not before:
+ * a `(rule id, version)` pair naming code that does not exist would be a fiction the edition key
+ * then certifies. The first one landing moved the seed's key, which is the governed event
+ * identity.md §8 describes.
+ *
+ * The pairs are **spelled here, not imported from the registry**: this file is the edition key's
+ * declaration site and must not move when the registry does. `methods.spec.ts` asserts every pair
+ * below resolves in the registry, so a seed naming an implementation this binary lacks is a red
+ * build rather than a project pinned to a fiction.
  */
-const SEED_METHODS: readonly RuleSetMethod[] = [];
+const SEED_METHODS: readonly RuleSetMethod[] = [{ ruleId: "RCC_COLUMN_CONCRETE_RECT_PRISM", version: 1 }];
 
 export const SEED_RULE_SET = {
   id: SEED_RULE_SET_ID,

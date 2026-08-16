@@ -67,6 +67,10 @@ const stages = [
   { name: "lint", cmd: "pnpm exec eslint .", cwd: root },
   { name: "test", cmd: "pnpm exec vitest run", cwd: root },
   driftStage,
+  // The method content-hash stage (measurement-rules.md §1, ADR-0010): one method per file under
+  // src/core/methods/, hashed whole against src/core/methods.manifest.json. Drift is the failure —
+  // a method's arithmetic moving under a held (rule id, version) — and the remedy is printed.
+  { name: "methods:hash", cmd: "node scripts/method-hashes.mjs", cwd: root, stdio: "pipe" },
   { name: "cad:ruff", cmd: "uv run ruff check .", cwd: cad },
   { name: "cad:test", cmd: "uv run pytest -q", cwd: cad },
   {

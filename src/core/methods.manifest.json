@@ -1,0 +1,8 @@
+{
+  "methods": {
+    "RCC_COLUMN_CONCRETE_RECT_PRISM@1": {
+      "file": "rcc-column-concrete-rect-prism.ts",
+      "sha256": "bae56ce77e0ee3d64a1fadac6becfcc82972fbe3ac4806167e3773820a767151"
+    }
+  }
+}

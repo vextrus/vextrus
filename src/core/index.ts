@@ -83,6 +83,47 @@ export {
   type RuleSetSeedId,
 } from "./rule-set";
 export { forkProjectRuleSetEdition, mintTenantRuleSetTemplate, type RuleSetEditionRef } from "./rule-set-editions";
+export {
+  DEDUCTION_CHANNELS,
+  GEOMETRY_VARIANTS,
+  geometryVariables,
+  type BoundValue,
+  type CalibrationRef,
+  type DeductionCandidate,
+  type DeductionCandidates,
+  type DeductionChannel,
+  type GeometrySpec,
+  type GeometryVariant,
+  type Offer,
+  type OfferGeometry,
+  type Provenance,
+  type Rail,
+  type RailObservation,
+  type RailResult,
+  type RegisterObjectRef,
+  type ViewRef,
+} from "./offer";
+/**
+ * The formula template's **constructors are deliberately not on the barrel** (`product`,
+ * `variable`, `evaluateFormula`): an expression is a method's, never a rail's (ADR-0010 — an
+ * expression a rail authors is a method a rail authors). A method file imports them relatively,
+ * inside `src/core/methods/`. The type travels, because `MethodDeclaration` carries it.
+ */
+export { type Formula } from "./formula";
+export {
+  METHOD_DECLARATIONS,
+  METHOD_REFUSALS,
+  acceptsGeometry,
+  evaluateMethod,
+  methodVariables,
+  resolveMethod,
+  type MethodDeclaration,
+  type MethodEvaluated,
+  type MethodEvaluation,
+  type MethodRefusal,
+  type MethodRefused,
+  type MethodResolution,
+} from "./methods";
 export { createProject, listProjects } from "./projects";
 export {
   catalogueDigestInForce,

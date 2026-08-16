@@ -80,12 +80,21 @@ describe("the platform seed IS1200_IN @ 2026.08 (measurement-rules.md §1)", () 
     expect(SEED_RULE_SET.id).toBe("IS1200_IN@2026.08");
   });
 
+  /** The methods in force, named — a seeded pair resolves in the registry (`methods.spec.ts`). */
+  it("names the first method in force", () => {
+    expect(SEED_RULE_SET.methods).toEqual([{ ruleId: "RCC_COLUMN_CONCRETE_RECT_PRISM", version: 1 }]);
+  });
+
   /**
    * A change detector, not a derivation: the seed's key is stored on every template edition and
    * inherited by every project edition, so a serialisation change that moved it would orphan every
    * stored key and void every signature scoped to one. Moving it is a governed act, never a diff.
+   *
+   * It moved once, deliberately: on 2026-08-17 the first method landed (#168), and identity.md §8
+   * makes a method entering the rule set an event that moves the key. Stored digests on existing
+   * editions are untouched — a fork mints from the seed, and no migration reads them.
    */
   it("has a frozen key", () => {
-    expect(ruleSetEditionKey(SEED_RULE_SET)).toBe("56454c22d6485619dd2a4d5793557caf41de3a32747220f5fbee69492a2c928a");
+    expect(ruleSetEditionKey(SEED_RULE_SET)).toBe("39d7539e6a8015430793efca3bced7b955bcd8e2eff639c2816881390bddad70");
   });
 });
