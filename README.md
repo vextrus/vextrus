@@ -5,6 +5,7 @@ quantities a professional can sign, prices them from Bangladesh Schedule-of-Rate
 the bid. Bangladesh first; built to travel.
 
 - Start here: `CLAUDE.md`, then `docs/specs/genesis-ii.md`.
+- Cloud sessions (claude.ai/code): `docs/agents/cloud-session.md` — the environment's variables and setup script.
 - The domain law: `docs/domain/`. Decisions: `docs/adr/`. Work: GitHub Issues (`docs/tracker.md`).
 
 ```sh
