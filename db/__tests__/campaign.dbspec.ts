@@ -11,8 +11,8 @@ import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
  * The campaign through the seam (identity.md §7, §8 and its amendment of 2026-08-16, §9), live
  * against Postgres via `pnpm test:db`: a campaign cannot exist without a set revision to cite, it
  * snapshots both the rule-set edition and the catalogue digest in force at creation and can edit
- * neither afterwards, one project carries one live campaign, and the pin act commits with the row
- * or neither lands.
+ * neither afterwards, one project carries one current campaign, and the pin act commits with the
+ * row or neither lands.
  */
 
 /** One tenant per project pair, so the cross-tenant cases have somewhere to point. */
@@ -179,7 +179,7 @@ describe("opening a campaign (identity.md §8, §9)", () => {
   });
 });
 
-describe("the pin, the snapshot and the one live campaign", () => {
+describe("the pin, the snapshot and the one current campaign", () => {
   it("refuses a campaign with no set revision — the column is NOT NULL, not a nullable pin", async () => {
     const [project] = await forTenant(ctxA(), (tx) =>
       tx.select().from(schema.projects).where(eq(schema.projects.id, projectA)),
@@ -290,11 +290,11 @@ describe("the pin, the snapshot and the one live campaign", () => {
     ).toMatch(/permission denied/i);
   });
 
-  it("refuses a second live campaign on one project, and lets a superseded one out of the way", async () => {
+  it("refuses a second current campaign on one project, and lets a superseded one out of the way", async () => {
     const second = await refusal(() =>
       openCampaign(ctxA(), { projectId: projectA, actorUserId: userA, members: membersA }),
     );
-    expect(second).toMatch(/campaigns_project_live_uq/);
+    expect(second).toMatch(/campaigns_project_current_uq/);
     const [live] = await campaignsOf(tenantA);
     if (!live) throw new Error("expected the live campaign");
     // Superseding is a state move (the re-pin act authors it); the grant permits this column only.

@@ -71,6 +71,13 @@
       "when": 1786908598919,
       "tag": "0009_campaign-catalogue-pin",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1786910103721,
+      "tag": "0010_campaign-repin",
+      "breakpoints": true
     }
   ]
 }

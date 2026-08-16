@@ -19,6 +19,8 @@ export type Campaign = {
   readonly setDigest: string;
   readonly ruleSetEditionId: string;
   readonly catalogueDigest: string;
+  /** The generation this one advanced from — null on the first campaign of a lineage (§9). */
+  readonly supersedesId: string | null;
   readonly state: CampaignState;
   readonly createdAt: Date;
 };
@@ -97,22 +99,55 @@ async function pinDrawingSetRevision(
 }
 
 /**
- * The campaign, its pin and its pin act, in the caller's transaction — exported at this
- * granularity because the surface that opens a campaign may have its own writes to land in the
- * same commit (§7: act row and state change commit together or neither).
- *
- * Both snapshots are read here, never passed in: a campaign carrying a rule-set edition its
- * project does not pin, or a catalogue digest nothing was hashed to produce, would be a citation
- * of a fiction. Both readers are the ones the freshness diff uses, so a verdict can never be
- * `STALE` on a campaign that changed nothing.
+ * One campaign row, read in the caller's transaction — the one reader every path that needs a
+ * campaign's own citations goes through (the freshness diff, the re-pin's outgoing side). A
+ * campaign the caller's tenant cannot see refuses by name rather than being reported as fresh, or
+ * as having nothing to re-pin: `CURRENT` on a row nobody could read, and an empty diff on one, are
+ * both the silent default the governing sentence condemns.
  */
-export async function pinCampaign(
+export async function readCampaign(
+  tx: Tx,
+  tenantId: string,
+  campaignId: string,
+): Promise<{
+  readonly id: string;
+  readonly projectId: string;
+  readonly setDigest: string;
+  readonly ruleSetEditionId: string;
+  readonly catalogueDigest: string;
+  readonly state: CampaignState;
+}> {
+  const [campaign] = await tx
+    .select({
+      id: schema.campaigns.id,
+      projectId: schema.campaigns.projectId,
+      setDigest: schema.campaigns.setDigest,
+      ruleSetEditionId: schema.campaigns.ruleSetEditionId,
+      catalogueDigest: schema.campaigns.catalogueDigest,
+      state: schema.campaigns.state,
+    })
+    .from(schema.campaigns)
+    .where(and(eq(schema.campaigns.tenantId, tenantId), eq(schema.campaigns.id, campaignId)));
+  if (!campaign) throw new Error(`CAMPAIGN_MISSING: ${campaignId}`);
+  return campaign;
+}
+
+/**
+ * One generation of a campaign: the pin, both snapshots, and the link to the generation it
+ * advanced from. Separated from the act above it because a lineage has two authors — `pinCampaign`
+ * opens it, `repinCampaign` (repin.ts) advances it — and both must mint a row exactly this way, in
+ * particular reading both snapshots **here** rather than accepting them: a campaign carrying a
+ * rule-set edition its project does not pin, or a catalogue digest nothing was hashed to produce,
+ * would be a citation of a fiction. Both readers are the ones the freshness diff uses, so a verdict
+ * can never be `STALE` on a campaign that changed nothing, and a re-pin's successor reads `CURRENT`.
+ */
+export async function insertCampaignGeneration(
   tx: Tx,
   args: {
     readonly tenantId: string;
     readonly projectId: string;
-    readonly actorUserId: string;
     readonly members: readonly DrawingSetMember[];
+    readonly supersedesId?: string;
   },
 ): Promise<Campaign> {
   const ruleSetEditionId = await projectRuleSetEdition(tx, args.tenantId, args.projectId);
@@ -130,6 +165,7 @@ export async function pinCampaign(
       setDigest,
       ruleSetEditionId,
       catalogueDigest: catalogueSnapshot,
+      supersedesId: args.supersedesId,
     })
     .returning({
       id: schema.campaigns.id,
@@ -137,10 +173,29 @@ export async function pinCampaign(
       setDigest: schema.campaigns.setDigest,
       ruleSetEditionId: schema.campaigns.ruleSetEditionId,
       catalogueDigest: schema.campaigns.catalogueDigest,
+      supersedesId: schema.campaigns.supersedesId,
       state: schema.campaigns.state,
       createdAt: schema.campaigns.createdAt,
     });
   if (!campaign) throw new Error("CAMPAIGN_NOT_WRITTEN");
+  return campaign;
+}
+
+/**
+ * The campaign, its pin and its pin act, in the caller's transaction — exported at this
+ * granularity because the surface that opens a campaign may have its own writes to land in the
+ * same commit (§7: act row and state change commit together or neither).
+ */
+export async function pinCampaign(
+  tx: Tx,
+  args: {
+    readonly tenantId: string;
+    readonly projectId: string;
+    readonly actorUserId: string;
+    readonly members: readonly DrawingSetMember[];
+  },
+): Promise<Campaign> {
+  const campaign = await insertCampaignGeneration(tx, args);
   // The act names its actor, its timestamp (the column's default) and what it pinned.
   await tx.insert(schema.acts).values({
     tenantId: args.tenantId,
@@ -149,14 +204,18 @@ export async function pinCampaign(
     type: "PIN_DRAWING_SET",
     subjectKind: "campaigns",
     subjectIds: [campaign.id],
-    detail: { setDigest, ruleSetEditionId, catalogueDigest: catalogueSnapshot },
+    detail: {
+      setDigest: campaign.setDigest,
+      ruleSetEditionId: campaign.ruleSetEditionId,
+      catalogueDigest: campaign.catalogueDigest,
+    },
   });
   return campaign;
 }
 
 /**
- * Opening a campaign on its own transaction. A second live campaign on the project is a unique
- * violation from `campaigns_project_live_uq`, refused at the door: one project, one lineage.
+ * Opening a campaign on its own transaction. A second current campaign on the project is a unique
+ * violation from `campaigns_project_current_uq`, refused at the door: one project, one lineage.
  */
 export async function openCampaign(ctx: TenantCtx, input: OpenCampaignInput): Promise<Campaign> {
   return forTenant(ctx, (tx) =>
