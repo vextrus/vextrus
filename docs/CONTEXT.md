@@ -49,6 +49,9 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Act** | A human write that changes what the machine would derive; the act log is append-only and human-only. |
 | **Proposal** | What a model may return: a payload plus resolvable source keys; never a conclusion or a quantity. |
 | **Source key** | `scheme:key` citing one original drawing entity (`DXF_HANDLE`, `PDF_OBJECT`, `RASTER_TRACE`). |
+| **Scale group** | The views one affirmation act names as sharing a scale; not an object of its own. |
+| **Affirmation** | The act by which a QS establishes a scale over a group; membership is positive, never residual. |
+| **Calibration** | The factor pair taking a view's drawing units to SI metres; X and Y independent, averaged as nothing. |
 | **BOQ** | Bill of Quantities — priced, structured list of work items; *generated*, never typed. |
 | **BBS** | Bar Bending Schedule — rebar cutting/bending list derived from detailing rules. |
 | **SoR** | Schedule of Rates — PWD/LGED/RHD government rate books; the Bangladesh pricing authority. |

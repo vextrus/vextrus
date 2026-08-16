@@ -271,6 +271,26 @@ plus the rule set in force**, not the values: an authored rule re-derives and vo
 signature it moves; a signed bill is **superseded**, never silently invalidated (issued
 documents snapshot their attribution and disclosure, citing act ids).
 
+*Amendment, 2026-08-16.* **The signed object carries a third instrument: the calibration.**
+`measurement-rules.md` §5 bound scale to the signature by declaring that *a scale family sits in the
+signed rule set*. `identity.md` §8 made that unrepresentable — a rule-set edition is immutable and
+forked platform → tenant → project at project creation, so it cannot contain a factor derived from a
+drawing uploaded afterwards. The split that replaces it: the **tolerances** are rule-set parameters,
+and the **calibration** binds through the lines' own content-addressed calibration keys.
+
+So the signed object is the **boundary + the rule set in force + the calibration in force**, and §8's
+void list gains a fourth member: a signature **voids whole** when any line inside its boundary cites
+a calibration key that is no longer the key in force for its view. This needs no second list — it is
+the diff §8's freshness gate already runs, over the references §3 already makes mandatory
+(`identity.md` §9). An identical re-affirmation voids nothing, because the key is content-addressed
+and not a pointer at an act; nor does an evidence upgrade that moves no factor, though that row
+re-presents under `identity.md` §5. §3's *an affirmed calibration reference — always* is carried
+**per measured attribute**, as basis already is in §1, and the line stores a non-empty set: empty is
+unrepresentable, which is what that row's `NOT NULL` was always saying.
+
+A QS scale override is a **declared disagreement**, so §8's **Part A** enumerates it in full. It is
+not a Part B stratum: Part B's draw unit and stratum are `(class × kind)` and have no scale axis.
+
 ## 8. The dip sample
 
 Two instruments: quantities are **sampled** (many, expensive); the boundary is **enumerated**

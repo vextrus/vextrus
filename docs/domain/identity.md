@@ -98,6 +98,14 @@ forward invisibly.
 - **Quantity↔bill links** with revision + staleness fields — the detector between an issued
   document and a moved quantity.
 
+*Amendment, 2026-08-16.* The line's **calibration reference** above is a **content-addressed key**
+over `(view key, factorX, factorY)` with the affirming act id beside it, carried **per measured
+attribute** rather than once per line — a member whose section is measured off a section view and
+whose run off a plan has two. `NOT NULL` therefore reads as **non-empty set**. Content-addressed for
+§9's reason: a pointer at an act would let a re-affirmation deriving the identical factor supersede
+every line citing it, voiding a signature nothing invalidated. The rule as data is
+`measurement-rules.md` §5; what it voids is `quantity-contract.md` §7.
+
 ## 7. The act log
 
 - **Append-only, human-only.** An act = a human write that changes what the machine would
