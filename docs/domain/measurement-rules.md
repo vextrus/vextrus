@@ -25,6 +25,8 @@ legacy defect (see `bd-authority.md`):
 | `embeddedDuctNoDeductMaxCm2` | 100 | embedded pipes/ducts not deducted up to this |
 | `finishOpeningDeductionMinM2` | 0.1 | openings deduct from brickwork/plaster/paint area only above this |
 | `finishMinOutlineArea` / `finishMaxOutlineArea` | 0.2 / 20,000 sft | plausibility band; out-of-band outlines are dropped **listed**, never silently |
+| `scaleVerificationTolerance` | 0.01 | symmetric band a single-observation scale is verified against (§5) |
+| `scaleAnisotropyTolerance` | 0.01 | symmetric band X is checked against Y; beyond it the view is unplaceable (§5) |
 
 Junction conventions carry citations, and **silence is never lawful**: vertical members measure
 full storey height floor-to-floor (beam/slab intersections not deducted); beam length is the
@@ -153,6 +155,105 @@ Nobody in the field ships this; it is a differentiator, not overhead.
 - The strict unit lane: an unknown or unmapped unit resolves to **null — never guess a
   scale**. A sheet-layout lane may assume a convention to *partition and declare*, but nothing
   on that lane may multiply geometry into a stored dimension.
+
+*Amendment, 2026-08-16.* §5 above is the rule; this is the rule as data. Two of its sentences were
+wrong once the campaign's pin set landed (`identity.md` §8) and are corrected here.
+
+**There is no scale-group row.** A *scale group* is the **subject set of one affirmation act** —
+`identity.md` §7's *recorded at the granularity performed* applied to scale, which is why "~6–8 acts
+per project" reads literally. The machine's candidate partition is a **proposal**: derived,
+recomputable, never stored. This answers *project-scoped or set-revision-scoped* with **neither**:
+the act's subjects are content-derived **view keys** (§3), so a re-issued sheet mints new source
+keys, hence new view keys, hence unaffirmed views — while views on sheets that did not move keep
+their affirmation with no rule of their own. That is §9's *partial re-issue re-presents nothing by
+itself*, inherited rather than restated.
+
+**Evidence is a query; the act is the only row.** Ranks 2–4 (grid spacing match, overridden
+dimension ratio, file units header) recompute from the frozen ingest artifact, so storing them
+would be the writerless machine `INSERT` `quantity-contract.md` §2.2 rejected for the scope
+register — a filter with no actor. Rank 1 is an act. Positive membership is therefore recorded
+exactly once: **a view is in a group because an act names it**, and the act names the rank it stood
+on and the source keys under it. A view no act names has no scale, which is §5's *membership is
+positive, never residual* with nothing left over to enforce it with.
+
+**A two-point observation cites source keys, or it is refused** (`SCALE_OBSERVATION_UNCITED`). The
+QS two-point outranks every machine rank, so a free click would be the one rung of the ladder that
+cannot be rechecked — and `cad-ingestion.md` §2's argument for content digests over counters is
+exactly this: verification recomputes what a claim cites, and a click cites nothing. The factor's
+two halves have different recourse: the stated real-world distance is `ENTERED` and is challenged
+through the act's named human; the drawing distance is geometry and is re-measurable only through a
+key. Each point records **source key + world coordinate quantized to 0.1 drawing unit** (§3's
+placement quantum) — the key names *what*, the coordinate names *where on it*.
+
+**The calibration reference is a content-addressed key, carried per measured attribute.** It
+digests `(view key, factorX, factorY)`, with the **act id beside it** for the named human
+`quantity-contract.md` §3 requires. Content-addressed for the reason §8 and §9 already give: under
+a minted pointer a QS re-affirming and deriving *the same factor* would supersede every line citing
+the old act, voiding a signature that nothing invalidated. Per **attribute**, because
+`quantity-contract.md` §1 already carries basis per attribute and a calibration is the provenance of
+a `MEASURED` basis — a member whose section is measured off a section view and whose run is measured
+off a plan has two. The line stores a **non-empty set**; empty is unrepresentable, which is §3's
+`NOT NULL` exactly. **No `COUNT` exemption**: placement is scale-free (`cad-ingestion.md` §9's
+constants are content-scaled shares), so a count's number does not depend on the factor — but the
+reference is also the evidence that *this view was established at all*, and exempting counts would
+put counted items on a bill face read off views nobody could scale. §5's *measures nothing* is flat.
+
+**The factors digest as fixed-precision decimal strings, 12 places, half-even** — the discipline of
+§4's content signature and `cad-ingestion.md` §2's 0.001 pt, and, in §2's words, **a collision
+policy and not a stability dial**. The temptation is a coarse quantum so a trivially-different
+re-affirmation voids nothing; `quantity-contract.md` §8 forecloses it — *no numeric void threshold,
+that judgement already has a name* — and a coarse quantum is a void threshold wearing a rounding
+rule. At a factor of 1e-3, 12 places sits seven orders above float noise and four below any
+observation difference a human can produce.
+
+**Re-affirmation is an authored act naming the outgoing and incoming keys**, stating before it
+commits which lines re-derive and that a signature over any of them **voids whole** — §9's re-pin
+shape, for §7's reason: before-images are rejected, a competing observation declares its precedence,
+and under an implicit *latest act wins* the voiding of a signature becomes the side effect of a
+click. Never silently blocked, never silently applied.
+
+**The gate multiplies, not the rail.** §8 gives the rail geometry and the spine arithmetic; an offer
+carries geometry in **drawing units** plus the view it was read from, and the gate resolves the
+calibration in force and evaluates in decimal. A rail handing over metres has applied a factor the
+gate never checked, which makes the `NOT NULL` reference decorative — the same defect §8 names for a
+rail that hands over lines. **A diagonal computes componentwise — `hypot(dx·X, dy·Y)`, areas `X·Y`**
+— which is the exact induced length of a diagonal linear map, not a fudge, and satisfies *averaged
+as nothing* because `(X+Y)/2` never appears.
+
+**Two tolerances, both rule-set parameters** (§1): `scaleVerificationTolerance` for a
+single-observation scale and `scaleAnisotropyTolerance` for X against Y, seeded equal at 0.01. They
+fail differently — the first asks whether an observation is trustworthy, the second whether the
+drawing is anisotropic, which is a scanning property — so collapsing them would let a future
+scan-lane change to one silently move the other.
+
+**Two named causes on the unit lane, not one.** An unmapped `$INSUNITS` does not refuse at ingest;
+it is **rank 4 declining to contribute**, and a view becomes unplaceable only if ranks 1–3 also
+yield nothing. `SCALE_NO_EVIDENCE` (nothing at any rank) and `SCALE_UNIT_UNMAPPED` (rank 4 carried a
+code we do not map) split for `quantity-contract.md` §2.2's reason — opposite remedies, as
+`INGESTION_TRUNCATED` splits from `ENTITY_TYPE_UNHANDLED`. Both are **rail-vocabulary reasons riding
+the queue item**, never scope-register causes: §2.2 reserves the cause taxonomy for its originator
+legality and the register's cause stays `NOT_ESTABLISHED`. Per `quantity-contract.md` §4 an
+unaffirmed scale **declares**; it never hard-blocks.
+
+**The two corrections.** *A scale family is **not** in the signed rule set* — after `identity.md`
+§8 an edition is immutable and forked platform → tenant → project at project creation, so a
+calibration derived from this drawing's geometry cannot live inside one. The **tolerances** are
+rule-set parameters; the **calibration** is a third signed instrument, bound to the signature
+through the lines' own keys (`quantity-contract.md` §7). And *a QS override is **not** a dip-sample
+stratum in the Part B sense*: §8 fixes Part B's draw unit and stratum at `(class × kind)`, which has
+no scale axis, while Part A already enumerates declared disagreements **in full** — that is the
+gate. Nor does an override **suspend**: §7's suspension exists where precedence is undeclared, and
+here the ladder declares it in advance, so suspending would freeze a fact the law has already
+decided.
+
+**What a recalibration voids, exactly.** A signature **voids whole** when any line inside its
+boundary cites a calibration key that is no longer the key in force for its view. It is the diff
+§8's freshness gate already runs, over data the register already holds, so there is no second list
+(§9). Two things deliberately do **not** void: an identical re-affirmation, because the key is
+content-addressed; and an evidence *upgrade* at the same factor (rank 4 → rank 1), because the
+number did not move — though that row **re-presents**, since §5's semantic carries cited evidence
+source keys. Row-level re-presentation is governed by the semantic, boundary-level validity by the
+key: §9's own split, and both are honest.
 
 ## 6. The register holds facts, never bands
 
