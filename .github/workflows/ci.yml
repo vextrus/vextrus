@@ -1,0 +1,60 @@
+# The contract on the pushed head (ADR-0007; issue #68): `pnpm verify` and `pnpm test:db` on
+# every push, on a machine nobody configured by hand. Same pins as the founder's machine:
+# Node 24 (.nvmrc), pnpm 9.15.1 (package.json packageManager, via corepack), uv, Postgres 16
+# with C.UTF-8 on 5544. Nothing here is cached: verify is uncached by contract, and the build is
+# cold into its own distDir.
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vextrus
+          POSTGRES_PASSWORD: vextrus
+          POSTGRES_DB: vextrus
+          POSTGRES_INITDB_ARGS: --locale=C.UTF-8
+        ports:
+          - 5544:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # The same values as .env.example: a CI cluster with dev passwords, nothing secret.
+      DATABASE_URL: postgres://vextrus_app:vextrus_app_dev_password@localhost:5544/vextrus
+      MIGRATE_DATABASE_URL: postgres://vextrus:vextrus@localhost:5544/vextrus
+      AUTH_DATABASE_URL: postgres://vextrus_auth:vextrus_auth_dev_password@localhost:5544/vextrus
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3210
+      VEXTRUS_STORAGE_ROOT: ${{ github.workspace }}/.data
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm via corepack (package.json packageManager pins 9.15.1)
+        run: |
+          corepack enable
+          pnpm --version
+      - uses: astral-sh/setup-uv@v10.0.1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm verify
+      - run: pnpm db:migrate
+      - run: pnpm test:db
