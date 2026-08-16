@@ -25,10 +25,13 @@ export { forTenant, mintTenantCtx, runAsSystem, type TenantCtx, type Tx } from "
 export {
   callModel,
   fixtureTransport,
+  liveTransport,
   proposalSchema,
+  recordFixture,
   type ModelId,
   type ModelTransport,
   type Proposal,
   type Refusal,
   type SourceKey,
 } from "./model";
+export { dbRecorder } from "./model-ledger";

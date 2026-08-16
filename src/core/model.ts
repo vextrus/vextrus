@@ -1,5 +1,6 @@
+import Anthropic from "@anthropic-ai/sdk";
 import { createHash, randomUUID } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { TenantCtx } from "./db";
@@ -71,7 +72,7 @@ export type ModelRequest = { readonly model: ModelId; readonly system: string; r
 export type ModelUsage = { readonly inputTokens: number; readonly outputTokens: number };
 export type ModelReply = { readonly text: string; readonly usage: ModelUsage } | { readonly error: string };
 
-/** A transport completes a request. `fixture` replays recorded replies; `live` is the SDK, landing with the first model ticket. */
+/** A transport completes a request. `fixture` replays recorded replies; `live` is the SDK (`liveTransport`). */
 export type ModelTransport = {
   readonly kind: "live" | "fixture";
   complete(req: ModelRequest): Promise<ModelReply>;
@@ -96,6 +97,25 @@ export function requestHash(req: ModelRequest): string {
   return createHash("sha256").update(canonical).digest("hex");
 }
 
+/** The fixture file's shape: exactly what a transport returns on success, and what the recorder writes. */
+const fixtureSchema = z.object({
+  text: z.string(),
+  usage: z.object({ inputTokens: z.number().int(), outputTokens: z.number().int() }),
+});
+type Fixture = z.infer<typeof fixtureSchema>;
+
+/**
+ * Write a reply as the fixture for its request — `<dir>/<requestHash>.json`, canonical bytes, so
+ * a re-recording of the same reply is byte-identical and `fixtureTransport` replays exactly what
+ * the live transport returned. The live transport calls this when VEXTRUS_RECORD_FIXTURES is set.
+ */
+export function recordFixture(dir: string, req: ModelRequest, reply: Fixture): string {
+  mkdirSync(dir, { recursive: true });
+  const file = path.join(dir, `${requestHash(req)}.json`);
+  writeFileSync(file, `${JSON.stringify({ text: reply.text, usage: reply.usage }, null, 2)}\n`);
+  return file;
+}
+
 /**
  * Replays recorded replies from `<dir>/<requestHash>.json` (`{ "text": ..., "usage": ... }`).
  * Deterministic by construction: same request, same bytes, same reply. A missing fixture is a
@@ -107,10 +127,77 @@ export function fixtureTransport(dir: string): ModelTransport {
     async complete(req) {
       const file = path.join(dir, `${requestHash(req)}.json`);
       if (!existsSync(file)) return { error: `FIXTURE_MISSING:${path.basename(file)}` };
-      const parsed = z
-        .object({ text: z.string(), usage: z.object({ inputTokens: z.number().int(), outputTokens: z.number().int() }) })
-        .safeParse(JSON.parse(readFileSync(file, "utf-8")));
+      const parsed = fixtureSchema.safeParse(JSON.parse(readFileSync(file, "utf-8")));
       return parsed.success ? parsed.data : { error: `FIXTURE_MISSING:${path.basename(file)} is malformed` };
+    },
+  };
+}
+
+/**
+ * The seam's own instruction to the model, appended after the caller's system prompt: the reply
+ * is the proposal envelope and nothing else. The caller's `system` and `input` are what the
+ * request hash covers; this block is a constant of the transport, so a fixture recorded live
+ * replays under the same hash.
+ */
+const PROPOSAL_INSTRUCTION =
+  'Reply with exactly one JSON object and nothing else — no prose, no code fence: {"payload": <the answer in the shape the task describes>, "sources": ["<scheme>:<key>", ...]}. "sources" lists the source keys of the drawing entities your answer relies on, verbatim as they were given to you, and must not be empty.';
+
+/** Non-streaming ceiling; a proposal is small, and the SDK's timeout scales with this. */
+const LIVE_MAX_TOKENS = 16_000;
+
+type AnthropicClientOptions = NonNullable<ConstructorParameters<typeof Anthropic>[0]>;
+
+export type LiveTransportOptions = {
+  readonly apiKey: string;
+  /** Where to write `<requestHash>.json` after each reply; defaults to VEXTRUS_RECORD_FIXTURES, unset = never. */
+  readonly recordFixturesDir?: string | undefined;
+  /** Test seam: the SDK's fetch. Never set in the product. */
+  readonly fetch?: AnthropicClientOptions["fetch"];
+};
+
+/**
+ * The live transport (ADR-0006): the one place the SDK is called. Sends the pinned model the
+ * caller's system prompt plus the seam's proposal instruction, returns the reply's text and
+ * token usage, and — when recording — writes the fixture that `fixtureTransport` will replay.
+ * Every failure is a named `{ error }`, never a throw: a refusal, a rate limit, a network fault
+ * are normal outcomes the ledger records as TRANSPORT_FAILED. Verify never constructs this.
+ */
+export function liveTransport(options: LiveTransportOptions): ModelTransport {
+  const client = new Anthropic({ apiKey: options.apiKey, ...(options.fetch ? { fetch: options.fetch } : {}) });
+  const recordDir = options.recordFixturesDir ?? process.env.VEXTRUS_RECORD_FIXTURES;
+  return {
+    kind: "live",
+    async complete(req) {
+      let message: Anthropic.Message;
+      try {
+        message = await client.messages.create({
+          model: req.model,
+          max_tokens: LIVE_MAX_TOKENS,
+          system: [
+            { type: "text", text: req.system },
+            { type: "text", text: PROPOSAL_INSTRUCTION },
+          ],
+          messages: [{ role: "user", content: req.input }],
+        });
+      } catch (err) {
+        if (err instanceof Anthropic.APIError) return { error: `API_ERROR:${err.status ?? "connection"}:${err.message}` };
+        return { error: `API_ERROR:unknown:${err instanceof Error ? err.message : String(err)}` };
+      }
+      if (message.stop_reason === "refusal") {
+        return { error: `REFUSAL:${message.stop_details?.category ?? "unspecified"}` };
+      }
+      if (message.stop_reason === "max_tokens" || message.stop_reason === "model_context_window_exceeded") {
+        return { error: `TRUNCATED:${message.stop_reason}` };
+      }
+      const reply: Fixture = {
+        text: message.content
+          .filter((b): b is Anthropic.TextBlock => b.type === "text")
+          .map((b) => b.text)
+          .join(""),
+        usage: { inputTokens: message.usage.input_tokens, outputTokens: message.usage.output_tokens },
+      };
+      if (recordDir) recordFixture(recordDir, req, reply);
+      return reply;
     },
   };
 }
