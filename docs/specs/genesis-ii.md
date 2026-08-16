@@ -264,7 +264,7 @@ that runs Claude.
   seams; `localeCompare` (identity sorts by code units); bare `toLocaleString` (lakh/crore, stated
   locale). CLAUDE.md's NEVER list names each rule's enforcement; a NEVER that cannot be enforced
   mechanically is not in the list.
-- **Harness:** `CLAUDE.md` 102 lines / 5.8 KB (the docs' target is under 200 lines);
+- **Harness:** `CLAUDE.md` 103 lines / 5.9 KB (the docs’ target is under 200 lines);
   `.claude/settings.json` denies by bare name the tools this project never calls (the measured
   lever — a bare-name `deny` removes the tool schema from context, 29.8k → 22.8k on the first
   founding's cloud measurement; the server-level MCP names are the documented pruning form), turns
