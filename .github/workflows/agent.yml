@@ -203,8 +203,20 @@ jobs:
           # with --allowedTools" — that is availability. bypassPermissions is about *prompting*:
           # this repo's .claude/settings.json puts `git push` behind `ask`, which is a denial when
           # nobody is there to answer. Dropping either produced three empty dispatches (#121).
+          # Measured, 2026-08-16: the first dispatch of a build ticket (#150, the rule-set
+          # edition) reached `error_max_turns` at 61 turns having spent $3.15 of the $8 budget in
+          # 9m23s, with the schema, the seed constant, the key function and both call sites
+          # written and nothing pushed — 27 Bash, 23 Read, 5 Grep, 4 Edit, 1 Write, and zero
+          # permission denials. Turns bound, money did not: roughly half a turn budget goes to
+          # orienting before a fresh session writes anything, and the migration, the tests,
+          # `pnpm verify`, `/code-review` and the pull request all sit after that. 150 is the
+          # first cap under which that whole tail fits. It moves the binding cap to
+          # `--max-budget-usd`: at the observed $0.052/turn a 150-turn run lands near $7.8, so a
+          # ticket that needs every turn will now fail as `error_max_budget` instead. That is the
+          # honest failure — a run that cannot finish inside $8 is a mis-sized ticket, and the
+          # remedy is a smaller ticket, not a bigger number.
           claude_args: |
-            --max-turns 60
+            --max-turns 150
             --max-budget-usd 8
             --allowedTools Read,Edit,Write,Glob,Grep,Bash,Skill
             --permission-mode bypassPermissions
