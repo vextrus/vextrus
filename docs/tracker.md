@@ -165,6 +165,21 @@ gh pr merge <pr> --squash --delete-branch
 A run that ends `failure`, `cancelled` or `timed_out` is `completed` too, so read the conclusions —
 the loop proves the runs finished, never that they passed.
 
+**A dispatched PR carries one `verify` run, not two.** The dispatcher's branch is pushed by the
+Claude GitHub App, so the `push` event fires `verify`; the PR itself is opened with `gh` under
+`GITHUB_TOKEN`, and GitHub does not fire workflows for that token, so no `pull_request` run
+appears. Wait for `1 1` on a dispatched PR and `2 2` on one a human pushed — or, for both,
+wait until at least one run exists and none is incomplete, then read the conclusions:
+
+```sh
+[ "$(gh api "repos/vextrus/vextrus/commits/$sha/check-runs" \
+  --jq '[.check_runs[] | select(.name=="verify")] | "\(length) \([.[] | select(.status=="completed")] | length)"')" = "1 1" ]
+```
+
+The required check is satisfied either way: branch protection asks for a `verify` context on the
+head commit, and the `push` run supplies it. `main`'s own merge commits show `1 1` for the same
+reason.
+
 **Never `gh pr merge --admin`** — it bypasses the gate the founder installed. A red CI is a defect to
 fix on the branch, never a reason to reach for the flag. Then close the ticket if the PR did not, and
 add the Decisions-so-far line if it belongs to a map.
