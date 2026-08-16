@@ -344,6 +344,42 @@ the quantity itself with its named cause. `PARTIAL_UNDECLARED` is unrepresentabl
 row with no number is the same lie by a shorter route; this also suppresses the grand total by this
 section's own rule rather than by anyone remembering to.
 
+*Amendment, 2026-08-17 (issue #136).* **The certificate's face: a left join from the catalogue, two
+statements, enumerations never cardinalities.** This clause makes the certificate a query over
+catalogue × residue without saying how the two denominators meet. They meet as a **left join from the
+catalogue to the residue on kind** — the catalogue is the outer axis, cells are inner — so every cell
+appears exactly once under exactly one kind and non-double-reporting is structural rather than a
+de-dup pass. A union was put and rejected for needing that pass. Three shapes fall out, each a
+different fact with a different remedy: a kind with borne cells that published nothing prints those
+cells with their causes; a kind **no sighted class bears** prints one line at kind grain
+(`NO_BEARER_SIGHTED`, §2.2) and no cells; and a **sighted class bearing no kind** prints in a
+**class-grain appendix, in full**, because it hangs under no kind and dropping it would let an unborne
+slice read as completed scope. The converse — a sighted class bearing a kind with no catalogue row —
+is unrepresentable, the catalogue being primary-keyed on the kind, so it is designed out and never
+printed.
+
+The two boundaries §2.2 separates print as **two separately titled statements, each projecting one
+axis**, never a shared cause column, and the **measurement statement prints first and in full over the
+whole catalogue, before any narrowing**. A cell both unmeasured and held out appears in both: not
+double-reporting, because they are different facts, and neither statement is expressible in the
+other's vocabulary — which is what makes *the unmeasured scope is excluded from the works*
+unrecoverable rather than merely forbidden.
+
+Five further bans, each one this face newly invites. **The certificate prints enumerations, never
+cardinalities** — no cell count, no *nine of twelve kinds measured*: a numerator beside a denominator
+is the banned percentage with one division added, and an aggregate destroys the remedy, which is
+always per cell. **No money on the measurement statement**, ever, on this section's own stated ground
+that a value-weighted figure originates quantities outside the register. **No severity ordering** —
+causes differ in remedy, not in size, and ranking them invents a magnitude; the sort is
+`compareCanonical` over `(kind code, class code, level)`, which the signature needs anyway, since two
+renderings of one boundary must be byte-identical. **No empty-section suppression**: a statement with
+no rows prints its heading and a closed *none* code, a heading that vanishes being indistinguishable
+from a heading nobody wrote. **Never a symbol alone**, on this section's colour argument — a ✓/✗
+column dies the same death in greyscale; every cause is a closed code rendered en+bn by the document
+formatter. The sighting channel that established a cell stays queryable and **off the face**: it is
+evidence for the cause, not the cause. Contiguous level runs **collapse on the face** (`L6–L10`) while
+the query stays per level — a run is an enumeration written shortly, not a cardinality.
+
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates
@@ -368,6 +404,13 @@ signed rule set*. `identity.md` §8 made that unrepresentable — a rule-set edi
 forked platform → tenant → project at project creation, so it cannot contain a factor derived from a
 drawing uploaded afterwards. The split that replaces it: the **tolerances** are rule-set parameters,
 and the **calibration** binds through the lines' own content-addressed calibration keys.
+
+*Amendment, 2026-08-17 (issue #136).* **The boundary in the signed object is both boundaries.** §2.2
+as amended splits measurement boundary from bill boundary into two orthogonal axes, and the signature
+binds the grid, not one projection of it: a bill narrowed by a `NOT_IN_THIS_BILL` act after signing
+widens nothing measured and is exactly as fatal as scope measured after it, because the reader's
+recourse — check what this signature covered — fails identically either way. This needs no addition to
+§8's void list: an act moving either axis moves the boundary, which that list already names.
 
 So the signed object is the **boundary + the rule set in force + the calibration in force**, and §8's
 void list gains a fourth member: a signature **voids whole** when any line inside its boundary cites
@@ -425,3 +468,18 @@ naming the missing rule was put and rejected: it needs a machine writer, reopeni
 no actor* door §2.2 shut, and the reader's remedy is unchanged. §2.2's `ENTITY_TYPE_UNHANDLED` is
 ingestion-owned, off the artifact's fidelity counters, and does not reach a stage ingestion knows
 nothing about.
+
+*Amendment, 2026-08-17 (issue #136).* **Both cell sets gain level, and a contradicted act is a Part A
+row.** §2.2 as amended makes the residue's cell `(class × kind × level)`, and the borne and
+quantity-bearing sets are defined off it, so both carry the level axis and `N = quantity-bearing
+cells × 2` grows with the level stack. That is the intended price: the stratum this clause chose
+exists because systematic errors are present in every member of their class, and a rule that misfires
+on one storey is systematic within that storey and invisible in a stratum that has averaged the
+building. *Level picked uniformly before object* survives unchanged — it now selects within a stratum
+rather than across strata, which is the same draw with the bias removed one step earlier.
+
+A **contradicted scope act** — `NOT_IN_PROJECT_SCOPE` on a cell that is now quantity-bearing (§2.2) —
+is a machine-enumerable declared disagreement and therefore a **Part A** row, checked in full. It is
+not a Part B stratum (the cell has lines, which Part B already samples) and it is not a certificate
+line (the boundary is right; a human's belief about it is not). The absence census is unaffected: it
+runs over human-authored declarations still in force, and a contradicted act is not.
