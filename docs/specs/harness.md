@@ -1,6 +1,7 @@
 # The harness — planning and executing the takeoff module
 
-**Status:** proposed · **Date:** 2026-08-16 · **For:** the founder to accept, amend or refuse.
+**Status:** **accepted 2026-08-16** (proposed and accepted the same day; the founder accepted
+both §5 amendments and directed that A1 be built immediately) · **Date:** 2026-08-16.
 **Supersedes:** nothing. **Constrains:** no product code — this is workflow, so it lives in a spec and
 in `docs/tracker.md`, never in an ADR (`genesis-ii.md` §3).
 **Evidence:** `docs/research/harness-2026-08.md` §10–§15 (2026-08-16, primary sources) and the
@@ -108,7 +109,7 @@ that we lack; the rulings:
 | trajectory logs | **Declined.** No source measures a benefit on a small repo, and the tracker's "one paragraph, no transcript" is a deliberate anti-sprawl rule. The diff, the PR body and `docs/lessons/` are the record. |
 | semantic edges beyond two | **Declined.** "Supersedes" is an ADR convention; "implements" is the `## Clause` line. |
 
-### 3.4 Dispatcher — the founder today; one amendment, gated on a count
+### 3.4 Dispatcher — the founder, and one accepted workflow
 
 **Nothing Anthropic ships reads GitHub Issues as a queue** (research §11): Routines' GitHub triggers
 are Pull request and Release only; the Action fires per event and knows nothing of `blocked_by`;
@@ -124,7 +125,11 @@ that buy minutes are ticket quality, verify speed, and parallelism.
 
 **The amendment (§5.A1)** is the issue-triggered GitHub Action, because it is the only surface where
 GitHub itself is the picker (no polling), state stays in Issues, CI runs on its pushes, and merge
-stays human. It is gated on a counted backlog.
+stays human. **Accepted and built 2026-08-16** as `.github/workflows/agent.yml` (§5.A1): it fires
+only on `issues.labeled` with `ready-for-agent`, refuses by name if the ticket is blocked, already
+claimed, or missing its `## Clause` / `## Verification` sections, and runs serially. The founder
+keeps the dispatcher's own switch — a ticket is dispatched by applying the label, and by nothing
+else.
 
 **Alternatives rejected.** *Routines* — no `issues` event, ≥1 h poll, state in claude.ai rather than
 Issues, no dollar cap, and "A green status … does not mean the task in your prompt succeeded".
@@ -210,7 +215,17 @@ that runs Claude, no new ADR, and no product code beyond §10's refusal-coverage
 tracker-doc changes (§3.2's fields, §3.1's arc label, §3.5's session flow) are workflow, which §3
 places in `docs/tracker.md` by name.
 
-## 5. Amendments to `genesis-ii.md` §3 — for the founder's decision
+## 5. Amendments to `genesis-ii.md` §3 — **accepted 2026-08-16**
+
+Both were accepted by the founder on the day they were written, and both now stand as dated
+amendments under `genesis-ii.md` §3, which is the authoritative text. The founder additionally
+directed that **A1 be built immediately rather than at the ≥ 8-ticket gate this section proposed
+for it**, having authorised harness-before-product explicitly. What that changes, stated plainly:
+the count now governs when the dispatcher is *used*, not when it is written. The workflow is inert
+until an issue carries `ready-for-agent` — it has no schedule, no poll and no daemon — so writing
+it early costs one file and buys the first arc a dispatcher that is already tested. What it does
+*not* buy is exemption from §8: if the metrics there go the wrong way, the workflow is deleted,
+and that is a one-line change.
 
 ### A1 — a committed workflow may run Claude, for one purpose, above one number
 
@@ -270,11 +285,10 @@ the defect rate of one executor is the baseline against which a second is judged
 
 ## 6. The environment
 
-- **Startup context budget: ≤ 15k.** Measured 13.9k on 2026-08-16 (system tools 6.7k · system prompt
-  3.5k · memory 2.0k · skills 1.6k), with 9.7k of tool schemas deferred and costing nothing. Issue #89
-  denies `SendUserFile` and `ListAgents` by bare name; the founder re-measures at the next session's
-  start and the number lands in `genesis-ii.md` §7. A change that pushes startup above 15k is a defect
-  to fix, not a new baseline.
+- **Startup context budget: ≤ 15k. Measured 12.3k** on 2026-08-16 after #89 denied `SendUserFile`
+  and `ListAgents` by bare name — down 1.6k from 13.9k (system tools 6.7k · system prompt 3.5k ·
+  memory 2.0k · skills 1.6k), with 9.7k of tool schemas deferred and costing nothing. A change that
+  pushes startup above 15k is a defect to fix, not a new baseline.
 - **Tool set.** Denied by bare name: the tools this project never calls (`.claude/settings.json`).
   `AskUserQuestion` stays — it is how the HITL skills speak to the founder, and no subagent ever gets
   it. Deferred tools cost names only and are left alone. **Never deny a tool mid-session** — built-in
@@ -337,11 +351,13 @@ sessions — that is the honest stop condition, and it is cheaper than any recov
 
 | # | issue | needs an amendment? |
 |---|---|---|
-| 1 | **this spec** — `docs/specs/harness.md`, proposed | no |
+| 1 | **this spec** — `docs/specs/harness.md`, accepted 2026-08-16 | no |
 | 2 | `docs/tracker.md`: the build-ticket contract (`## Clause`, `## Verification`, `## Out of scope`), the `arc:<name>` label, and the build-session flow a fresh session follows from claim to merge; `CLAUDE.md` gains the one line it lacks | no |
 | 3 | **the refusal-coverage test**: every closed reason-code enum in the repo is exercised by name inside `pnpm verify`, so CLAUDE.md's "refuses or defers with a named reason" gets the mechanical enforcement its siblings have | no |
-| 4 | the dispatcher workflow (§5.A1) | **yes — A1**, and gated on ≥ 8 open `ready-for-agent` build tickets |
-| 5 | concurrent executors (§5.A2) | **yes — A2**, after ten serial merges |
+| 4 | the dispatcher workflow (§5.A1) — `.github/workflows/agent.yml` | A1 **accepted**; built 2026-08-16 by founder direction, inert until a ticket carries the label |
+| 5 | the dispatch section of `docs/tracker.md` — the independence test (§5.A2), how a ticket is dispatched, and the one-line switch from serial to parallel | A2 **accepted**; the switch stays serial until ten tickets have merged |
 
-Issues 1–3 are opened and merged by the session that writes this spec. Issue 4 is opened the day the
-count is met. Issue 5 is opened the day issue 4's defect rate is known.
+All five were opened and merged by the session that wrote this spec (issues #95, #97, #99, #104,
+#105). Two operational preconditions remain the founder's, and the workflow refuses by name
+without them: the **Claude GitHub App** installed on the repository, and an **`ANTHROPIC_API_KEY`
+or `CLAUDE_CODE_OAUTH_TOKEN` secret**.

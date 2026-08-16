@@ -140,6 +140,40 @@ justified by a workflow it would enable later.
 The legacy autopsy's counter-decisions (one app, one schema lane, no codegen, typed tenancy,
 register-centred schema, thin harness) all survive and are re-derived in `docs/adr/0001–0007`.
 
+### Amendments to §3
+
+The paragraph above is the rule as written at the second founding and is never edited; a change
+to it is a dated amendment beneath it, accepted by the founder, carrying its evidence and the
+fault it must not reproduce. The evidence for both below is `docs/research/harness-2026-08.md`
+§10–§15 and `docs/specs/harness.md` §5.
+
+**A1 — 2026-08-16.** §3's *"no script that runs Claude"* admits exactly one exception: a single
+GitHub Actions workflow that runs `anthropics/claude-code-action` when an issue is labelled
+`ready-for-agent`, provided (a) it opens no pull request that a human does not merge, (b) it adds
+no state outside GitHub Issues, and (c) its cost and defect rate are recorded in
+`docs/specs/harness.md` §8. **Any second such workflow needs its own amendment.**
+*Evidence:* of the eleven execution surfaces Anthropic ships, this is the only one where the
+picker is GitHub itself — no poll, no daemon, no second task list — and it *cannot* merge or
+approve ("Cannot merge, rebase, or execute git operations beyond pushing commits"; "cannot
+approve pull requests"), so the human verdict survives by construction.
+*The fault it must not reproduce:* the harness eating the product. Prevented by the ceiling of
+one workflow, by the merge staying human, and by §8's metrics being the thing that retires it.
+*Note on the gate:* `harness.md` §5 proposed building this only above eight open build tickets.
+The founder accepted the amendment and directed that it be built immediately, twice and
+explicitly; the count therefore governs when the workflow is *used*, not when it is written, and
+the workflow is inert until an issue carries the label.
+
+**A2 — 2026-08-16.** More than one executor session may run concurrently only when the tickets
+are provably independent — no file named in either ticket's `## Verification`, and no
+`blocked_by` relation between them — and the claim is taken before any read of the code.
+*Evidence:* parallelism is the only lever that shortens wall time by more than seconds, and the
+measured downside is specific: a 41.7% cross-agent merge-conflict rate against 19.8% within one
+agent (arXiv 2607.04697), and "Having 16 agents running didn't help because each was stuck
+solving the same task" (Anthropic, 2026-02-05).
+*The fault it must not reproduce:* two sessions resolving one ticket, and two branches touching
+one file. Prevented by the independence test in `docs/tracker.md` and by the dispatcher running
+serially until ten tickets have merged and set a defect-rate baseline.
+
 ## 4. Architecture
 
 Boring, mainstream, strongly typed, locally runnable, one obvious place for everything,
@@ -241,7 +275,9 @@ that runs Claude.
   **Startup context, measured by the founder in a fresh session on 2026-08-16 (`/context`):
   13.9k of 1M** — system tools 6.7k · system prompt 3.5k · memory files 2.0k · skills 1.6k ·
   messages 61; a further 9.7k of tool schemas sit deferred behind ToolSearch and cost nothing
-  until used. **The loaded-tool lever was pulled on 2026-08-16 (#89):** `SendUserFile` and
+  until used. **Re-measured after #89: 12.3k of 1M** — a **1.6k drop** from denying two loaded
+  tools by bare name, which also settles that both were in fact loaded in a plain terminal
+  session (the PR predicted 0.6–1.0k, or ~0 if neither surfaced). **The loaded-tool lever was pulled on 2026-08-16 (#89):** `SendUserFile` and
   `ListAgents` denied by bare name — nothing in this repo or in the installed skills needs either,
   and both are gated on Remote Control / cross-session messaging in any case — and the
   `EndConversation` entry dropped, the tools-reference being explicit that a deny naming it "ha[s]
