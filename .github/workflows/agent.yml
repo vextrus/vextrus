@@ -193,9 +193,15 @@ jobs:
           # over 26 turns and produced nothing, with permission_denials_count 6 (issue #117).
           # The safety here is not the permission prompt: it is an ephemeral runner, a token that
           # cannot merge, protected `main`, and a human on the pull request.
+          # Both lines are load-bearing and neither substitutes for the other. In automation mode
+          # "Claude has no shell or GitHub API access until you grant the tools the prompt needs,
+          # with --allowedTools" — that is availability. bypassPermissions is about *prompting*:
+          # this repo's .claude/settings.json puts `git push` behind `ask`, which is a denial when
+          # nobody is there to answer. Dropping either produced three empty dispatches (#121).
           claude_args: |
             --max-turns 60
             --max-budget-usd 8
+            --allowedTools Read,Edit,Write,Glob,Grep,Bash,Skill
             --permission-mode bypassPermissions
 
       # "Success" from the executor is a report, not a result: a run that opens no pull request
