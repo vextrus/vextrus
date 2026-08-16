@@ -131,6 +131,24 @@ claimed, or missing its `## Clause` / `## Verification` sections, and runs seria
 keeps the dispatcher's own switch — a ticket is dispatched by applying the label, and by nothing
 else.
 
+*Amendment, 2026-08-16 — the dispatcher is retired* (`genesis-ii.md` §3 Amendment A3). Pointed at
+its first two real build tickets it lost both whole: $7.44, two correct implementations, zero lines
+surviving, because a runner's work is not durable until `git push` succeeds and the push was denied
+in both (`docs/lessons/an-unattended-executor-that-cannot-push-loses-the-whole-ticket.md`). Its
+lifetime output was one one-line docs PR. The paragraph above this one is unamended and is now the
+whole of §3.4: **the founder is the dispatcher**. Three findings survive the retirement, because
+they cost something to learn and would be paid for again by anything built here later:
+
+- **Nothing is durable until the push.** A publishing fault costs the whole session, not the step,
+  and cannot be detected early — every prior tool call succeeds. Prove the push before reading any
+  code.
+- **The one workflow permitted to run Claude was the one dependency not pinned** —
+  `anthropics/claude-code-action@v1` is a floating tag, and the job declared no `permissions:`
+  block, so every number measured against it is unreproducible.
+- **Any label on any issue competes for the concurrency slot.** The serial group is `agent`, not
+  per-issue, so routine triage cancels a pending dispatch — broader than this section's "label one
+  ticket at a time", which read the trap as being about labelling *tickets*.
+
 **Alternatives rejected.** *Routines* — no `issues` event, ≥1 h poll, state in claude.ai rather than
 Issues, no dollar cap, and "A green status … does not mean the task in your prompt succeeded".
 *Agent teams* — a second task list beside Issues, and "In non-interactive mode with the `-p` flag …
@@ -391,8 +409,8 @@ sessions — that is the honest stop condition, and it is cheaper than any recov
 | 1 | **this spec** — `docs/specs/harness.md`, accepted 2026-08-16 | no |
 | 2 | `docs/tracker.md`: the build-ticket contract (`## Clause`, `## Verification`, `## Out of scope`), the `arc:<name>` label, and the build-session flow a fresh session follows from claim to merge; `CLAUDE.md` gains the one line it lacks | no |
 | 3 | **the refusal-coverage test**: every closed reason-code enum in the repo is exercised by name inside `pnpm verify`, so CLAUDE.md's "refuses or defers with a named reason" gets the mechanical enforcement its siblings have | no |
-| 4 | the dispatcher workflow (§5.A1) — `.github/workflows/agent.yml` | A1 **accepted**; built 2026-08-16 by founder direction, inert until a ticket carries the label |
-| 5 | the dispatch section of `docs/tracker.md` — the independence test (§5.A2), how a ticket is dispatched, and the one-line switch from serial to parallel | A2 **accepted**; the switch stays serial until ten tickets have merged |
+| 4 | the dispatcher workflow (§5.A1) — `.github/workflows/agent.yml` | A1 **accepted**; built 2026-08-16 by founder direction; **retired the same day** (A3) after losing two build tickets whole |
+| 5 | the dispatch section of `docs/tracker.md` — the independence test (§5.A2), how a ticket is dispatched, and the one-line switch from serial to parallel | A2 **accepted** and untested; the dispatch half is retired with A1, so A2 governs nothing until an executor exists again |
 
 All five were opened and merged by the session that wrote this spec — issues **#95, #97, #99, #105,
 #110** — together with two the spec did not foresee: **#103**, accepting the amendments, and

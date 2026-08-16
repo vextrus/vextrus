@@ -174,6 +174,19 @@ solving the same task" (Anthropic, 2026-02-05).
 one file. Prevented by the independence test in `docs/tracker.md` and by the dispatcher running
 serially until ten tickets have merged and set a defect-rate baseline.
 
+**A3 — 2026-08-16.** A1 is **retired**: the workflow it admitted is deleted, and §3's *"no script
+that runs Claude"* stands with no exception. A second such workflow still needs its own amendment,
+and this one is not it.
+*Evidence:* pointed at its first two real build tickets, the dispatcher lost both whole — $7.44,
+two correct implementations, zero lines surviving, because an unattended executor's work is not
+durable until `git push` succeeds and the push was denied
+(`docs/lessons/an-unattended-executor-that-cannot-push-loses-the-whole-ticket.md`). Against that,
+the total it ever produced was one one-line docs PR (#125). §8's metrics are the thing that retires
+it, as A1 said they would be; this is that clause firing, not an unwind of the decision.
+*The fault it must not reproduce:* the harness eating the product — the same fault A1 named, now
+observed from the other side. `harness.md` §3.4's ruling stands unamended and becomes the whole
+answer: **the founder is the dispatcher**, and automating the pick buys seconds.
+
 ## 4. Architecture
 
 Boring, mainstream, strongly typed, locally runnable, one obvious place for everything,
@@ -291,8 +304,8 @@ that runs Claude.
   **How a module is planned and built** — the pipeline, the build-ticket contract, model and
   effort per ticket class, the metrics and the two §3 amendments (**accepted 2026-08-16**, and
   recorded under §3 above) — is `docs/specs/harness.md` (**accepted 2026-08-16**); the flow a
-  session follows from claim to merge is `docs/tracker.md`, which also carries how a ticket is
-  dispatched to `.github/workflows/agent.yml`.
+  session follows from claim to merge is `docs/tracker.md`. Dispatch to a workflow was A1's
+  exception and is retired (§3 Amendment A3).
 - **Tests:** Vitest at seams — **40 tests over 6 files** inside `pnpm verify`, plus `pnpm test:db`'s
   25 live-seam tests over 6 files (3.84 s); golden vectors for construction math; synthetic drawing
   fixtures including a revision pair; competitor-derived drawings never enter this repo. Since #99

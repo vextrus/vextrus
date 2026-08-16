@@ -76,8 +76,9 @@ on 3210. Only `pnpm verify` output is evidence; a check run any other way is a c
   Wait for **every** `verify` check-run on the head (a PR produces two); `gh pr merge --admin` is
   never used.
 - Nothing about campaigns, loops, conductors or dispatch belongs in this repo. If you are writing
-  a script that runs Claude, stop — the one exception is `.github/workflows/agent.yml`, and
-  genesis-ii §3 Amendment A1 caps it at one.
+  a script that runs Claude, stop. The one exception A1 admitted — `.github/workflows/agent.yml` —
+  is **retired** (genesis-ii §3 Amendment A3, 2026-08-16, after it lost two build tickets whole);
+  a build ticket is worked in an interactive session, `docs/tracker.md`.
 - Delegate only wide, independent investigation; never to check your own work.
 - Where a reading is ambiguous, take the most defensible one, name the assumption in the issue
   or PR, and finish. Unfinished and said so beats a guess reported as done.

@@ -165,20 +165,11 @@ gh pr merge <pr> --squash --delete-branch
 A run that ends `failure`, `cancelled` or `timed_out` is `completed` too, so read the conclusions —
 the loop proves the runs finished, never that they passed.
 
-**A dispatched PR carries one `verify` run, not two.** The dispatcher's branch is pushed by the
-Claude GitHub App, so the `push` event fires `verify`; the PR itself is opened with `gh` under
-`GITHUB_TOKEN`, and GitHub does not fire workflows for that token, so no `pull_request` run
-appears. Wait for `1 1` on a dispatched PR and `2 2` on one a human pushed — or, for both,
-wait until at least one run exists and none is incomplete, then read the conclusions:
-
-```sh
-[ "$(gh api "repos/vextrus/vextrus/commits/$sha/check-runs" \
-  --jq '[.check_runs[] | select(.name=="verify")] | "\(length) \([.[] | select(.status=="completed")] | length)"')" = "1 1" ]
-```
-
-The required check is satisfied either way: branch protection asks for a `verify` context on the
-head commit, and the `push` run supplies it. `main`'s own merge commits show `1 1` for the same
-reason.
+**Why two, and where one comes from.** GitHub does not fire workflows for pushes made with
+`GITHUB_TOKEN`, so a branch pushed by an app or an action produces only the `push` run. With dispatch
+retired every PR is pushed by a human, so `2 2` is the rule; `main`'s own merge commits show `1 1`
+and nothing waits on them. Either way branch protection is satisfied by a `verify` context on the
+head commit, which the `push` run supplies.
 
 **Never `gh pr merge --admin`** — it bypasses the gate the founder installed. A red CI is a defect to
 fix on the branch, never a reason to reach for the flag. Then close the ticket if the PR did not, and
@@ -188,68 +179,28 @@ Two `gh` calls fail on this repo with a "Projects (classic) is being deprecated"
 `gh pr edit --body-file` and `gh pr checks`. Use `gh api -X PATCH repos/vextrus/vextrus/pulls/<n> -F
 body=@file` and the check-runs query above.
 
-## Dispatching a ticket to the agent
+## Dispatch is retired
 
-A build ticket can be run by a human session (above) or dispatched to
-`.github/workflows/agent.yml` — the one workflow permitted to run Claude
-(`genesis-ii.md` §3 Amendment A1). **The whole trigger is applying `ready-for-agent` to a
-`wayfinder:task` issue.** There is no schedule, no poll and no daemon: GitHub is the picker, and a
-ticket nobody labels is never dispatched.
+A build ticket is worked in an **interactive session** — the flow above, claim to merge. There is no
+other way to run one.
 
-```sh
-gh issue edit <n> --add-label ready-for-agent      # the entire dispatch
-```
+For part of 2026-08-16 a ticket could also be dispatched to a GitHub Actions workflow by applying
+`ready-for-agent`. That workflow is deleted and the amendment admitting it is retired
+(`genesis-ii.md` §3 Amendment A3): pointed at its first two real build tickets it lost both whole —
+$7.44, two correct implementations, zero lines surviving, because a runner's work is not durable
+until `git push` succeeds and the push was denied in both
+(`docs/lessons/an-unattended-executor-that-cannot-push-loses-the-whole-ticket.md`). Its lifetime
+output was one one-line docs PR.
 
-**Re-applying a label that is already present fires no event** (measured 2026-08-16). That is why
-every refusal removes the label: a re-dispatch is then a deliberate re-apply, never an echo. If a
-ticket sits labelled and nothing happened, remove the label and add it again.
+**`ready-for-agent` is now a triage label only** — it means *this ticket is ready for a session to
+claim*, which is what the frontier query reads. Applying it starts nothing; a human does.
 
-### The five refusals
-
-The gate runs before any checkout, so a refused ticket costs one runner-minute and no tokens.
-Each refusal comments on the issue by name and removes the label.
-
-| reason | what it means | what to fix |
-|---|---|---|
-| `SECRET_MISSING` | no `ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN` on the repository | the founder adds the secret and re-installs the Claude GitHub App — see below |
-| `NOT_A_BUILD_TICKET` | the issue has no `wayfinder:task` label | a decision ticket is resolved by a human session, never dispatched |
-| `TICKET_BLOCKED` | `blocked_by` counts an open blocker | close the blocker; the frontier is unblocked tickets only |
-| `TICKET_CLAIMED` | the issue already has an assignee | someone holds it; unassign it first if the claim is stale |
-| `TICKET_INCOMPLETE` | the body has no `## Clause` or no `## Verification` | write them — a ticket that cannot name its clause and its deciding command is not dispatchable |
-
-### What the dispatcher does, and what it never does
-
-It claims the ticket by assigning the person who applied the label, works on `issue-<n>-<slug>`,
-runs `pnpm verify` (and `pnpm test:db` where the seam moved), runs `/code-review`, and opens a pull
-request. **It never merges** — `main` is protected, `verify` is required, `enforce_admins` is on,
-and the action cannot merge or approve in any case. If the run does not finish it **unassigns the
-ticket and says so**, because a claim that outlives its dispatch hides the work from the frontier.
-
-### Running two at once — the A2 independence test
-
-Amendment A2 permits concurrent executors, and the dispatcher stays **serial until ten tickets
-have merged** and set a defect-rate baseline. Two tickets may then run concurrently only when
-both hold:
-
-1. **No shared file.** No path named in either ticket's `## Verification` appears in the other's.
-2. **No dependency.** Neither is `blocked_by` the other, directly or through a chain.
-
-The measured reason for the test: the cross-agent merge-conflict rate is 41.7% against 19.8%
-within one agent, and Anthropic's own parallel run stalled because "each was stuck solving the
-same task" (`docs/research/harness-2026-08.md` §14, §11.1). The switch is one line in
-`.github/workflows/agent.yml`: change the `concurrency` group from `agent` to
-`agent-${{ github.event.issue.number }}`.
-
-**While it is serial, label one ticket at a time.** GitHub keeps at most one *pending* run per
-concurrency group, so labelling three in quick succession cancels the middle one before its gate
-runs. It keeps its label, so re-applying it is the remedy — but nothing announces it.
-
-### The two preconditions the founder holds
-
-The dispatcher refuses `SECRET_MISSING` until both are in place: the **Claude GitHub App**
-installed on the repository, and an **`ANTHROPIC_API_KEY` or `CLAUDE_CODE_OAUTH_TOKEN`** secret.
-Verified live on 2026-08-16 (runs `31941273131`, `31941479863`, smoke issue #107): with neither
-present, the gate refuses by name, comments, and removes the label.
+What the retirement does **not** change: the build-ticket contract (`## Clause`, `## Verification`,
+`## Out of scope`) is what makes a ticket claimable by a fresh session, and it was never the
+dispatcher's requirement — it is the reason a session that starts at ~14k of context can finish. The
+A2 independence test (`genesis-ii.md` §3) likewise still governs two humans working two tickets: no
+path named in either ticket's `## Verification` appears in the other, and neither is `blocked_by` the
+other.
 
 ## Rules that keep the tracker honest
 
