@@ -23,6 +23,8 @@ import {
   LEVEL_HEIGHT_BASES,
   REFUSED_SIGHTING_CAUSES,
 } from "../../src/core/enums";
+import { detectedUnitSchema } from "../../src/core/entitygraph";
+import { INGEST_PARAMETER_KEYS } from "../../src/core/ingest-contract";
 import { MODEL_IDS, REFUSAL_CAUSES } from "../../src/core/model";
 import { tenantIsolation } from "./rls";
 
@@ -466,5 +468,65 @@ export const acts = pgTable(
     enumCheck("acts_type_check", "type", ACT_TYPES),
     check("acts_subjects_check", sql.raw(`cardinality("subject_ids") >= 1`)),
     tenantIsolation("acts"),
+  ],
+).enableRLS();
+
+/**
+ * The ingest record (cad-ingestion.md §2–§3, ADR-0001): one row per run of `cad/` over one
+ * uploaded file for one drawing revision. The DB stores references — paths under
+ * VEXTRUS_STORAGE_ROOT and content digests — never blobs. It pins the extractor identity
+ * (version + parameter-set hash) so a re-minted key multiset is detectable, and carries the
+ * artifact's fidelity counters verbatim (`explode_truncated`, `lost_by_type`,
+ * `unsupported_by_type`) — surfacing truncation is mandatory (quantity-contract.md §2). The unit
+ * is reported, never interpreted: an unmapped $INSUNITS is null + flagged, and nothing here
+ * multiplies geometry (measurement-rules.md §5). Immutable by grant: an artifact freezes at
+ * ingest; upgrading the extractor is a declared re-ingest, a new row.
+ */
+export const ingests = pgTable(
+  "ingests",
+  {
+    id: uuid("id").primaryKey(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    projectId: uuid("project_id").notNull(),
+    drawingRevisionId: uuid("drawing_revision_id").notNull(),
+    uploadFilename: text("upload_filename").notNull(),
+    uploadRef: text("upload_ref").notNull(),
+    uploadSha256: text("upload_sha256").notNull(),
+    artifactRef: text("artifact_ref").notNull(),
+    artifactSha256: text("artifact_sha256").notNull(),
+    extractorVersion: text("extractor_version").notNull(),
+    extractorParameters: jsonb("extractor_parameters").$type<Record<(typeof INGEST_PARAMETER_KEYS)[number], number>>().notNull(),
+    extractorParameterHash: text("extractor_parameter_hash").notNull(),
+    insunits: integer("insunits"),
+    unitDetected: text("unit_detected"),
+    insunitsUnmapped: boolean("insunits_unmapped").notNull(),
+    original: integer("original").notNull(),
+    derived: integer("derived").notNull(),
+    explodeTruncated: boolean("explode_truncated").notNull(),
+    lostByType: jsonb("lost_by_type").$type<Record<string, number>>().notNull(),
+    unsupportedByType: jsonb("unsupported_by_type").$type<Record<string, number>>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ingests_revision_idx").on(t.drawingRevisionId),
+    unique("ingests_id_project_uq").on(t.id, t.projectId),
+    foreignKey({
+      name: "ingests_project_tenant_fk",
+      columns: [t.projectId, t.tenantId],
+      foreignColumns: [projects.id, projects.tenantId],
+    }),
+    foreignKey({
+      name: "ingests_revision_project_fk",
+      columns: [t.drawingRevisionId, t.projectId],
+      foreignColumns: [drawingRevisions.id, drawingRevisions.projectId],
+    }),
+    enumCheck("ingests_unit_detected_check", "unit_detected", detectedUnitSchema.options),
+    check("ingests_upload_sha256_check", sql.raw(`"upload_sha256" ~ '^[0-9a-f]{64}$'`)),
+    check("ingests_artifact_sha256_check", sql.raw(`"artifact_sha256" ~ '^[0-9a-f]{64}$'`)),
+    check("ingests_extractor_parameter_hash_check", sql.raw(`"extractor_parameter_hash" ~ '^[0-9a-f]{64}$'`)),
+    check("ingests_counters_check", sql.raw(`"original" >= 0 and "derived" >= 0`)),
+    tenantIsolation("ingests"),
   ],
 ).enableRLS();
