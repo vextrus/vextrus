@@ -1,7 +1,12 @@
 import { and, eq } from "drizzle-orm";
-import { catalogueDigestInForce } from "./campaigns";
+import { catalogueDigestInForce, projectRuleSetEdition } from "./campaigns";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
-import { CAMPAIGN_PINS, type CampaignFreshnessRefusal, type CampaignPin } from "./enums";
+import {
+  CAMPAIGN_PINS,
+  type CampaignFreshnessRefusal,
+  type CampaignFreshnessVerdict,
+  type CampaignPin,
+} from "./enums";
 import { compareCanonical } from "./order";
 
 /**
@@ -28,8 +33,12 @@ export type CampaignPins = {
  * refuse with — a refusal states what it refused, never that it refused.
  */
 export type CampaignFreshness =
-  | { readonly verdict: "CURRENT" }
-  | { readonly verdict: "STALE"; readonly reason: CampaignFreshnessRefusal; readonly moved: readonly CampaignPin[] };
+  | { readonly verdict: Extract<CampaignFreshnessVerdict, "CURRENT"> }
+  | {
+      readonly verdict: Extract<CampaignFreshnessVerdict, "STALE">;
+      readonly reason: CampaignFreshnessRefusal;
+      readonly moved: readonly CampaignPin[];
+    };
 
 /**
  * Pin → the value it addresses. Total over the closed pin vocabulary, so a third snapshot added to
@@ -59,12 +68,10 @@ export function campaignFreshnessOf(pinned: CampaignPins, inForce: CampaignPins)
  * Both read in the caller's transaction, so the two halves of a verdict are one consistent read.
  */
 async function pinsInForce(tx: Tx, tenantId: string, projectId: string): Promise<CampaignPins> {
-  const [project] = await tx
-    .select({ ruleSetEditionId: schema.projects.ruleSetEditionId })
-    .from(schema.projects)
-    .where(and(eq(schema.projects.tenantId, tenantId), eq(schema.projects.id, projectId)));
-  if (!project) throw new Error(`CAMPAIGN_PROJECT_MISSING: ${projectId}`);
-  return { ruleSetEditionId: project.ruleSetEditionId, catalogueDigest: await catalogueDigestInForce(tx) };
+  return {
+    ruleSetEditionId: await projectRuleSetEdition(tx, tenantId, projectId),
+    catalogueDigest: await catalogueDigestInForce(tx),
+  };
 }
 
 /**

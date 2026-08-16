@@ -31,25 +31,38 @@ export type OpenCampaignInput = {
 };
 
 /**
- * The catalogue in force, read from the table rather than from the const it was seeded from
- * (db/migrations/0007): the digest must address what the certificate's denominator will actually
- * be enumerated from (quantity-contract.md §6), and the deployed rows are that. A code const read
- * instead would pin the binary's opinion of the catalogue, which is the same class of fiction as
- * a project-level pin advancing on deploy. `bears` is platform-owned, tenant-independent and
- * read-only to the app role, so this is a plain SELECT through the seam with no tenant predicate.
+ * The catalogue digest as it stands now — the value a campaign pins at creation and the value the
+ * freshness diff compares that pin against, from one reader so the two cannot disagree about what
+ * "the catalogue" means.
+ *
+ * It reads the **table**, not the const the table was seeded from (db/migrations/0007): the digest
+ * must address what the certificate's denominator will actually be enumerated from
+ * (quantity-contract.md §6), and the deployed rows are that. A const read instead would pin the
+ * binary's opinion of the catalogue. `bears` is platform-owned, tenant-independent and read-only
+ * to the app role, so this is a plain SELECT through the seam with no tenant predicate. An empty
+ * relation refuses by closed code (`CATALOGUE_BEARS_EMPTY`): a denominator of nothing certifies
+ * everything as measured.
  */
-export async function catalogueInForce(tx: Tx): Promise<readonly BearsPair[]> {
-  return tx.select({ elementType: schema.bears.elementType, kind: schema.bears.kind }).from(schema.bears);
+export async function catalogueDigestInForce(tx: Tx): Promise<string> {
+  const pairs: readonly BearsPair[] = await tx
+    .select({ elementType: schema.bears.elementType, kind: schema.bears.kind })
+    .from(schema.bears);
+  return catalogueDigest(pairs);
 }
 
 /**
- * The catalogue digest as it stands now — the value a campaign pins at creation, and the value
- * the freshness diff compares that pin against. One reader, so the two cannot disagree about what
- * "the catalogue" means. An empty relation refuses by closed code (`CATALOGUE_BEARS_EMPTY`): a
- * denominator of nothing certifies everything as measured.
+ * The rule-set edition a project pins, read in the caller's transaction — the value a campaign
+ * snapshots at creation and the value the freshness diff compares that snapshot against, again
+ * from one reader. A project the caller's tenant cannot see refuses by name: no invented edition,
+ * and no bare insert that RLS would have to catch.
  */
-export async function catalogueDigestInForce(tx: Tx): Promise<string> {
-  return catalogueDigest(await catalogueInForce(tx));
+export async function projectRuleSetEdition(tx: Tx, tenantId: string, projectId: string): Promise<string> {
+  const [project] = await tx
+    .select({ ruleSetEditionId: schema.projects.ruleSetEditionId })
+    .from(schema.projects)
+    .where(and(eq(schema.projects.tenantId, tenantId), eq(schema.projects.id, projectId)));
+  if (!project) throw new Error(`CAMPAIGN_PROJECT_MISSING: ${projectId}`);
+  return project.ruleSetEditionId;
 }
 
 /**
@@ -90,8 +103,8 @@ async function pinDrawingSetRevision(
  *
  * Both snapshots are read here, never passed in: a campaign carrying a rule-set edition its
  * project does not pin, or a catalogue digest nothing was hashed to produce, would be a citation
- * of a fiction. A project the caller's tenant cannot see refuses by name — no invented edition,
- * no bare insert that RLS would have to catch.
+ * of a fiction. Both readers are the ones the freshness diff uses, so a verdict can never be
+ * `STALE` on a campaign that changed nothing.
  */
 export async function pinCampaign(
   tx: Tx,
@@ -102,11 +115,7 @@ export async function pinCampaign(
     readonly members: readonly DrawingSetMember[];
   },
 ): Promise<Campaign> {
-  const [project] = await tx
-    .select({ ruleSetEditionId: schema.projects.ruleSetEditionId })
-    .from(schema.projects)
-    .where(and(eq(schema.projects.tenantId, args.tenantId), eq(schema.projects.id, args.projectId)));
-  if (!project) throw new Error(`CAMPAIGN_PROJECT_MISSING: ${args.projectId}`);
+  const ruleSetEditionId = await projectRuleSetEdition(tx, args.tenantId, args.projectId);
   const setDigest = await pinDrawingSetRevision(tx, {
     tenantId: args.tenantId,
     projectId: args.projectId,
@@ -119,7 +128,7 @@ export async function pinCampaign(
       tenantId: args.tenantId,
       projectId: args.projectId,
       setDigest,
-      ruleSetEditionId: project.ruleSetEditionId,
+      ruleSetEditionId,
       catalogueDigest: catalogueSnapshot,
     })
     .returning({
@@ -140,7 +149,7 @@ export async function pinCampaign(
     type: "PIN_DRAWING_SET",
     subjectKind: "campaigns",
     subjectIds: [campaign.id],
-    detail: { setDigest, ruleSetEditionId: project.ruleSetEditionId, catalogueDigest: catalogueSnapshot },
+    detail: { setDigest, ruleSetEditionId, catalogueDigest: catalogueSnapshot },
   });
   return campaign;
 }

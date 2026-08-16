@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openCampaign } from "@/core/campaigns";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
@@ -82,17 +82,35 @@ afterAll(async () => {
  * with the owner role because the app role has SELECT and nothing else on a platform-owned table:
  * this is the shipped-a-`bears`-row deploy, standing in for a migration.
  */
+const SHIPPED_PAIR = { elementType: "BEAM", kind: "RCC_CONCRETE" } as const;
+
 async function withBearsRow<T>(fn: () => Promise<T>): Promise<T> {
   await runAsSystem("campaign freshness dbspec: a bears row ships", (tx) =>
-    tx.insert(schema.bears).values({ elementType: "BEAM", kind: "RCC_CONCRETE" }),
+    tx.insert(schema.bears).values(SHIPPED_PAIR),
   );
   try {
     return await fn();
   } finally {
     await runAsSystem("campaign freshness dbspec: the shipped bears row is withdrawn", (tx) =>
-      tx.delete(schema.bears).where(eq(schema.bears.elementType, "BEAM")),
+      tx
+        .delete(schema.bears)
+        .where(and(eq(schema.bears.elementType, SHIPPED_PAIR.elementType), eq(schema.bears.kind, SHIPPED_PAIR.kind))),
     );
   }
+}
+
+/**
+ * The project re-pins to a fresh edition — the authoring surface lands later; what matters here is
+ * that the campaign's snapshot does not follow it. Idempotent enough to be a precondition: every
+ * call forks again, and the campaign's snapshot stays behind either way, so no case below depends
+ * on another having run first.
+ */
+async function advanceProjectRuleSetEdition(): Promise<string> {
+  return forTenant(ctx(), async (tx) => {
+    const fork = await forkProjectRuleSetEdition(tx, tenantId);
+    await tx.update(schema.projects).set({ ruleSetEditionId: fork.id }).where(eq(schema.projects.id, projectId));
+    return fork.id;
+  });
 }
 
 describe("the freshness diff (identity.md §8)", () => {
@@ -113,13 +131,7 @@ describe("the freshness diff (identity.md §8)", () => {
   });
 
   it("returns stale after the project's rule-set edition advances, naming that pin alone", async () => {
-    // The project re-pins to a fresh edition — the authoring surface lands later; what matters
-    // here is that the campaign's snapshot did not follow it.
-    const advanced = await forTenant(ctx(), async (tx) => {
-      const fork = await forkProjectRuleSetEdition(tx, tenantId);
-      await tx.update(schema.projects).set({ ruleSetEditionId: fork.id }).where(eq(schema.projects.id, projectId));
-      return fork.id;
-    });
+    const advanced = await advanceProjectRuleSetEdition();
     const [campaign] = await forTenant(ctx(), (tx) =>
       tx.select().from(schema.campaigns).where(eq(schema.campaigns.id, campaignId)),
     );
@@ -132,6 +144,7 @@ describe("the freshness diff (identity.md §8)", () => {
   });
 
   it("names both pins when both moved", async () => {
+    await advanceProjectRuleSetEdition();
     await withBearsRow(async () => {
       expect(await campaignFreshness(ctx(), campaignId)).toEqual({
         verdict: "STALE",
@@ -142,7 +155,7 @@ describe("the freshness diff (identity.md §8)", () => {
   });
 
   it("keeps the measurement path open on a stale campaign — stale blocks signing and nothing else", async () => {
-    // The campaign is stale from the case above: its rule-set snapshot no longer matches.
+    await advanceProjectRuleSetEdition();
     expect(await campaignFreshness(ctx(), campaignId)).toMatchObject({ verdict: "STALE" });
     await forTenant(ctx(), (tx) =>
       tx.insert(schema.registerObjects).values({
@@ -161,13 +174,10 @@ describe("the freshness diff (identity.md §8)", () => {
       ),
     ).toHaveLength(1);
     // A new drawing revision — ingest's evidence side — lands on a stale campaign too.
+    const drawingId = members[0]?.drawingId;
+    if (!drawingId) throw new Error("expected the manifest's drawing");
     await forTenant(ctx(), (tx) =>
-      tx.insert(schema.drawingRevisions).values({
-        tenantId,
-        projectId,
-        drawingId: members[0]?.drawingId ?? "",
-        label: "R2",
-      }),
+      tx.insert(schema.drawingRevisions).values({ tenantId, projectId, drawingId, label: "R2" }),
     );
     expect(await campaignFreshness(ctx(), campaignId)).toMatchObject({ verdict: "STALE" });
   });

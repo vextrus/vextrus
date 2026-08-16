@@ -82,7 +82,6 @@ export { forkProjectRuleSetEdition, mintTenantRuleSetTemplate, type RuleSetEditi
 export { createProject, listProjects } from "./projects";
 export {
   catalogueDigestInForce,
-  catalogueInForce,
   openCampaign,
   pinCampaign,
   type Campaign,

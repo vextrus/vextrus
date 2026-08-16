@@ -131,7 +131,11 @@ export function catalogueDigest(pairs: readonly BearsPair[]): string {
   return createHash("sha256").update(members.join("\n")).digest("hex");
 }
 
-/** The digest of the relation as shipped — what `arc:campaign` will pin, with no consumer today. */
+/**
+ * The digest of the relation **as shipped in this binary**. A campaign pins the digest of the
+ * relation as *deployed* (`catalogueDigestInForce` in campaigns.ts reads the table), so this const
+ * is the code side of that pair: the seed guard and the campaign tests assert the two agree.
+ */
 export const CATALOGUE_DIGEST = catalogueDigest(BEARS_PAIRS);
 
 /** Which arm of the naming law a name breaks (measurement-rules.md §4). Closed, never prose. */
