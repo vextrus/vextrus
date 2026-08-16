@@ -6,6 +6,9 @@ export { compareCanonical } from "./order";
 export {
   ACT_TYPES,
   BASES,
+  CAMPAIGN_FRESHNESS_REFUSALS,
+  CAMPAIGN_FRESHNESS_VERDICTS,
+  CAMPAIGN_PINS,
   CAMPAIGN_STATES,
   DISCIPLINES,
   ELEMENT_TYPES,
@@ -18,6 +21,9 @@ export {
   SI_UNITS,
   type ActType,
   type Basis,
+  type CampaignFreshnessRefusal,
+  type CampaignFreshnessVerdict,
+  type CampaignPin,
   type CampaignState,
   type Discipline,
   type ElementType,
@@ -74,7 +80,20 @@ export {
 } from "./rule-set";
 export { forkProjectRuleSetEdition, mintTenantRuleSetTemplate, type RuleSetEditionRef } from "./rule-set-editions";
 export { createProject, listProjects } from "./projects";
-export { openCampaign, pinCampaign, type Campaign, type OpenCampaignInput } from "./campaigns";
+export {
+  catalogueDigestInForce,
+  catalogueInForce,
+  openCampaign,
+  pinCampaign,
+  type Campaign,
+  type OpenCampaignInput,
+} from "./campaigns";
+export {
+  campaignFreshness,
+  campaignFreshnessOf,
+  type CampaignFreshness,
+  type CampaignPins,
+} from "./freshness";
 export { entityGraphSchema, entitySchema, type Entity, type EntityGraph } from "./entitygraph";
 export { forTenant, mintTenantCtx, runAsSystem, type TenantCtx, type Tx } from "./db";
 export {

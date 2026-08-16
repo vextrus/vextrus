@@ -2,20 +2,23 @@ import { and, eq } from "drizzle-orm";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
 import { type CampaignState } from "./enums";
 import { drawingSetRevisionDigest, type DrawingSetMember } from "./identity";
+import { catalogueDigest, type BearsPair } from "./kinds";
 
 /**
  * Opening a campaign (identity.md §8 and its amendment of 2026-08-16, §9): a QS pins a
- * drawing-set revision and the campaign snapshots the rule-set edition the project has in force.
- * The pin is a human act (§7), so the act row and the campaign row commit in one transaction or
- * neither. Everything here goes through the seam (ADR-0004).
+ * drawing-set revision and the campaign snapshots **two** things in force — the rule-set edition
+ * the project pins, and the catalogue digest. The pin is a human act (§7), so the act row and the
+ * campaign row commit in one transaction or neither. Everything here goes through the seam
+ * (ADR-0004).
  */
 
-/** What a campaign carries once opened: the pin, the snapshot, and the state it opens in. */
+/** What a campaign carries once opened: the pin, both snapshots, and the state it opens in. */
 export type Campaign = {
   readonly id: string;
   readonly projectId: string;
   readonly setDigest: string;
   readonly ruleSetEditionId: string;
+  readonly catalogueDigest: string;
   readonly state: CampaignState;
   readonly createdAt: Date;
 };
@@ -26,6 +29,28 @@ export type OpenCampaignInput = {
   /** The manifest — the citation list, one revision per drawing (§9). There is no second list. */
   readonly members: readonly DrawingSetMember[];
 };
+
+/**
+ * The catalogue in force, read from the table rather than from the const it was seeded from
+ * (db/migrations/0007): the digest must address what the certificate's denominator will actually
+ * be enumerated from (quantity-contract.md §6), and the deployed rows are that. A code const read
+ * instead would pin the binary's opinion of the catalogue, which is the same class of fiction as
+ * a project-level pin advancing on deploy. `bears` is platform-owned, tenant-independent and
+ * read-only to the app role, so this is a plain SELECT through the seam with no tenant predicate.
+ */
+export async function catalogueInForce(tx: Tx): Promise<readonly BearsPair[]> {
+  return tx.select({ elementType: schema.bears.elementType, kind: schema.bears.kind }).from(schema.bears);
+}
+
+/**
+ * The catalogue digest as it stands now — the value a campaign pins at creation, and the value
+ * the freshness diff compares that pin against. One reader, so the two cannot disagree about what
+ * "the catalogue" means. An empty relation refuses by closed code (`CATALOGUE_BEARS_EMPTY`): a
+ * denominator of nothing certifies everything as measured.
+ */
+export async function catalogueDigestInForce(tx: Tx): Promise<string> {
+  return catalogueDigest(await catalogueInForce(tx));
+}
 
 /**
  * The set revision the campaign will cite, materialised in the caller's transaction. It is
@@ -63,9 +88,10 @@ async function pinDrawingSetRevision(
  * granularity because the surface that opens a campaign may have its own writes to land in the
  * same commit (§7: act row and state change commit together or neither).
  *
- * The snapshot is read here, never passed in: a campaign carrying a rule-set edition its project
- * does not pin would be a citation of a fiction. A project the caller's tenant cannot see refuses
- * by name — no invented edition, no bare insert that RLS would have to catch.
+ * Both snapshots are read here, never passed in: a campaign carrying a rule-set edition its
+ * project does not pin, or a catalogue digest nothing was hashed to produce, would be a citation
+ * of a fiction. A project the caller's tenant cannot see refuses by name — no invented edition,
+ * no bare insert that RLS would have to catch.
  */
 export async function pinCampaign(
   tx: Tx,
@@ -86,6 +112,7 @@ export async function pinCampaign(
     projectId: args.projectId,
     members: args.members,
   });
+  const catalogueSnapshot = await catalogueDigestInForce(tx);
   const [campaign] = await tx
     .insert(schema.campaigns)
     .values({
@@ -93,12 +120,14 @@ export async function pinCampaign(
       projectId: args.projectId,
       setDigest,
       ruleSetEditionId: project.ruleSetEditionId,
+      catalogueDigest: catalogueSnapshot,
     })
     .returning({
       id: schema.campaigns.id,
       projectId: schema.campaigns.projectId,
       setDigest: schema.campaigns.setDigest,
       ruleSetEditionId: schema.campaigns.ruleSetEditionId,
+      catalogueDigest: schema.campaigns.catalogueDigest,
       state: schema.campaigns.state,
       createdAt: schema.campaigns.createdAt,
     });
@@ -111,7 +140,7 @@ export async function pinCampaign(
     type: "PIN_DRAWING_SET",
     subjectKind: "campaigns",
     subjectIds: [campaign.id],
-    detail: { setDigest, ruleSetEditionId: project.ruleSetEditionId },
+    detail: { setDigest, ruleSetEditionId: project.ruleSetEditionId, catalogueDigest: catalogueSnapshot },
   });
   return campaign;
 }
