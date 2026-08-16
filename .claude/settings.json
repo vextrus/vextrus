@@ -37,7 +37,11 @@
     "keybindings-help": "off",
     "fewer-permission-prompts": "off",
     "update-config": "off",
-    "init": "off"
+    "init": "off",
+    "claude-api": "off",
+    "code-review": "off",
+    "simplify": "off",
+    "security-review": "off"
   },
   "permissions": {
     "allow": [
