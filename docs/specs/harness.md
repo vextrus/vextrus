@@ -329,6 +329,23 @@ the defect rate of one executor is the baseline against which a second is judged
   Three further runs were correctly **skipped** by the `if` guard when an issue was labelled
   `harness`, `wayfinder:task` and `ready-for-human`. Also measured: re-applying a label already
   present fires **no** event, which is why a refusal removes it.
+- **The dispatcher executing a real ticket, 2026-08-16.** Five dispatches of one small docs ticket
+  (#116), each a fresh session on Sonnet 5:
+
+  | run | turns | cost | outcome |
+  |---|---|---|---|
+  | `31942707852` | 26 | $0.79 | nothing — 6 denials: the repo's own `ask` rails deny non-interactively |
+  | `31943109269` | 20 | $0.53 | nothing — `NO_PULL_REQUEST` guard fired, claim released |
+  | `31943431573` | 20 | $0.72 | branch created locally, nothing pushed — no shell grant |
+  | `31944168418` | 19 | $0.39 | nothing — 2 denials, output hidden, diagnosis blocked |
+  | **`31944431975`** | — | — | **merged as PR #125** — the ticket, correctly, in 3 m 41 s |
+
+  **$2.43 spent to learn the configuration; the run that worked produced a one-line diff with a
+  PR body carrying its verification, its assumption and its `/code-review` findings.** Two flags
+  are load-bearing and neither substitutes for the other: `--allowedTools` grants the shell in
+  automation mode, `--permission-mode bypassPermissions` stops the repo's interactive `ask` rails
+  from denying it. `show_full_output: true` is on, because a denial *count* is not a denial.
+  A dispatched PR carries **one** `verify` check-run, as predicted.
 
 ## 8. Metrics watched
 
@@ -344,10 +361,16 @@ Recorded in the PR body of each build ticket (the tracker is mutable state; the 
 | **defects that reach `main`** | a revert, a follow-up fix, or a new `docs/lessons/` file | the only metric that can fail this spec |
 
 First observations, 2026-08-16 (the harness building itself, so they are a floor rather than a
-sample of real tickets): eight tickets merged in one session; `pnpm verify` 11.2–13.4 s throughout;
-one defect reached `main` — the dispatcher's mute gate (#108), caught by the first smoke run and
-fixed the same session, which is the loop working rather than failing. The dispatcher is live and
-has executed no build ticket: its `SECRET_MISSING` path is the only one exercised.
+sample of real tickets): **sixteen tickets merged in one session**; `pnpm verify` 11.2–13.4 s
+throughout. Defects that reached `main`: the dispatcher's mute gate (#108), and the dispatcher's
+own misconfiguration across #117/#119/#121/#123 — every one caught by a live run and fixed the
+same session, which is the loop working rather than failing.
+
+**The first ticket built end to end by the dispatcher merged as PR #125** (issue #116): one fresh
+Sonnet 5 session, 3 m 41 s, a one-line diff, a PR body carrying `pnpm verify`'s wall time, the
+assumption taken and its `/code-review` findings — including one real contradiction in
+`genesis-ii.md` §7 that the ticket put out of scope, which it **flagged rather than fixed**. That
+is the contract holding under its own weight, and it is the strongest single observation here.
 
 ## 9. Exit criteria
 
