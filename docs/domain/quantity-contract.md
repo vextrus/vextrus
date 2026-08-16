@@ -283,3 +283,19 @@ Two instruments: quantities are **sampled** (many, expensive); the boundary is *
   No clock-based or volume-based re-sampling — the bill's freshness gate is the volume rule.
   Draws are irrevocable; abandonment is recorded; the certificate prints the failure count. No numeric void threshold — that judgement already has
   a name (`NOT_RELIABLE`).
+
+*Amendment, 2026-08-16.* This clause uses one root for two sets, and they are not the same. A
+**borne cell** is `bears(class, kind)` (`measurement-rules.md` §8) restricted to the classes
+ingestion sighted — §2.2's residue denominator. A **quantity-bearing cell** is a borne cell that
+published at least one line — this clause's stratum, so `N = quantity-bearing cells × 2` is
+determined at **publish**, not at ingestion. Reading *quantity-bearing* as the borne set was put
+and rejected: a cell with no published line has nothing to blind-re-derive, and absence is already
+routed to a census over human-authored declarations. The residue is exactly *borne minus
+quantity-bearing*, so the two instruments partition one grid with no gap and no overlap —
+producing cells sampled (Part B), absent cells enumerated (Part A + census).
+
+A borne cell whose **rail does not exist** falls through to `NOT_ESTABLISHED` (§2.2). A cause
+naming the missing rule was put and rejected: it needs a machine writer, reopening the *filter with
+no actor* door §2.2 shut, and the reader's remedy is unchanged. §2.2's `ENTITY_TYPE_UNHANDLED` is
+ingestion-owned, off the artifact's fidelity counters, and does not reach a stage ingestion knows
+nothing about.

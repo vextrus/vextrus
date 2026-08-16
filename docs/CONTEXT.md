@@ -41,6 +41,11 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Basis** | Where a number came from: `MEASURED · TRANSCRIBED · DERIVED · IMPORTED · ENTERED · INTERPRETED · DEFAULTED`. |
 | **Coverage** | What fraction of the scope a line claims: `COMPLETE` or `PARTIAL_DECLARED`; never undeclared. |
 | **Certificate of Measured Coverage** | The bill's boundary statement — a query over catalogue × scope register, bound into the bill PDF. |
+| **Quantity kind** | What trade of work a quantity is — trade and material only, never a class, dimension, pricing role or book code. |
+| **Work-item catalogue** | The rate-free, code-derived enumeration of kinds; the certificate's coverage denominator. |
+| **`bears`** | Which kinds an element class lawfully carries — the kind axis held outside the identity key. |
+| **Borne cell** | A `(class × kind)` cell whose class ingestion sighted; the residue's denominator. |
+| **Quantity-bearing cell** | A borne cell that published a line; the dip sample's stratum. Borne minus quantity-bearing is the residue. |
 | **Act** | A human write that changes what the machine would derive; the act log is append-only and human-only. |
 | **Proposal** | What a model may return: a payload plus resolvable source keys; never a conclusion or a quantity. |
 | **Source key** | `scheme:key` citing one original drawing entity (`DXF_HANDLE`, `PDF_OBJECT`, `RASTER_TRACE`). |
