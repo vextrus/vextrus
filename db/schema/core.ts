@@ -567,7 +567,11 @@ export const drawingSetRevisionMembers = pgTable(
  *
  * **One live campaign per project**, structurally: the partial unique index below. Two campaigns
  * over one project scope reopen the double-count door §2 closes at the register, and two lineages
- * would both claim first registration for one ordinal. A superseded campaign stays readable.
+ * would both claim first registration for one ordinal. A superseded campaign stays readable, and
+ * stays superseded: `state` moves one way, held by the `campaigns_state_is_one_way` trigger the
+ * migration carries (drizzle models no trigger), because the column-level UPDATE grant is
+ * bidirectional and reviving a superseded pin would make an older set revision and an older
+ * snapshot the project's live scope with no act naming it — CAMPAIGN_STATE_NOT_REVERSIBLE.
  *
  * The catalogue digest is the campaign's second snapshot (§8, amended); it lands with the
  * freshness diff that reads it.

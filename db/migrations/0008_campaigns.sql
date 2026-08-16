@@ -28,3 +28,20 @@ CREATE POLICY "campaigns_tenant_isolation" ON "campaigns" AS PERMISSIVE FOR ALL 
 -- citation, rather than the application remembering not to write one.
 GRANT SELECT, INSERT ON "campaigns" TO vextrus_app;--> statement-breakpoint
 GRANT UPDATE ("state") ON "campaigns" TO vextrus_app;
+--> statement-breakpoint
+-- A superseded pin is history (identity.md §9), so `state` moves one way. A CHECK cannot see the
+-- old row, so the transition is a trigger: without it the column-level grant above is bidirectional
+-- and a superseded campaign could be returned to LIVE once its successor was superseded — reviving
+-- an older set revision and an older rule-set snapshot as the project's live scope, with no act
+-- naming it. The reason code is closed, and the refusal is the database's.
+CREATE FUNCTION campaigns_state_is_one_way() RETURNS trigger AS $$
+BEGIN
+  IF OLD."state" = 'SUPERSEDED' AND NEW."state" <> 'SUPERSEDED' THEN
+    RAISE EXCEPTION 'CAMPAIGN_STATE_NOT_REVERSIBLE: a superseded campaign is history'
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;--> statement-breakpoint
+CREATE TRIGGER campaigns_state_is_one_way BEFORE UPDATE ON "campaigns"
+  FOR EACH ROW EXECUTE FUNCTION campaigns_state_is_one_way();

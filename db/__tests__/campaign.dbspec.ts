@@ -287,9 +287,22 @@ describe("the pin, the snapshot and the one live campaign", () => {
     expect(all.filter((c) => c.projectId === projectA).map((c) => c.state).sort()).toEqual(["LIVE", "SUPERSEDED"]);
   });
 
+  it("refuses a superseded campaign returned to LIVE — a superseded pin is history", async () => {
+    const superseded = (await campaignsOf(tenantA)).find((c) => c.state === "SUPERSEDED");
+    if (!superseded) throw new Error("expected the superseded campaign");
+    expect(
+      await refusal(() =>
+        forTenant(ctxA(), (tx) =>
+          tx.update(schema.campaigns).set({ state: "LIVE" }).where(eq(schema.campaigns.id, superseded.id)),
+        ),
+      ),
+    ).toMatch(/CAMPAIGN_STATE_NOT_REVERSIBLE/);
+  });
+
   it("refuses a state outside the closed enum", async () => {
-    const [campaign] = await campaignsOf(tenantA);
-    if (!campaign) throw new Error("expected a campaign");
+    // The live one: on a superseded row the one-way trigger fires first, and this case is the CHECK.
+    const campaign = (await campaignsOf(tenantA)).find((c) => c.state === "LIVE");
+    if (!campaign) throw new Error("expected the live campaign");
     expect(
       await refusal(() =>
         forTenant(ctxA(), (tx) =>
