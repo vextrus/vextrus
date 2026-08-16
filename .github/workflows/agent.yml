@@ -62,6 +62,14 @@ jobs:
       BETTER_AUTH_URL: http://localhost:3210
       VEXTRUS_STORAGE_ROOT: ${{ github.workspace }}/.data
       NEXT_TELEMETRY_DISABLED: "1"
+      # The executor's shell needs a token: the action authenticates *itself* as the Claude
+      # GitHub App, and does not export one for the Bash tool, so `gh issue view` / `gh pr create`
+      # would fail on the first call. Consequence for whoever merges: the *branch* is pushed by
+      # the action as the App, so the `push` event fires `verify`; a PR opened with `gh` under
+      # GITHUB_TOKEN does not fire `pull_request`. A dispatched PR therefore carries ONE `verify`
+      # check-run, not the two a human PR carries (docs/tracker.md, the merge gate).
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      GH_REPO: ${{ github.repository }}
     steps:
       # The gate. Five named refusals, each posted to the issue so a human sees why nothing ran.
       # This runs before the executor, so a refused ticket costs one runner-minute and no tokens.
