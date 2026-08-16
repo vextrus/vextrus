@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "BASH_DEFAULT_TIMEOUT_MS": "600000",
+    "BASH_MAX_TIMEOUT_MS": "900000",
+    "BASH_MAX_OUTPUT_LENGTH": "50000"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/checkup.mjs\" --hook",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  },
+  "includeGitInstructions": false,
+  "autoMemoryEnabled": false,
+  "skillOverrides": {
+    "docx": "off",
+    "pdf": "off",
+    "pptx": "off",
+    "xlsx": "off",
+    "skill-creator": "off",
+    "morning": "off",
+    "dataviz": "off",
+    "artifact-design": "off",
+    "artifact-diagramming": "off",
+    "artifact-capabilities": "off",
+    "schedule": "off",
+    "loop": "off",
+    "run": "off",
+    "keybindings-help": "off",
+    "fewer-permission-prompts": "off",
+    "update-config": "off",
+    "init": "off"
+  },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Edit",
+      "Write",
+      "Glob",
+      "Grep",
+      "WebFetch",
+      "WebSearch",
+      "Bash(pnpm:*)",
+      "Bash(node:*)",
+      "Bash(uv:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh issue:*)",
+      "Bash(gh api:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(psql:*)"
+    ],
+    "ask": ["Bash(git push:*)", "Bash(git reset:*)", "Bash(rm -r:*)", "Bash(rm -rf:*)"],
+    "deny": [
+      "Artifact",
+      "Workflow",
+      "CronCreate",
+      "CronDelete",
+      "CronList",
+      "ScheduleWakeup",
+      "RemoteTrigger",
+      "PushNotification",
+      "EnterWorktree",
+      "ExitWorktree",
+      "NotebookEdit",
+      "DesignSync",
+      "EndConversation",
+      "ListMcpResourcesTool",
+      "ReadMcpResourceTool",
+      "WaitForMcpServers",
+      "PowerShell",
+      "ShowOnboardingRolePicker",
+      "ShareOnboardingGuide",
+      "SuggestSkills",
+      "mcp__claude_ai_Gmail",
+      "mcp__claude_ai_Google_Calendar",
+      "mcp__claude_ai_Google_Drive",
+      "mcp__claude_ai_Notion"
+    ]
+  }
+}
