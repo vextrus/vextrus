@@ -4,6 +4,8 @@ import path from "node:path";
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import { createProject } from "@/core/projects";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 import { ingestDrawingRevision } from "@/modules/takeoff";
 
 /**
@@ -22,31 +24,43 @@ const r1 = {
 
 beforeAll(async () => {
   process.env.VEXTRUS_STORAGE_ROOT = mkdtempSync(path.join(os.tmpdir(), "vextrus-ingest-db-"));
-  await runAsSystem("ingest dbspec setup", async (tx) => {
-    for (const who of ["a", "b"] as const) {
-      const [t] = await tx.insert(schema.tenants).values({ name: `dbspec ingest ${who}`, slug: `dbspec-ing-${who}-${crypto.randomUUID()}` }).returning();
-      if (!t) throw new Error("setup failed");
-      const [p] = await tx.insert(schema.projects).values({ tenantId: t.id, name: "ingest project" }).returning();
-      if (!p) throw new Error("setup failed");
+  for (const who of ["a", "b"] as const) {
+    const [t] = await runAsSystem("ingest dbspec setup", (tx) =>
+      tx.insert(schema.tenants).values({ name: `dbspec ingest ${who}`, slug: `dbspec-ing-${who}-${crypto.randomUUID()}` }).returning(),
+    );
+    if (!t) throw new Error("setup failed");
+    // The tenant's template edition and the project's fork of it (identity.md §8).
+    await mintTenantRuleSetTemplate(mintTenantCtx(t.id));
+    const p = await createProject(mintTenantCtx(t.id), { name: "ingest project" });
+    const r = await forTenant(mintTenantCtx(t.id), async (tx) => {
       const [d] = await tx.insert(schema.drawings).values({ tenantId: t.id, projectId: p.id, title: "S-01" }).returning();
       if (!d) throw new Error("setup failed");
-      const [r] = await tx.insert(schema.drawingRevisions).values({ tenantId: t.id, projectId: p.id, drawingId: d.id, label: "R1" }).returning();
-      if (!r) throw new Error("setup failed");
-      if (who === "a") {
-        tenantA = t.id;
-        revisionA = r.id;
-      } else {
-        tenantB = t.id;
-        revisionB = r.id;
-      }
+      const [rev] = await tx.insert(schema.drawingRevisions).values({ tenantId: t.id, projectId: p.id, drawingId: d.id, label: "R1" }).returning();
+      return rev;
+    });
+    if (!r) throw new Error("setup failed");
+    if (who === "a") {
+      tenantA = t.id;
+      revisionA = r.id;
+    } else {
+      tenantB = t.id;
+      revisionB = r.id;
     }
-  });
+  }
 });
 
 afterAll(async () => {
   await runAsSystem("ingest dbspec teardown", async (tx) => {
     for (const id of [tenantA, tenantB]) {
-      for (const table of [schema.ingests, schema.drawingRevisions, schema.drawings, schema.projects]) {
+      for (const table of [
+        schema.ingests,
+        schema.drawingRevisions,
+        schema.drawings,
+        schema.projects,
+        schema.ruleSetEditionParameters,
+        schema.ruleSetEditionMethods,
+        schema.ruleSetEditions,
+      ]) {
         await tx.delete(table).where(eq(table.tenantId, id));
       }
       await tx.delete(schema.tenants).where(eq(schema.tenants.id, id));

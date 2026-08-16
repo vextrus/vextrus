@@ -5,6 +5,8 @@ import { z } from "zod";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
 import { callModel, fixtureTransport, type ModelTransport } from "@/core/model";
 import { dbRecorder } from "@/core/model-ledger";
+import { createProject } from "@/core/projects";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 
 /**
  * The ledger's writer (ADR-0006), live: `dbRecorder` lands exactly one `model_calls` row per call
@@ -20,16 +22,18 @@ beforeAll(async () => {
     const [t] = await tx.insert(schema.tenants).values({ name: "dbspec ledger", slug: `dbspec-ledger-${crypto.randomUUID()}` }).returning();
     if (!t) throw new Error("setup failed");
     tenantId = t.id;
-    const [p] = await tx.insert(schema.projects).values({ tenantId, name: "ledger project" }).returning();
-    if (!p) throw new Error("setup failed");
-    projectId = p.id;
   });
+  await mintTenantRuleSetTemplate(mintTenantCtx(tenantId));
+  projectId = (await createProject(mintTenantCtx(tenantId), { name: "ledger project" })).id;
 });
 
 afterAll(async () => {
   await runAsSystem("model-ledger dbspec teardown", async (tx) => {
     await tx.delete(schema.modelCalls).where(eq(schema.modelCalls.tenantId, tenantId));
     await tx.delete(schema.projects).where(eq(schema.projects.tenantId, tenantId));
+    await tx.delete(schema.ruleSetEditionParameters).where(eq(schema.ruleSetEditionParameters.tenantId, tenantId));
+    await tx.delete(schema.ruleSetEditionMethods).where(eq(schema.ruleSetEditionMethods.tenantId, tenantId));
+    await tx.delete(schema.ruleSetEditions).where(eq(schema.ruleSetEditions.tenantId, tenantId));
     await tx.delete(schema.tenants).where(eq(schema.tenants.id, tenantId));
   });
 });
@@ -90,12 +94,12 @@ describe("dbRecorder", () => {
   });
 
   it("refuses to attribute a call to another tenant's project — the composite FK, not convention", async () => {
-    const [other] = await runAsSystem("make a foreign project", async (tx) => {
-      const [t] = await tx.insert(schema.tenants).values({ name: "dbspec ledger other", slug: `dbspec-ledger-o-${crypto.randomUUID()}` }).returning();
-      if (!t) throw new Error("setup failed");
-      return tx.insert(schema.projects).values({ tenantId: t.id, name: "other" }).returning();
-    });
-    if (!other) throw new Error("setup failed");
+    const [t] = await runAsSystem("make a foreign project", (tx) =>
+      tx.insert(schema.tenants).values({ name: "dbspec ledger other", slug: `dbspec-ledger-o-${crypto.randomUUID()}` }).returning(),
+    );
+    if (!t) throw new Error("setup failed");
+    await mintTenantRuleSetTemplate(mintTenantCtx(t.id));
+    const other = await createProject(mintTenantCtx(t.id), { name: "other" });
     let refused: unknown;
     try {
       await callModel(
@@ -110,7 +114,10 @@ describe("dbRecorder", () => {
     expect(messages.join(" | ")).toMatch(/foreign key/i);
     await runAsSystem("teardown foreign project", async (tx) => {
       await tx.delete(schema.projects).where(eq(schema.projects.id, other.id));
-      await tx.delete(schema.tenants).where(eq(schema.tenants.id, other.tenantId));
+      await tx.delete(schema.ruleSetEditionParameters).where(eq(schema.ruleSetEditionParameters.tenantId, t.id));
+      await tx.delete(schema.ruleSetEditionMethods).where(eq(schema.ruleSetEditionMethods.tenantId, t.id));
+      await tx.delete(schema.ruleSetEditions).where(eq(schema.ruleSetEditions.tenantId, t.id));
+      await tx.delete(schema.tenants).where(eq(schema.tenants.id, t.id));
     });
   });
 });

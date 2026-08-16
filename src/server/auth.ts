@@ -4,6 +4,20 @@ import { organization } from "better-auth/plugins";
 import { and, count, eq } from "drizzle-orm";
 import { AUTH_MODELS, authAdapter, forTenant, mintTenantCtx, schema } from "@/core/db";
 import { requireEnv } from "@/core/env";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
+
+/**
+ * identity.md §8 (amended 2026-08-16): a project can never exist without naming the rules that
+ * will measure it, so creating a tenant mints that tenant's rule-set **template** edition from the
+ * platform seed — the first of the two forks, and the only thing that materialises the seed
+ * (nothing is seeded into the database). A tenant is created exactly here, through better-auth's
+ * organization API, so this hook is where the mint belongs. It runs after the organization row
+ * exists: a mint that fails leaves a tenant with no template, and project creation then refuses by
+ * name (`RULE_SET_TEMPLATE_MISSING`) rather than forking a fiction.
+ */
+async function mintRuleSetTemplate(tenantId: string): Promise<void> {
+  await mintTenantRuleSetTemplate(mintTenantCtx(tenantId));
+}
 
 /**
  * identity.md §7: the act log is append-only and human-only, and an act's actor is a membership
@@ -106,6 +120,7 @@ function build() {
           session: { fields: { activeOrganizationId: "activeTenantId" } },
         },
         organizationHooks: {
+          afterCreateOrganization: ({ organization }) => mintRuleSetTemplate(organization.id),
           beforeRemoveMember: ({ member, organization }) => refuseIfActor(organization.id, member.userId),
         },
       }),

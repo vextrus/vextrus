@@ -36,6 +36,20 @@
       "when": 1786857740708,
       "tag": "0004_model-refused",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1786904831558,
+      "tag": "0005_rule-set-editions",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786904832262,
+      "tag": "0006_project-rule-set-pin",
+      "breakpoints": true
     }
   ]
 }

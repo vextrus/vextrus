@@ -1,7 +1,9 @@
 import { eq } from "drizzle-orm";
 import postgres from "postgres";
 import { afterAll, describe, expect, it } from "vitest";
-import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import { mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import { createProject } from "@/core/projects";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 import { getAuth } from "@/server/auth";
 import { createCaller } from "@/server/router";
 import { createContext } from "@/server/trpc";
@@ -23,6 +25,9 @@ afterAll(async () => {
     for (const id of [tenantId, otherTenantId]) {
       if (!id) continue;
       await tx.delete(schema.projects).where(eq(schema.projects.tenantId, id));
+      await tx.delete(schema.ruleSetEditionParameters).where(eq(schema.ruleSetEditionParameters.tenantId, id));
+      await tx.delete(schema.ruleSetEditionMethods).where(eq(schema.ruleSetEditionMethods.tenantId, id));
+      await tx.delete(schema.ruleSetEditions).where(eq(schema.ruleSetEditions.tenantId, id));
       await tx.delete(schema.memberships).where(eq(schema.memberships.tenantId, id));
       await tx.delete(schema.tenants).where(eq(schema.tenants.id, id));
     }
@@ -79,14 +84,15 @@ describe("the request path", () => {
     expect(ctx.tenant?.tenantId).toBe(tenantId);
 
     // Two projects in two tenants; the caller sees exactly the session's tenant's.
-    const [other] = await runAsSystem("another tenant", async (tx) => {
-      const [t] = await tx.insert(schema.tenants).values({ name: "other", slug: `other-${stamp}` }).returning();
-      if (!t) throw new Error("setup failed");
-      await tx.insert(schema.projects).values({ tenantId: t.id, name: "not yours" });
-      return [t];
-    });
-    otherTenantId = other?.id;
-    await forTenant(mintTenantCtx(tenantId), (tx) => tx.insert(schema.projects).values({ tenantId: tenantId!, name: "Bashundhara Tower A" }));
+    const [other] = await runAsSystem("another tenant", (tx) =>
+      tx.insert(schema.tenants).values({ name: "other", slug: `other-${stamp}` }).returning(),
+    );
+    if (!other) throw new Error("setup failed");
+    otherTenantId = other.id;
+    await mintTenantRuleSetTemplate(mintTenantCtx(other.id));
+    await createProject(mintTenantCtx(other.id), { name: "not yours" });
+    // The session's tenant was minted by sign-up, template edition and all (identity.md §8).
+    await createProject(mintTenantCtx(tenantId), { name: "Bashundhara Tower A" });
     const listed = await createCaller(ctx).projects.list({ limit: 10 });
     expect(listed.map((p) => p.name)).toEqual(["Bashundhara Tower A"]);
     // A later sign-in mints the same tenant from the session hook, not from the sign-up path.
