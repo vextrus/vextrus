@@ -1,0 +1,183 @@
+# The dispatcher (genesis-ii.md §3 Amendment A1, accepted 2026-08-16; docs/specs/harness.md §3.4).
+#
+# This is the one workflow in this repository permitted to run Claude, and A1 caps it at one. It
+# fires only when a human applies the `ready-for-agent` label to a build ticket: GitHub is the
+# picker, so there is no schedule, no poll, no daemon and no state outside GitHub Issues. It can
+# push a branch and open a pull request; it cannot merge one — `main` is protected, `verify` is
+# required, and `enforce_admins` is on, so the human verdict survives by construction.
+#
+# Every refusal is by name, before a token is spent (CLAUDE.md: silence is the only condemned
+# state). To retire the dispatcher, delete this file; nothing else depends on it.
+name: agent
+
+on:
+  issues:
+    types: [labeled]
+
+# One dispatch at a time. A2 (accepted) permits concurrent executors on provably independent
+# tickets, and stays off until ten tickets have merged and set a defect-rate baseline
+# (docs/specs/harness.md §5.A2). The switch is this one line: to run in parallel, change the
+# group to `agent-${{ github.event.issue.number }}`.
+#
+# While it is serial, label ONE ticket at a time. GitHub keeps at most one pending run per
+# concurrency group: label three in quick succession and the middle one is cancelled before its
+# gate runs, leaving a ticket that still looks dispatchable and never will be. The label is
+# untouched in that case, so re-applying it is the remedy — but nothing announces it.
+concurrency:
+  group: agent
+  cancel-in-progress: false
+
+jobs:
+  build-ticket:
+    if: github.event.label.name == 'ready-for-agent'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: vextrus
+          POSTGRES_PASSWORD: vextrus
+          POSTGRES_DB: vextrus
+          POSTGRES_INITDB_ARGS: --locale=C.UTF-8
+        ports:
+          - 5544:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      # The same values as .env.example and ci.yml: a CI cluster with dev passwords, nothing secret.
+      DATABASE_URL: postgres://vextrus_app:vextrus_app_dev_password@localhost:5544/vextrus
+      MIGRATE_DATABASE_URL: postgres://vextrus:vextrus@localhost:5544/vextrus
+      AUTH_DATABASE_URL: postgres://vextrus_auth:vextrus_auth_dev_password@localhost:5544/vextrus
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://localhost:3210
+      VEXTRUS_STORAGE_ROOT: ${{ github.workspace }}/.data
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      # The gate. Five named refusals, each posted to the issue so a human sees why nothing ran.
+      # This runs before the executor, so a refused ticket costs one runner-minute and no tokens.
+      - name: the ticket is dispatchable, or refuse by name
+        id: gate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE: ${{ github.event.issue.number }}
+          HAS_SECRET: ${{ secrets.ANTHROPIC_API_KEY != '' || secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
+        run: |
+          set -euo pipefail
+          refuse() {
+            echo "::error::$1 — $2"
+            gh issue comment "$ISSUE" --body "**Dispatch refused: \`$1\`** — $2 _The \`ready-for-agent\` label has been removed; fix the cause and re-apply it to dispatch again._"
+            gh issue edit "$ISSUE" --remove-label ready-for-agent
+            exit 1
+          }
+          json=$(gh api "repos/${{ github.repository }}/issues/$ISSUE")
+          labels=$(jq -r '[.labels[].name] | join(",")' <<<"$json")
+          assignees=$(jq -r '.assignees | length' <<<"$json")
+          blocked=$(jq -r '(.issue_dependencies_summary.blocked_by) // 0' <<<"$json")
+          body=$(jq -r '.body // ""' <<<"$json")
+
+          [ "$HAS_SECRET" = "true" ] || refuse SECRET_MISSING \
+            "no ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN is set on this repository, and the Claude GitHub App must be installed (docs/specs/harness.md §10)."
+          grep -q 'wayfinder:task' <<<"$labels" || refuse NOT_A_BUILD_TICKET \
+            "only a \`wayfinder:task\` issue is dispatchable; a decision ticket is resolved by a human session."
+          [ "$blocked" -eq 0 ] || refuse TICKET_BLOCKED \
+            "$blocked open blocker(s); the frontier is unblocked tickets only (docs/tracker.md)."
+          [ "$assignees" -eq 0 ] || refuse TICKET_CLAIMED \
+            "already assigned — the claim is the assignee, and a second executor would race it."
+          grep -q '^## Clause' <<<"$body" || refuse TICKET_INCOMPLETE \
+            "the body has no \`## Clause\` section; a build ticket names the domain clause it implements (docs/tracker.md)."
+          grep -q '^## Verification' <<<"$body" || refuse TICKET_INCOMPLETE \
+            "the body has no \`## Verification\` section; a build ticket names the command whose exit code decides (docs/tracker.md)."
+
+          # The claim, taken before any code is read (genesis-ii.md §3 Amendment A2). The label is
+          # removed in the same breath so a re-label is a deliberate re-dispatch, never an echo.
+          gh issue edit "$ISSUE" --add-assignee "${{ github.event.sender.login }}" --remove-label ready-for-agent
+          echo "slug=$(jq -r '.title' <<<"$json" | tr '[:upper:]' '[:lower:]' | sed -e 's/[^a-z0-9]\+/-/g' -e 's/^-//' -e 's/-$//' | cut -c1-40)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: pnpm via corepack (package.json packageManager pins 9.15.1)
+        run: |
+          corepack enable
+          pnpm --version
+      - uses: astral-sh/setup-uv@v10.0.1
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm db:migrate
+
+      # Automation mode: the `prompt` input means Claude runs without waiting for a mention. It
+      # reads CLAUDE.md on the runner, which routes it to docs/tracker.md for the build-session
+      # flow and to docs/domain/ for the clause. `github_token` is deliberately NOT passed, so the
+      # action authenticates as the Claude GitHub App and CI runs on its pushes.
+      - uses: anthropics/claude-code-action@v1
+        id: claude
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          branch_prefix: issue-
+          branch_name_template: "{{prefix}}{{entityNumber}}-${{ steps.gate.outputs.slug }}"
+          prompt: |
+            Build the ticket in issue #${{ github.event.issue.number }} of ${{ github.repository }}.
+
+            Read CLAUDE.md first, then `gh issue view ${{ github.event.issue.number }} --comments`,
+            then the domain clause the ticket's `## Clause` section names. Follow the build session
+            in docs/tracker.md, with these differences because you are running unattended:
+
+            - You are already on a branch and the ticket is already claimed. Do not re-assign it.
+            - Your branch is named for the issue, so an earlier failed dispatch of this same
+              ticket would have left its commits on it. Run `git log main..HEAD` first: if it is
+              not empty, read what is there and say so in the PR body — never build on top of a
+              half-finished commit without naming it.
+            - Implement only what `## What to build` describes; leave everything under
+              `## Out of scope` alone. Never edit `.github/workflows/` — the dispatcher does not
+              modify itself.
+            - `pnpm verify` must be green before you commit, and `pnpm test:db` too if you touched
+              `db/` or `src/core/db.ts`. Only their output is evidence.
+            - Run `/code-review` before opening the pull request. A finding blocks the PR only if
+              it names a correctness defect or a stated requirement the diff misses.
+            - Open the pull request with `gh pr create --base main`. Do not merge it and do not
+              use `--admin`: a human merges on green CI.
+            - If the ticket cannot be built as written — the clause contradicts it, a decision is
+              missing, the verification step is not machine-checkable — do not guess and do not
+              build part of it. Comment on the issue with the named reason, unassign yourself,
+              and stop. An unfinished ticket that says so is worth more than a partial one.
+
+            State the assumption you took in the PR body, with `pnpm verify`'s wall time and what
+            `/code-review` found.
+          claude_args: |
+            --max-turns 60
+            --max-budget-usd 8
+            --allowedTools Read,Edit,Write,Glob,Grep,Bash,Skill
+
+      # The metrics harness.md §8 requires, on the issue where the tracker can see them. Skipped
+      # when the gate refused: that path has already said why, by name, and a second comment
+      # reporting a dispatch that never started would bury it.
+      - name: record the run
+        if: always() && steps.gate.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          n="${{ github.event.issue.number }}"
+          run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          conclusion="${{ steps.claude.outcome }}"
+          gh issue comment "$n" --body "**Dispatch finished** — executor \`$conclusion\`, [run]($run_url), branch \`${{ steps.claude.outputs.branch_name || '(none)' }}\`, session \`${{ steps.claude.outputs.session_id || '(none)' }}\`."
+          # A claim that outlives its dispatch is worse than no claim: the frontier query excludes
+          # an assigned ticket, so a failed run would hide the work from everyone (docs/tracker.md,
+          # "an abandoned claim is unassigned with a comment saying where it stopped"). Hand it back.
+          if [ "$conclusion" != "success" ]; then
+            gh issue edit "$n" --remove-assignee "${{ github.event.sender.login }}"
+            gh issue comment "$n" --body "**Claim released** — the dispatch did not finish, so this ticket is unassigned and back on the frontier. Read the [run]($run_url) and the branch before re-applying \`ready-for-agent\`."
+          fi
