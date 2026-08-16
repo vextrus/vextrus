@@ -72,3 +72,55 @@ export type ActType = (typeof ACT_TYPES)[number];
  */
 export const REFUSED_SIGHTING_CAUSES = ["DUPLICATE_IDENTITY", "REPUDIATED"] as const;
 export type RefusedSightingCause = (typeof REFUSED_SIGHTING_CAUSES)[number];
+
+/**
+ * The quantity kinds — the trade axis every quantity line is keyed on (measurement-rules.md §4:
+ * `kind = (chapter × dimension), named for the trade`; §8: the closed enum selection runs on).
+ * Code-owned and closed: no tenant, project or drawing invents a kind, because the coverage
+ * denominator is enumerated from this list and a kind nothing knows how to price is a hole in the
+ * certificate. The naming law is closed too — trade and material tokens only, never a dimension,
+ * a unit, an element class, a pricing role or a chapter code (`kindNamingViolation` in kinds.ts
+ * is its mechanical form).
+ *
+ * The chapter is **cited as evidence here, never carried as a field** (§4's 2026-08-16 amendment,
+ * bd-authority.md §4: a chapter reference is `(book, chapter)` and numbering differs across books,
+ * so a code-owned chapter column would pin a platform enum to one edition of one book):
+ *
+ * - `RCC_CONCRETE` — PWD SoR Ch. 07 (items 07.1–07.11), measured on the gross concrete section
+ *   with no deduction for reinforcement (bd-authority.md §4).
+ * - `FORMWORK` — ships **uncited**: contact area priced by structural member is PWD's twelve
+ *   sub-items, whose chapter this repo has not established. Uncited, never under a fallback name.
+ * - `REINFORCEMENT` — a separate chapter from the concrete it sits in (bd-authority.md §4), also
+ *   uncited here. Seeded although nothing measures it: `bears` states what a class **lawfully
+ *   bears**, never what a rail emits, so column steel can be reported absent rather than in
+ *   silence.
+ */
+export const QUANTITY_KINDS = ["RCC_CONCRETE", "FORMWORK", "REINFORCEMENT"] as const;
+export type QuantityKind = (typeof QUANTITY_KINDS)[number];
+
+/**
+ * The four measurement algebras (measurement-rules.md §8): member (section × run + bar rule —
+ * structure and brick walls), face (a face of a space, gross less scheduled openings), network
+ * (runs by diameter), topology (a pipe tee is a junction in the run graph, not a symbol anyone
+ * drew). The algebra is selected **per quantity kind, never per drawing**.
+ */
+export const MEASUREMENT_ALGEBRAS = ["MEMBER", "FACE", "NETWORK", "TOPOLOGY"] as const;
+export type MeasurementAlgebra = (typeof MEASUREMENT_ALGEBRAS)[number];
+
+/**
+ * The physical dimensions a quantity may carry. Two jobs: the catalogue states each kind's
+ * dimension beside its SI unit (the unit is the dimension's lock when a rate item joins up on the
+ * kind — measurement-rules.md §4), and the naming ban is a token test over this set (§4's
+ * 2026-08-16 amendment: *the ban is on the dimension category, not on a list of four*).
+ */
+export const QUANTITY_DIMENSIONS = ["LENGTH", "AREA", "VOLUME", "MASS", "COUNT"] as const;
+export type QuantityDimension = (typeof QUANTITY_DIMENSIONS)[number];
+
+/**
+ * The canonical SI units a quantity is stored and computed in (bd-authority.md §3: Standards of
+ * Weights and Measures Act 2018 §4(1) makes SI the standard, §68(2) bars keeping any written
+ * measurement record in a non-standard unit). Imperial is lawful only as an input read off a
+ * sheet, retained as provenance; documents own presentation, the register never does.
+ */
+export const SI_UNITS = ["m", "m²", "m³", "kg", "nr"] as const;
+export type SiUnit = (typeof SI_UNITS)[number];
