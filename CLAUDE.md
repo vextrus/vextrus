@@ -47,7 +47,7 @@ module counts or agent counts.
 ## The feedback loop
 
 ```
-pnpm verify    # tsc → eslint → vitest → schema-drift → ruff → pytest → next build; fail-fast, uncached
+pnpm verify    # typegen → tsc → eslint → vitest → schema-drift → ruff → pytest → next build; fail-fast, uncached
 pnpm test:db   # the live seam test — run it after touching db/ or src/core/db.ts
 pnpm checkup   # the machine, not the tree; runs once at SessionStart
 ```

@@ -213,7 +213,13 @@ that runs Claude.
   (#76–#80, #85): 13.5–14.7 s** across the session's runs (typecheck 2.4 · lint 0.9 · test 2.7–4.1
   · **schema-drift 0.6** · ruff 0.0 · pytest 0.4 · build 6.2–7.6), the drift probe (#78) being the
   one stage added: `drizzle-kit generate` into a scratch `out`, no database, tree untouched. `pnpm
-  test:db`: 25 tests, 6 files, ~3.9 s. On the CI runner (`.github/workflows/ci.yml`, ubuntu-latest,
+  test:db`: 25 tests, 6 files, ~3.9 s. **Re-measured 2026-08-16, fourth session (#91): 11.4–13.4 s**
+  (typegen 0.4 · typecheck 2.4 · lint 0.9 · test 2.6–4.6 · schema-drift 0.6 · ruff 0.0 · pytest 0.4
+  · **build 4.1**): `next typegen` now writes Next's route validator into the verify distDir before
+  `tsc`, so the typecheck stage covers page/layout/route-handler signatures on a clean tree (it did
+  not: a sync-`params` route handler was green under `tsc` and red only under the build's check),
+  and the build stage skips its second type check inside the lane only (`ignoreBuildErrors` under
+  `VEXTRUS_NEXT_DIST_DIR`; `pnpm build` keeps Next's own check). On the CI runner (`.github/workflows/ci.yml`, ubuntu-latest,
   cold) `pnpm verify` is 24.2 s and the whole job — checkout, the landed-migration guard (#85),
   install, verify, migrate, `test:db` against a `postgres:16` service — 77 s. Playwright, if
   ever, outside the lane.
