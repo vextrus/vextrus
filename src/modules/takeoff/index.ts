@@ -3,4 +3,13 @@
  * the app is exported from this file; nothing outside the folder may import deeper. The module
  * enriches Quantity Register rows and never originates a quantity (ADR-0005).
  */
-export {};
+export {
+  INGEST_REFUSAL_CAUSES,
+  extractUpload,
+  ingestDrawingRevision,
+  type Extraction,
+  type IngestOutcome,
+  type IngestRefusal,
+  type IngestRefusalCause,
+  type Upload,
+} from "./ingest";

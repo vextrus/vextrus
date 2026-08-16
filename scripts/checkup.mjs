@@ -11,7 +11,7 @@
  * of that name and wins, printing nothing and exiting 0.
  */
 import { spawnSync } from "node:child_process";
-import { existsSync, readFileSync } from "node:fs";
+import { accessSync, constants, existsSync, readFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 import postgres from "postgres";
@@ -55,6 +55,23 @@ report(process.env.NODE_ENV ? "BROKEN" : "ok", "NODE_ENV", process.env.NODE_ENV 
 
 // .env — the seam and the migration lane read it.
 report(existsSync(path.join(root, ".env")) ? "ok" : "BROKEN", ".env", existsSync(path.join(root, ".env")) ? "present" : "missing — cp .env.example .env");
+
+// VEXTRUS_STORAGE_ROOT — where ingest writes uploads and artifacts (the DB stores references).
+// Absolute and writable, or ingest refuses; absent directory is fine (created on first ingest).
+{
+  const storage = process.env.VEXTRUS_STORAGE_ROOT;
+  if (!storage) report("BROKEN", "storage root", "VEXTRUS_STORAGE_ROOT unset — see .env.example");
+  else if (!path.isAbsolute(storage)) report("BROKEN", "storage root", `${storage} is not absolute`);
+  else if (!existsSync(storage)) report("note", "storage root", `${storage} absent — created on first ingest`);
+  else {
+    try {
+      accessSync(storage, constants.W_OK);
+      report("ok", "storage root", `${storage} writable`);
+    } catch {
+      report("BROKEN", "storage root", `${storage} not writable`);
+    }
+  }
+}
 
 // Postgres: reachable as owner, app role exists, ledger in sync with db/migrations.
 {
