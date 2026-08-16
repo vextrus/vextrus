@@ -219,15 +219,18 @@ that runs Claude.
   `tsc`, so the typecheck stage covers page/layout/route-handler signatures on a clean tree (it did
   not: a sync-`params` route handler was green under `tsc` and red only under the build's check),
   and the build stage skips its second type check inside the lane only (`ignoreBuildErrors` under
-  `VEXTRUS_NEXT_DIST_DIR`; `pnpm build` keeps Next's own check). On the CI runner (`.github/workflows/ci.yml`, ubuntu-latest,
-  cold) `pnpm verify` is 24.2 s and the whole job — checkout, the landed-migration guard (#85),
-  install, verify, migrate, `test:db` against a `postgres:16` service — 77 s. Playwright, if
-  ever, outside the lane.
+  `VEXTRUS_NEXT_DIST_DIR`; `pnpm build` keeps Next's own check). On the CI runner
+  (`.github/workflows/ci.yml`, ubuntu-latest, cold), sampled over five successful runs on
+  2026-08-16: the whole job — checkout, the landed-migration guard (#85), install, verify,
+  migrate, `test:db` against a `postgres:16` service — **70–81 s**, of which `pnpm verify`
+  **27–30 s** (install 5 s · migrate 1 s · `test:db` 7 s). The runner's verify is ~2.4× the local
+  figure and did not fall with #91: a cold runner pays for the whole `next build` regardless, and
+  the suite grew by four tests. Playwright, if ever, outside the lane.
 - **Guardrails, all lint-enforced with a fail-closed fixture test:** module boundaries; the two
   seams; `localeCompare` (identity sorts by code units); bare `toLocaleString` (lakh/crore, stated
   locale). CLAUDE.md's NEVER list names each rule's enforcement; a NEVER that cannot be enforced
   mechanically is not in the list.
-- **Harness:** `CLAUDE.md` 97 lines / 5.4 KB (the docs' target is under 200 lines);
+- **Harness:** `CLAUDE.md` 102 lines / 5.8 KB (the docs' target is under 200 lines);
   `.claude/settings.json` denies by bare name the tools this project never calls (the measured
   lever — a bare-name `deny` removes the tool schema from context, 29.8k → 22.8k on the first
   founding's cloud measurement; the server-level MCP names are the documented pruning form), turns
@@ -238,12 +241,27 @@ that runs Claude.
   **Startup context, measured by the founder in a fresh session on 2026-08-16 (`/context`):
   13.9k of 1M** — system tools 6.7k · system prompt 3.5k · memory files 2.0k · skills 1.6k ·
   messages 61; a further 9.7k of tool schemas sit deferred behind ToolSearch and cost nothing
-  until used. The next lever is the loaded tool set (6.7k): deny by bare name what no skill needs
-  — measured before and after, never guessed. `main` is protected since 2026-08-16: the CI job
-  `verify` must pass before a merge, enforced for admins too, linear history — every change is a
-  PR that waits for green.
-- **Tests:** Vitest at seams; golden vectors for construction math; synthetic drawing fixtures
-  including a revision pair; competitor-derived drawings never enter this repo.
+  until used. **The loaded-tool lever was pulled on 2026-08-16 (#89):** `SendUserFile` and
+  `ListAgents` denied by bare name — nothing in this repo or in the installed skills needs either,
+  and both are gated on Remote Control / cross-session messaging in any case — and the
+  `EndConversation` entry dropped, the tools-reference being explicit that a deny naming it "ha[s]
+  no effect" while any other tool remains. `AskUserQuestion` **stays**: it is how the HITL skills
+  speak to the founder, and no subagent ever receives it. The founder takes the new `/context`
+  number at the next session's start; the expectation stated in #90 is a drop of ~0.6–1.0k, or ~0
+  if neither tool surfaces in a plain terminal, and either result is the finding. `main` is
+  protected since 2026-08-16: the CI job `verify` must pass before a merge, enforced for admins
+  too, linear history — every change is a PR that waits for green (two `verify` check-runs per PR;
+  both gate it).
+  **How a module is planned and built** — the pipeline, the build-ticket contract, model and
+  effort per ticket class, the metrics and the two §3 amendments awaiting a decision — is
+  `docs/specs/harness.md` (proposed 2026-08-16); the flow a session follows from claim to merge is
+  `docs/tracker.md`.
+- **Tests:** Vitest at seams — **40 tests over 6 files** inside `pnpm verify`, plus `pnpm test:db`'s
+  25 live-seam tests over 6 files (3.84 s); golden vectors for construction math; synthetic drawing
+  fixtures including a revision pair; competitor-derived drawings never enter this repo. Since #99
+  the suite carries **the refusal register**: every member of a closed reason-code enum either fires
+  by name in a test or is deferred by name with its reason, compared against the enum both ways —
+  so a cause added with neither, and a deferral outliving its cause, both turn verify red.
 
 ## 8. How work proceeds from here
 
