@@ -4,6 +4,16 @@ Re-derived 2026-08-12 from the legacy pipeline (proven on real multi-drawing fix
 its measured censuses. The pipeline is `cad/` — a pure CLI, drawing in → EntityGraph JSON out
 (ADR-0001).
 
+*Amendment, 2026-08-16 (the governing sentence of this document; ADR-0009).* **The seam is a
+format boundary, not a stage boundary, and the CLI is one-shot.** `cad/` turns file formats into
+one geometry vocabulary and stops: §§1–4 and nothing else. It is invoked once per drawing
+revision and is **never fed app-produced input**. Everything that reads *meaning* — §5, §7, §8,
+§9, §10, §11 — runs in the app, over the artifact, and never re-opens the drawing. §6's closing
+bullet, which said this of the notation parsers alone, is hereby the whole pipeline's law. The
+consequence that decides arguments: a stage in the app is improved by a **partition rebuild**,
+where the same stage inside `cad/` would be a declared re-ingest minting a new key multiset and
+forcing every derived row to re-present for disposition (`identity.md` §5).
+
 ## 1. Pipeline and licenses
 
 DWG → DXF via **LibreDWG** in an isolated subprocess (GPL: subprocess only, never linked, license
@@ -146,6 +156,16 @@ on (`identity.md` §3).
 - Paper layouts get their own bbox; content-less layouts are dropped, not shipped.
 - Closed polylines carry shoelace area; curve flattening at fixed tolerance with a point cap.
 
+*Amendment, 2026-08-16 (ADR-0009).* Because the app never re-opens the drawing, four facts of this
+section must ride **in the artifact**, and the envelope advances to `version: 2` to carry them: a
+**space marker per entity** (model space, or the named paper layout — §7 partitions model-space
+entities and v1 records no such distinction); a **layout inventory** with each layout's bbox and
+the count of layouts dropped as content-less; the **robust extents** with the count of entities
+the inter-percentile window rejected; and a **flatten point-cap counter**, because unlike
+`explode_truncated` a tripped point cap currently says nothing, and a loss nobody counted is the
+silence §3 forbids. The bump is purely additive and re-mints no key, so there is no data
+migration.
+
 ## 5. Schedule-table reconstruction (no gridlines needed)
 
 Anchor on schedule-title text; collect body text within a reach window; **row-cluster by y**
@@ -161,6 +181,10 @@ units of intra-row jitter outvote the real row gap 3:1 (pitch resolves to 0.50 a
 clustering fixes it; tuning constants in drawing units are the same species as guessed scale.
 A schedule reconstructor returning zero on a schedule-titled sheet is a machine-knowable
 silence and must surface.
+
+*Amendment, 2026-08-16 (ADR-0009).* **Runs in the app.** Keeping it in `cad/` as the one geometric
+exception was put and rejected: §11 admits schedule evidence only after view-membership filtering,
+so the exception re-acquires §7's dependency at its consumer, having bought nothing.
 
 ## 6. BD drawing-notation parsers (golden-tested against real strings)
 
@@ -178,6 +202,12 @@ silence and must surface.
 - These parsers live **beside their consumer in the app**, not in `cad/` — the pipeline stays
   geometry/spatial-only.
 
+*Amendment, 2026-08-16 (ADR-0009).* This bullet is generalised into the document's governing
+sentence above. Its corollary for the artifact: **text crosses the seam raw.** `cad/` never strips
+the AutoCAD escapes (`%%C`→Ø, `%%D`→°); the app's parsers do, grading on top of raw truth as §11
+requires. §2's "decoded string" means the file's own character decoding, which ezdxf resolves —
+never AutoCAD's formatting escapes.
+
 ## 7. The view law
 
 Every model-space original entity belongs to exactly one view; view types are a closed
@@ -189,6 +219,14 @@ exists. Classification follows caption grammar (en+bn stems), never title litera
 unclassifiable caption anchors nothing and the view is honestly untyped. Member-scoped plans
 ("PLAN OF <subject>") are details — never countable.
 
+*Amendment, 2026-08-16 (ADR-0009).* **Runs in the app**, in `src/modules/takeoff/` — never in
+`src/core/`, because `book`, `estimate` and `bid` never classify a view and core would become the
+home of takeoff's judgement. Only the view **key grammar** stays in `src/core/identity.ts` (§3
+there). The "one exported predicate" is enforced **by construction, not by detection**: the closed
+vocabulary is a branded type exported from one module beside the predicate, and the view-type
+literals are a lint error anywhere else — so a second decision site cannot be written. The lint
+rule carries a fixture test proving it fires; a check nobody proved fires is not a check.
+
 ## 8. The grid backbone
 
 Axes in two families (letter/numeral) with per-view georeference, derived **only from
@@ -197,6 +235,13 @@ shift an axis. **Content signature, never layer names**: a grid bubble is a bare
 text anchored inside a circle — a template whose bubbles live on layer `PILE` detects
 identically. A view without lawful bubble evidence georeferences as deferred with a named
 reason. Machine proposes; disposition is human.
+
+*Amendment, 2026-08-16 (ADR-0009).* **Runs in the app.** This clause is what settles the seam for
+all five stages: "derived only from layout-plan evidence, filtered before detection" makes grid
+detection a consumer of §7's classification, and §7 classifies by caption grammar, which §6 places
+in the app. A grid stage in `cad/` would have to read back an answer the app owns — a second CLI
+pass fed with app-produced input, which turns a pure CLI into a two-way protocol and gives the
+pinned extractor identity a second, unpinned input.
 
 ## 9. Instance placement
 
@@ -209,6 +254,19 @@ classes (column, shear wall) expand per level. Label normalization strips size p
 and compares dotless-uppercase (`TB` matches registered `T.B`) — both forms are the drawing's
 own; nothing is invented.
 
+*Amendment, 2026-08-16 (ADR-0009).* **Runs in the app**, and it is the stage that needs the
+register: it mints `identity.md` §3's placement and instance row keys behind `forTenant`
+(ADR-0004). **The partition it produces is stored and rebuilt per ingest, never computed per
+read** — §3 there already presumes it ("row ids re-mint on every partition rebuild"), and the
+one-hop level carry has to move filed human dispositions across a rebuild, which no value returned
+by a function can hold. The scope register stays a query (`quantity-contract.md` §2.2) because it
+reads register rows that already exist; this partition is what makes them exist.
+
+*Amendment, 2026-08-16 (ADR-0009).* **The constants above are rule-set edition parameter values**
+(`identity.md` §8) — pinned, signed, and voidable — because a footprint band that rejects a real
+column deletes quantity. They are never code literals and never a config file. §10's seed is the
+opposite species and is pinned by nothing; see there.
+
 ## 10. The extraction convention profile (the generalisation mechanism)
 
 A drawing's conventions — which layers carry bar linework / member outlines / text /
@@ -218,6 +276,15 @@ literals live only in a replaceable seed that may **corroborate but never add, d
 re-assign a role** — the ablation law: `resolve(census, {})` must deep-equal
 `resolve(census)` for any census. This is what frees the extractor from hardcoded drawing
 constants; it is CI-enforced.
+
+*Amendment, 2026-08-16 (ADR-0009).* **Runs in the app.** A profile in `cad/` would mint a
+*semantic* claim — this layer carries bar linework — inside an immutable artifact, where it can
+never be re-resolved or shown to a human without a re-ingest. The **census is computed by the app
+from the entities and is not an artifact field**: shipping it would create a second place the
+census is defined. And the **seed is pinned by nothing** — the ablation law bars it from changing
+any outcome, so putting its key in a signature would void signatures on a change that by law
+affects nothing. What enters the rule-set edition for this clause is the **resolver**, as a
+`(rule id, version)` pair.
 
 ## 11. The member-type registry (reading schedules)
 
