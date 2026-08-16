@@ -3,14 +3,16 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { openCampaign, pinCampaign } from "@/core/campaigns";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
 import { drawingSetRevisionDigest } from "@/core/identity";
+import { CATALOGUE_DIGEST } from "@/core/kinds";
 import { createProject } from "@/core/projects";
 import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 
 /**
  * The campaign through the seam (identity.md §7, §8 and its amendment of 2026-08-16, §9), live
  * against Postgres via `pnpm test:db`: a campaign cannot exist without a set revision to cite, it
- * snapshots the rule-set edition in force at creation and cannot be edited afterwards, one
- * project carries one live campaign, and the pin act commits with the row or neither lands.
+ * snapshots both the rule-set edition and the catalogue digest in force at creation and can edit
+ * neither afterwards, one project carries one live campaign, and the pin act commits with the row
+ * or neither lands.
  */
 
 /** One tenant per project pair, so the cross-tenant cases have somewhere to point. */
@@ -121,15 +123,16 @@ async function ruleSetEditionOf(projectId: string): Promise<string> {
 }
 
 describe("opening a campaign (identity.md §8, §9)", () => {
-  it("cites the project, the set revision it pinned, and the rule-set edition in force", async () => {
+  it("cites the project, the set revision it pinned, and both snapshots in force", async () => {
     const campaign = await openCampaign(ctxA(), { projectId: projectA, actorUserId: userA, members: membersA });
     const digest = drawingSetRevisionDigest(membersA);
     expect(campaign).toMatchObject({ projectId: projectA, setDigest: digest, state: "LIVE" });
     const [project] = await forTenant(ctxA(), (tx) =>
       tx.select().from(schema.projects).where(eq(schema.projects.id, projectA)),
     );
-    // The snapshot: what the project pinned at creation, copied onto the campaign.
+    // The snapshots: what the project pinned at creation, and the catalogue as deployed.
     expect(campaign.ruleSetEditionId).toBe(project?.ruleSetEditionId);
+    expect(campaign.catalogueDigest).toBe(CATALOGUE_DIGEST);
     // Pinning the set is pinning the scope: the manifest is the citation list.
     const manifest = await forTenant(ctxA(), (tx) =>
       tx
@@ -152,7 +155,11 @@ describe("opening a campaign (identity.md §8, §9)", () => {
       actorUserId: userA,
       subjectKind: "campaigns",
       subjectIds: [campaign.id],
-      detail: { setDigest: campaign.setDigest, ruleSetEditionId: campaign.ruleSetEditionId },
+      detail: {
+        setDigest: campaign.setDigest,
+        ruleSetEditionId: campaign.ruleSetEditionId,
+        catalogueDigest: campaign.catalogueDigest,
+      },
     });
     expect(acts[0]?.performedAt).toBeInstanceOf(Date);
   });
@@ -180,8 +187,8 @@ describe("the pin, the snapshot and the one live campaign", () => {
     const refused = await refusal(() =>
       forTenant(ctxA(), (tx) =>
         tx.execute(
-          sql`insert into campaigns (tenant_id, project_id, rule_set_edition_id)
-              values (${tenantA}::uuid, ${projectA}::uuid, ${project?.ruleSetEditionId}::uuid)`,
+          sql`insert into campaigns (tenant_id, project_id, rule_set_edition_id, catalogue_digest)
+              values (${tenantA}::uuid, ${projectA}::uuid, ${project?.ruleSetEditionId}::uuid, ${CATALOGUE_DIGEST})`,
         ),
       ),
     );
@@ -199,6 +206,7 @@ describe("the pin, the snapshot and the one live campaign", () => {
           projectId: otherProjectA,
           setDigest: foreignDigest,
           ruleSetEditionId: editionId,
+          catalogueDigest: CATALOGUE_DIGEST,
         }),
       ),
     );
@@ -223,6 +231,7 @@ describe("the pin, the snapshot and the one live campaign", () => {
             projectId: otherProjectA,
             setDigest: digest,
             ruleSetEditionId: foreignEdition.id,
+            catalogueDigest: CATALOGUE_DIGEST,
           }),
         ),
       ),
@@ -258,6 +267,18 @@ describe("the pin, the snapshot and the one live campaign", () => {
           tx
             .update(schema.campaigns)
             .set({ setDigest: "f".repeat(64) })
+            .where(eq(schema.campaigns.id, campaign.id)),
+        ),
+      ),
+    ).toMatch(/permission denied/i);
+    // The catalogue snapshot needed no grant of its own: a column-level UPDATE grant does not
+    // extend to a column added after it (0009), so the second pin is insert-only the same way.
+    expect(
+      await refusal(() =>
+        forTenant(ctxA(), (tx) =>
+          tx
+            .update(schema.campaigns)
+            .set({ catalogueDigest: "a".repeat(64) })
             .where(eq(schema.campaigns.id, campaign.id)),
         ),
       ),

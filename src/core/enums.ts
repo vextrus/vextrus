@@ -76,6 +76,35 @@ export const CAMPAIGN_STATES = ["LIVE", "SUPERSEDED"] as const;
 export type CampaignState = (typeof CAMPAIGN_STATES)[number];
 
 /**
+ * What a campaign pins, and therefore what the freshness diff reads (identity.md §8, amended
+ * 2026-08-16: *a campaign snapshots what it cites; staleness is a diff, never a flag*). Two
+ * snapshots, two independent ways to diverge: the project's rule-set edition, which a re-pin
+ * advances, and the catalogue digest, which a shipped kind or `bears` row moves. The drawing-set
+ * revision is not here — a campaign's manifest never follows a newer set (§9: advance, never
+ * drift), so it cannot go out of date underneath itself; it changes only by an authored re-pin.
+ */
+export const CAMPAIGN_PINS = ["CATALOGUE", "RULE_SET_EDITION"] as const;
+export type CampaignPin = (typeof CAMPAIGN_PINS)[number];
+
+/**
+ * The freshness verdict — closed, and computed on every read (identity.md §8): the campaign's
+ * snapshots against what is in force now. Nothing stores it, because a stored flag is one
+ * forgotten write from lying, and the diff is cheap enough to be the truth every time.
+ */
+export const CAMPAIGN_FRESHNESS_VERDICTS = ["CURRENT", "STALE"] as const;
+export type CampaignFreshnessVerdict = (typeof CAMPAIGN_FRESHNESS_VERDICTS)[number];
+
+/**
+ * The refusal a stale campaign carries (identity.md §8: *the signature act refuses `PIN_STALE`,
+ * cleared only by an authored re-pin*). It is a **signing** refusal and nothing else: measuring,
+ * ingest and registration continue on a stale campaign, because a partial faulty estimate is
+ * harmful and an unmeasured one is merely unfinished. The gate that consumes this code lands with
+ * the signature arc; the code is declared here so that when it does, it is closed and not prose.
+ */
+export const CAMPAIGN_FRESHNESS_REFUSALS = ["PIN_STALE"] as const;
+export type CampaignFreshnessRefusal = (typeof CAMPAIGN_FRESHNESS_REFUSALS)[number];
+
+/**
  * Why a sighting sits in the refused-sightings table instead of the register (identity.md §2,
  * §7, §9): a second sighting of registered scope within one set revision is refused at the door
  * as DUPLICATE_IDENTITY; a human repudiation retires the object as REPUDIATED. Machine and human

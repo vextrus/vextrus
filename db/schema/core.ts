@@ -21,10 +21,12 @@ import {
   type CampaignState,
   DISCIPLINES,
   ELEMENT_TYPES,
+  type ElementType,
   LEVEL_BASES,
   LEVEL_HEIGHT_BASES,
   QUANTITY_DIMENSIONS,
   QUANTITY_KINDS,
+  type QuantityKind,
   REFUSED_SIGHTING_CAUSES,
   SI_UNITS,
 } from "../../src/core/enums";
@@ -573,8 +575,11 @@ export const drawingSetRevisionMembers = pgTable(
  * bidirectional and reviving a superseded pin would make an older set revision and an older
  * snapshot the project's live scope with no act naming it — CAMPAIGN_STATE_NOT_REVERSIBLE.
  *
- * The catalogue digest is the campaign's second snapshot (§8, amended); it lands with the
- * freshness diff that reads it.
+ * The catalogue digest is the campaign's second snapshot (§8, amended): a content address over
+ * `bears` (src/core/kinds.ts), pinned so a kind or a `bears` row shipped after a signature cannot
+ * widen the coverage denominator the signature covered. It is held here and never on the project —
+ * the catalogue is platform-owned and code-derived, so a project chooses nothing, and a
+ * project-level pin would have to advance on deploy: a fallback wearing a `NOT NULL`.
  */
 export const campaigns = pgTable(
   "campaigns",
@@ -586,6 +591,7 @@ export const campaigns = pgTable(
     projectId: uuid("project_id").notNull(),
     setDigest: text("set_digest").notNull(),
     ruleSetEditionId: uuid("rule_set_edition_id").notNull(),
+    catalogueDigest: text("catalogue_digest").notNull(),
     state: text("state").$type<CampaignState>().notNull().default("LIVE"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -610,6 +616,7 @@ export const campaigns = pgTable(
       columns: [t.ruleSetEditionId, t.tenantId],
       foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
     }),
+    check("campaigns_catalogue_digest_check", sql.raw(`"catalogue_digest" ~ '^[0-9a-f]{64}$'`)),
     enumCheck("campaigns_state_check", "state", CAMPAIGN_STATES),
     tenantIsolation("campaigns"),
   ],
@@ -891,8 +898,9 @@ export const workItemCatalogue = pgTable(
 export const bears = pgTable(
   "bears",
   {
-    elementType: text("element_type").notNull(),
+    elementType: text("element_type").$type<ElementType>().notNull(),
     kind: text("kind")
+      .$type<QuantityKind>()
       .notNull()
       .references(() => workItemCatalogue.kind),
   },

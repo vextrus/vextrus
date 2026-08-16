@@ -1,6 +1,7 @@
 import { eq, sql } from "drizzle-orm";
 import { describe, expect, it } from "vitest";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import type { QuantityKind } from "@/core/enums";
 import { BEARS_PAIRS } from "@/core/kinds";
 import { compareCanonical } from "@/core/order";
 import { WORK_ITEM_CATALOGUE } from "@/core/work-items";
@@ -81,7 +82,9 @@ describe("the catalogue and bears as tables (measurement-rules.md §4)", () => {
     expect(
       await refusalOf(() =>
         runAsSystem("catalogue dbspec: the foreign key", (tx) =>
-          tx.insert(schema.bears).values({ elementType: "COLUMN", kind: "NOT_A_KIND" }),
+          // The cast is the point: the column is typed to the closed enum, so an unknown kind is
+          // unrepresentable in TS — this asserts the *database* refuses it too.
+          tx.insert(schema.bears).values({ elementType: "COLUMN", kind: "NOT_A_KIND" as QuantityKind }),
         ),
       ),
     ).toMatch(/foreign key|check constraint/i);
