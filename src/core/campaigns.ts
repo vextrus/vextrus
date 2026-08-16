@@ -1,5 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { forTenant, schema, type TenantCtx, type Tx } from "./db";
+import { type CampaignState } from "./enums";
 import { drawingSetRevisionDigest, type DrawingSetMember } from "./identity";
 
 /**
@@ -15,7 +16,7 @@ export type Campaign = {
   readonly projectId: string;
   readonly setDigest: string;
   readonly ruleSetEditionId: string;
-  readonly state: string;
+  readonly state: CampaignState;
   readonly createdAt: Date;
 };
 

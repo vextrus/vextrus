@@ -18,6 +18,7 @@ import {
 import {
   ACT_TYPES,
   CAMPAIGN_STATES,
+  type CampaignState,
   DISCIPLINES,
   ELEMENT_TYPES,
   LEVEL_BASES,
@@ -581,7 +582,7 @@ export const campaigns = pgTable(
     projectId: uuid("project_id").notNull(),
     setDigest: text("set_digest").notNull(),
     ruleSetEditionId: uuid("rule_set_edition_id").notNull(),
-    state: text("state").notNull().default("LIVE"),
+    state: text("state").$type<CampaignState>().notNull().default("LIVE"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

@@ -6,6 +6,7 @@ export { compareCanonical } from "./order";
 export {
   ACT_TYPES,
   BASES,
+  CAMPAIGN_STATES,
   DISCIPLINES,
   ELEMENT_TYPES,
   LEVEL_BASES,
@@ -17,6 +18,7 @@ export {
   SI_UNITS,
   type ActType,
   type Basis,
+  type CampaignState,
   type Discipline,
   type ElementType,
   type LevelBasis,
@@ -72,6 +74,7 @@ export {
 } from "./rule-set";
 export { forkProjectRuleSetEdition, mintTenantRuleSetTemplate, type RuleSetEditionRef } from "./rule-set-editions";
 export { createProject, listProjects } from "./projects";
+export { openCampaign, pinCampaign, type Campaign, type OpenCampaignInput } from "./campaigns";
 export { entityGraphSchema, entitySchema, type Entity, type EntityGraph } from "./entitygraph";
 export { forTenant, mintTenantCtx, runAsSystem, type TenantCtx, type Tx } from "./db";
 export {
