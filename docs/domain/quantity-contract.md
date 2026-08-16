@@ -118,6 +118,74 @@ so finding nothing returns an empty list, which says nothing rather than denying
 distinction must stay representable — *a channel ran and yielded zero* is `NOT_ESTABLISHED`, *no
 channel ran* is `ENTITY_TYPE_UNHANDLED`.
 
+*Amendment, 2026-08-17 (issue #136).* **The residue's cell gains level, sighting is a query, and the
+bill boundary leaves this clause.** Six rulings, each closing a hole this clause left open:
+
+- **The cell is `(sighted class × kind borne × level sighted)`.** Flat, a tower whose columns are
+  measured on levels 1–5 and missed on 6–10 has a `(COLUMN, RCC_CONCRETE)` cell that published, so it
+  is quantity-bearing, leaves the residue, and certifies as measured scope — *correctly measured, of
+  the wrong scope*, which §1 calls two thirds of the legacy money error, reappearing one axis up.
+  Level is already in the identity key, so this costs no new concept, and §8 already picks level
+  uniformly before object. It does not disturb `bears`, which stays `(class × kind)`: the level axis
+  comes from the sighting, never from the relation. The 2026-08-17 amendment to §6 stands unchanged —
+  a row kept with no quantity is still `PARTIAL_DECLARED` — but its stated reason is now the weaker
+  of two: with level in the cell the missing-storey case is caught twice, and that rule still governs
+  the case this one cannot see, where the row exists and the number does not.
+
+- **"Ingestion sighted a class" is a query, never a table** — the ruling this clause already made for
+  the residue, applied to its denominator. It is a **union of `EXISTS`** over three named channels
+  within the campaign's pinned revision manifest: register rows of the class; the stored §7–§9
+  partition's placements and member-type registry families; view membership off the artifact's layout
+  inventory. No new writer, and *recomputed per ingestion* stays free. Register-only was put and
+  rejected: a column schedule carrying forty marks that registers no column would make `COLUMN`
+  unsighted, dropping the class out of the residue entirely so the bill reports no columns in the
+  project — the silent-loss defect wearing a denominator. The one-way valve is structural in three
+  layers: a union of existence claims cannot express absence; the recogniser type is `Sighting[]` with
+  no `absent()` constructor; and **`NOT EXISTS` is lint-banned inside the channel module**, so
+  negation appears exactly once, in the spine-owned residue query. The third layer is what makes the
+  first two more than a convention.
+
+- **`NO_BEARER_SIGHTED`** — a kind-grain, writerless fall-through for a catalogue kind that no sighted
+  class bears. This is this clause's *missing sheet*, and it has no cell to attach to. Collapsing it
+  into `NOT_ESTABLISHED` was put and rejected on the argument that already split `INGESTION_TRUNCATED`
+  from `ENTITY_TYPE_UNHANDLED`: **different remedy, different code**. `NOT_ESTABLISHED` tells a reader
+  we saw the scope and measured nothing; the truth here is that no drawing carrying that work ever
+  arrived, and the remedy is to supply the sheet. It reopens no *filter with no actor* door — it is an
+  arm of a query with no writer, exactly as the fall-through is.
+
+- **`NOT_IN_THIS_BILL` leaves this clause's cause taxonomy.** It sits happily on a cell that
+  *published*, which a residue whose numerator is published lines structurally cannot hold. Bill
+  boundary and measurement boundary are therefore **two orthogonal axes over one borne grid**, the
+  move §1 already makes for basis and coverage: a **measurement axis** (measured, or not with a cause
+  — `NOT_ESTABLISHED` · `INGESTION_TRUNCATED` · `NOT_IN_PROJECT_SCOPE` · `NO_BEARER_SIGHTED` ·
+  unborne) and a **bill axis**, whose only non-default value is `NOT_IN_THIS_BILL`, always a named
+  human act. Listing them in one enum is what made merging them expressible; two axes make the lie
+  this clause names unrepresentable rather than forbidden.
+
+- **The fidelity counters land on cells only through `src`.** They are per entity type and per page
+  (`cad-ingestion.md` §2, §3) while a cell is per class × kind × level, and most of that gap is
+  unbridgeable — `LWPOLYLINE` names no element class. So: **`INGESTION_TRUNCATED` attributes to a cell
+  only through the parent chain** — §3 makes every synthesized entity carry its parent INSERT's
+  handle, so a tripped cap names a parent instance, and where that key is cited by a sighting of class
+  X, the counter lands on X's borne cells for that page. **`ENTITY_TYPE_UNHANDLED` never reaches a
+  cell**: code nobody wrote cannot know what class the bytes were, and attributing it would be a guess
+  wearing a cause code. The honest answer for everything unattributable is a **sheet-grain fidelity
+  block, enumerated and never summarised**, naming the sheet and the entity type — §6's unit and §6's
+  reason, that a per-line list is the bill reprinted inside its own certificate. And an attributed
+  truncation makes **`COMPLETE` unrepresentable on that cell's lines**: a lost entity cannot
+  over-measure, so the defect is always short, and §1's coverage axis is where a short line belongs.
+
+- **The `CASE`'s arms, in order, first match wins**: (1) published lines exist — the cell is
+  quantity-bearing and not in the residue at all; (2) a human act in force whose evidence resolves —
+  its cause, and because this arm is a **join on the evidence**, §8's *name the evidence or lose the
+  cause* degrades by the join failing, with nothing to remember to run; (3) an attributed
+  `INGESTION_TRUNCATED`; (4) the fall-through, `NOT_ESTABLISHED`. **Contradiction needs no state**: it
+  computes to *a cell an act declared absent is now quantity-bearing*, so arm 1 beats arm 2 and the
+  act is suspended by arm order. Only `NOT_IN_PROJECT_SCOPE` can be contradicted this way; the same
+  shape under the bill axis is not a contradiction at all but measured scope lawfully held out. A
+  contradiction surfaces in §8's Part A as a declared disagreement, **not on the certificate** — the
+  boundary is not wrong there, a human's belief about it is, and the certificate reports the boundary.
+
 ## 3. Publishability, per line
 
 | attribute | required |

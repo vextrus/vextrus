@@ -326,3 +326,16 @@ threshold enforced rather than decorative. The gate does not check that the expr
 them yields discipline → algebra, which is the per-drawing selection this clause bans, spelled
 differently. `bears` carries the kind axis **outside the identity key**: the class is in the key,
 the kind is not, and the kinds a class bears are looked up, never stored on the row.
+
+*Amendment, 2026-08-17 (issue #135, ADR-0010).* **The expression travels by reference, never
+transported.** "The offer carries the inputs and the expression combining them" above admits an
+expression a rail authors — an AST the gate walks — which defeats the very sentence that follows
+it: an expression no `(rule id, version)` names cannot be CI-hashed, so choosing the formula stops
+being a §1 method. Read instead: **the offer carries the inputs and names the method that combines
+them** — a `ruleId` and **no version**, the gate resolving the version from the project's pinned
+rule-set edition (`identity.md` §8) and refusing by name when the edition does not name it or the
+registry lacks the implementation. A rail naming its own version would let two rails price one
+campaign under two versions of one method while the edition key certifies them as one rule set. The
+gate renders §6's human-auditable formula string from the same registry template it evaluates, so
+the printed string and the arithmetic have one source. Unchanged: the gate does not check that the
+method is the *right* one.
