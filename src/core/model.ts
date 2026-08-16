@@ -56,13 +56,20 @@ export function proposalSchema<T>(payload: z.ZodType<T>) {
   return z.object({ payload, sources: z.tuple([sourceKeySchema]).rest(sourceKeySchema) });
 }
 
-/** One taxonomy for the seam's refusals; stable identifiers, never prose (formulas.md §6). */
+/**
+ * One taxonomy for the seam's refusals; stable identifiers, never prose (formulas.md §6).
+ * MODEL_REFUSED is the model declining (`stop_reason: "refusal"`) — a normal, non-retryable
+ * outcome; TRANSPORT_FAILED is everything the transport side remedies (a fault, a rate limit,
+ * a truncated reply). Adding a cause is a diff here and a superseding migration on the ledger's
+ * CHECK (ADR-0006).
+ */
 export const REFUSAL_CAUSES = [
   "UNSOURCED",
   "SOURCE_UNRESOLVED",
   "MALFORMED",
   "FIXTURE_MISSING",
   "TRANSPORT_FAILED",
+  "MODEL_REFUSED",
 ] as const;
 export type RefusalCause = (typeof REFUSAL_CAUSES)[number];
 export type Refusal = { readonly ok: false; readonly cause: RefusalCause; readonly detail: string; readonly callId: string };
@@ -90,6 +97,17 @@ export type ModelCallRecord = {
   readonly outcome: "PROPOSED" | RefusalCause;
 };
 export type ModelCallRecorder = (record: ModelCallRecord) => Promise<void>;
+
+/**
+ * A transport's `{ error }` string names its class in a prefix; this maps the prefix to the
+ * ledger's cause. `FIXTURE_MISSING:` and `REFUSAL:` are the two the caller may act on
+ * differently (record the fixture; do not retry); everything else is the transport's to remedy.
+ */
+export function causeOfTransportError(error: string): RefusalCause {
+  if (error.startsWith("FIXTURE_MISSING")) return "FIXTURE_MISSING";
+  if (error.startsWith("REFUSAL:")) return "MODEL_REFUSED";
+  return "TRANSPORT_FAILED";
+}
 
 /** The request's content hash: what a fixture is keyed by, and what the ledger cites. */
 export function requestHash(req: ModelRequest): string {
@@ -160,7 +178,8 @@ export type LiveTransportOptions = {
  * caller's system prompt plus the seam's proposal instruction, returns the reply's text and
  * token usage, and — when recording — writes the fixture that `fixtureTransport` will replay.
  * Every failure is a named `{ error }`, never a throw: a refusal, a rate limit, a network fault
- * are normal outcomes the ledger records as TRANSPORT_FAILED. Verify never constructs this.
+ * are normal outcomes the ledger records by cause — MODEL_REFUSED for the model's own refusal,
+ * TRANSPORT_FAILED for the rest (`causeOfTransportError`). Verify never constructs this.
  */
 export function liveTransport(options: LiveTransportOptions): ModelTransport {
   const client = new Anthropic({ apiKey: options.apiKey, ...(options.fetch ? { fetch: options.fetch } : {}) });
@@ -241,7 +260,7 @@ export async function callModel<T>(
 
   const reply = await deps.transport.complete(req);
   if ("error" in reply) {
-    return refuse(reply.error.startsWith("FIXTURE_MISSING") ? "FIXTURE_MISSING" : "TRANSPORT_FAILED", reply.error, null);
+    return refuse(causeOfTransportError(reply.error), reply.error, null);
   }
 
   let json: unknown;

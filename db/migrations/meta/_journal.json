@@ -29,6 +29,13 @@
       "when": 1786853119250,
       "tag": "0003_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1786857740708,
+      "tag": "0004_model-refused",
+      "breakpoints": true
     }
   ]
 }

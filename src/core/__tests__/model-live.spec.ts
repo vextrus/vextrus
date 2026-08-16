@@ -101,7 +101,7 @@ describe("the live transport", () => {
     }
   });
 
-  it("names a refusal and an API error instead of throwing, and callModel records TRANSPORT_FAILED", async () => {
+  it("names a refusal and an API error instead of throwing; callModel records MODEL_REFUSED and TRANSPORT_FAILED by cause", async () => {
     const refused = liveTransport({ apiKey: "sk-test", fetch: cannedFetch(200, message({ content: [], stop_reason: "refusal", stop_details: { type: "refusal", category: "cyber", explanation: null } })) });
     expect(await refused.complete(req)).toEqual({ error: "REFUSAL:cyber" });
     const bad = liveTransport({
@@ -115,7 +115,13 @@ describe("the live transport", () => {
       { ctx: mintTenantCtx("00000000-0000-0000-0000-00000000000a"), model: "claude-sonnet-5", purpose: "t", system: req.system, input: req.input, payload: z.object({ viewClass: z.string() }), resolve: () => true },
       { transport: refused, record: async (r) => void records.push(r) },
     );
-    expect(out).toMatchObject({ ok: false, cause: "TRANSPORT_FAILED", detail: "REFUSAL:cyber" });
-    expect(records[0]).toMatchObject({ transport: "live", outcome: "TRANSPORT_FAILED", usage: null });
+    expect(out).toMatchObject({ ok: false, cause: "MODEL_REFUSED", detail: "REFUSAL:cyber" });
+    expect(records[0]).toMatchObject({ transport: "live", outcome: "MODEL_REFUSED", usage: null });
+    const failed = await callModel(
+      { ctx: mintTenantCtx("00000000-0000-0000-0000-00000000000a"), model: "claude-sonnet-5", purpose: "t", system: req.system, input: req.input, payload: z.object({ viewClass: z.string() }), resolve: () => true },
+      { transport: bad, record: async (r) => void records.push(r) },
+    );
+    expect(failed).toMatchObject({ ok: false, cause: "TRANSPORT_FAILED", detail: expect.stringMatching(/^API_ERROR:400:/) });
+    expect(records[1]).toMatchObject({ transport: "live", outcome: "TRANSPORT_FAILED", usage: null });
   });
 });
