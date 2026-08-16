@@ -230,11 +230,18 @@ already gates).
   ToolSearch (schemas not loaded); no MCP tools present. Skills visible: 11 plugin skills, 4
   bundled; the founder-invoked skills (`/wayfinder`, `/to-tickets`, `/triage`, `/to-spec`,
   `/implement`, `/grill-with-docs`) are `disable-model-invocation: true` and cost nothing.
-- **Not measured, and how to:** the session's total startup context — `/context` is a slash
-  command the model cannot invoke, and running `claude -p '/context'` from a shell would be a
-  script that runs Claude. The founder runs `/context all` once in a fresh session and records the
-  Memory files and Tools lines beside these numbers in spec §7. The first founding's cloud
-  measurement of the deny lever (29.8k → 22.8k) stands as the last real number.
+- **Startup context, measured by the founder in a fresh session (2026-08-16, `/context`):
+  13.9k / 1M** — system tools 6.7k · system prompt 3.5k · memory files 2.0k · skills 1.6k ·
+  messages 61 · free 986.2k; system tools *deferred* 9.7k (not in context). A session cannot take
+  this number of itself (`/context` is a slash command; a shell `claude -p` would be a script that
+  runs Claude), so it is the founder's measurement. The first founding's cloud number for the deny
+  lever was 29.8k → 22.8k; the rebuilt environment starts at 13.9k. Remaining lever: the loaded
+  tool set (6.7k) — the founder's list to consider is AskUserQuestion, EnterPlanMode/ExitPlanMode,
+  EndConversation, LSP; note that `EndConversation` "can't be removed while any other tool
+  remains" (permissions doc), the plan-mode tools are already deferred (names only), and
+  AskUserQuestion is what the HITL skills (`/wayfinder`, `/grilling`, `/code-review`,
+  `/to-tickets`) use to speak with the founder — deny it only in a settings scope that never runs
+  a HITL session. Measure before and after each deny.
 
 ## 9. Proposals for the founder (not merged; each is forbidden by §3 or is a repo setting)
 

@@ -228,9 +228,14 @@ that runs Claude.
   off irrelevant bundled skills, sets bash timeouts, keeps auto memory **off** (`docs/lessons/` is
   the memory surface — dated, reviewed, in git), and keeps the one `SessionStart` checkup hook
   (0.27 s, one line, ~15 tokens); `docs/CONTEXT.md` commercial truth, glossary, BD rules.
-  Re-examined against Anthropic's August 2026 documentation in `docs/research/harness-2026-08.md`;
-  the session's startup context (`/context all`) is the one number a session cannot take of
-  itself and is recorded here by the founder when next measured.
+  Re-examined against Anthropic's August 2026 documentation in `docs/research/harness-2026-08.md`.
+  **Startup context, measured by the founder in a fresh session on 2026-08-16 (`/context`):
+  13.9k of 1M** — system tools 6.7k · system prompt 3.5k · memory files 2.0k · skills 1.6k ·
+  messages 61; a further 9.7k of tool schemas sit deferred behind ToolSearch and cost nothing
+  until used. The next lever is the loaded tool set (6.7k): deny by bare name what no skill needs
+  — measured before and after, never guessed. `main` is protected since 2026-08-16: the CI job
+  `verify` must pass before a merge, enforced for admins too, linear history — every change is a
+  PR that waits for green.
 - **Tests:** Vitest at seams; golden vectors for construction math; synthetic drawing fixtures
   including a revision pair; competitor-derived drawings never enter this repo.
 
