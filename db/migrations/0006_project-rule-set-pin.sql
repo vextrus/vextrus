@@ -1,0 +1,2 @@
+ALTER TABLE "projects" ADD COLUMN "rule_set_edition_id" uuid NOT NULL;--> statement-breakpoint
+ALTER TABLE "projects" ADD CONSTRAINT "projects_rule_set_edition_tenant_fk" FOREIGN KEY ("rule_set_edition_id","tenant_id") REFERENCES "public"."rule_set_editions"("id","tenant_id") ON DELETE no action ON UPDATE no action;

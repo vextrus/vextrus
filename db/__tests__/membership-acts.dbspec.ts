@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { runAsSystem, schema } from "@/core/db";
+import { mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import { createProject } from "@/core/projects";
 import { getAuth, MEMBER_HAS_ACTS } from "@/server/auth";
 
 /**
@@ -18,7 +19,6 @@ let ownerId: string | undefined;
 let memberId: string | undefined;
 let tenantId: string | undefined;
 let memberPersonalTenantId: string | undefined;
-let projectId: string | undefined;
 
 function cookieOf(headers: Headers): string {
   return headers
@@ -56,14 +56,18 @@ beforeAll(async () => {
     memberPersonalTenantId = memberMembership.tenantId;
     // The member joins the owner's tenant; a project exists for the act to be scoped to.
     await tx.insert(schema.memberships).values({ tenantId, userId: m.id, role: "member" });
-    const [p] = await tx.insert(schema.projects).values({ tenantId, name: "acts guard" }).returning();
-    if (!p) throw new Error("setup failed: project");
-    projectId = p.id;
+  });
+  const tenant = tenantId;
+  const actor = memberId;
+  if (!tenant || !actor) throw new Error("setup failed: tenant");
+  // Sign-up minted the tenant's template edition; the project forks it (identity.md §8).
+  const project = (await createProject(mintTenantCtx(tenant), { name: "acts guard" })).id;
+  await runAsSystem("membership-acts dbspec act", async (tx) => {
     // One act by the member: from now on, their membership is cited by the log.
     await tx.insert(schema.acts).values({
-      tenantId,
-      projectId,
-      actorUserId: m.id,
+      tenantId: tenant,
+      projectId: project,
+      actorUserId: actor,
       type: "CONFIRM_DISCIPLINE",
       subjectKind: "drawing",
       subjectIds: [crypto.randomUUID()],
@@ -77,6 +81,9 @@ afterAll(async () => {
       if (!id) continue;
       await tx.delete(schema.acts).where(eq(schema.acts.tenantId, id));
       await tx.delete(schema.projects).where(eq(schema.projects.tenantId, id));
+      await tx.delete(schema.ruleSetEditionParameters).where(eq(schema.ruleSetEditionParameters.tenantId, id));
+      await tx.delete(schema.ruleSetEditionMethods).where(eq(schema.ruleSetEditionMethods.tenantId, id));
+      await tx.delete(schema.ruleSetEditions).where(eq(schema.ruleSetEditions.tenantId, id));
       await tx.delete(schema.memberships).where(eq(schema.memberships.tenantId, id));
       await tx.delete(schema.tenants).where(eq(schema.tenants.id, id));
     }

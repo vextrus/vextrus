@@ -2,6 +2,8 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
 import { drawingSetRevisionDigest } from "@/core/identity";
+import { createProject } from "@/core/projects";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 
 /**
  * The register spine's seam test (identity.md §2, §7, §9; ADR-0004, ADR-0005), live against
@@ -29,10 +31,10 @@ beforeAll(async () => {
     if (!u) throw new Error("setup failed");
     userId = u.id;
     await tx.insert(schema.memberships).values({ tenantId, userId, role: "owner" });
-    const [p] = await tx.insert(schema.projects).values({ tenantId, name: "register project" }).returning();
-    if (!p) throw new Error("setup failed");
-    projectId = p.id;
   });
+  // The template edition and the project's fork of it, through the seam (identity.md §8).
+  await mintTenantRuleSetTemplate(mintTenantCtx(tenantId));
+  projectId = (await createProject(mintTenantCtx(tenantId), { name: "register project" })).id;
   // The rest through the seam, as the app would.
   await forTenant(mintTenantCtx(tenantId), async (tx) => {
     const [d] = await tx.insert(schema.drawings).values({ tenantId, projectId, title: "S-01 column layout" }).returning();
@@ -65,6 +67,9 @@ afterAll(async () => {
       schema.drawings,
       schema.levels,
       schema.projects,
+      schema.ruleSetEditionParameters,
+      schema.ruleSetEditionMethods,
+      schema.ruleSetEditions,
       schema.memberships,
     ]) {
       await tx.delete(table).where(eq(table.tenantId, tenantId));

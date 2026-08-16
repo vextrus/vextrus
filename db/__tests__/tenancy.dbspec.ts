@@ -1,6 +1,8 @@
 import { eq } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
+import { createProject } from "@/core/projects";
+import { mintTenantRuleSetTemplate } from "@/core/rule-set-editions";
 
 /**
  * The seam test (ADR-0004): tenant isolation against a live Postgres — the GUC-scoped read,
@@ -10,6 +12,7 @@ import { forTenant, mintTenantCtx, runAsSystem, schema } from "@/core/db";
 
 let tenantA: string;
 let tenantB: string;
+let editionB: string;
 
 beforeAll(async () => {
   await runAsSystem("tenancy dbspec setup", async (tx) => {
@@ -31,11 +34,17 @@ beforeAll(async () => {
       { tenantId: a.id, userId: ua.id, role: "owner" },
       { tenantId: b.id, userId: ub.id, role: "owner" },
     ]);
-    await tx.insert(schema.projects).values([
-      { tenantId: a.id, name: "A's project" },
-      { tenantId: b.id, name: "B's project" },
-    ]);
   });
+  // A tenant's template edition and a project's fork are minted through the seam, as the app
+  // does it (identity.md §8): a project without an edition is unrepresentable.
+  for (const [id, name] of [
+    [tenantA, "A's project"],
+    [tenantB, "B's project"],
+  ] as const) {
+    await mintTenantRuleSetTemplate(mintTenantCtx(id));
+    const project = await createProject(mintTenantCtx(id), { name });
+    if (id === tenantB) editionB = project.ruleSetEditionId;
+  }
 });
 
 afterAll(async () => {
@@ -43,6 +52,9 @@ afterAll(async () => {
     for (const id of [tenantA, tenantB]) {
       await tx.delete(schema.modelCalls).where(eq(schema.modelCalls.tenantId, id));
       await tx.delete(schema.projects).where(eq(schema.projects.tenantId, id));
+      await tx.delete(schema.ruleSetEditionParameters).where(eq(schema.ruleSetEditionParameters.tenantId, id));
+      await tx.delete(schema.ruleSetEditionMethods).where(eq(schema.ruleSetEditionMethods.tenantId, id));
+      await tx.delete(schema.ruleSetEditions).where(eq(schema.ruleSetEditions.tenantId, id));
       await tx.delete(schema.memberships).where(eq(schema.memberships.tenantId, id));
       await tx.delete(schema.tenants).where(eq(schema.tenants.id, id));
     }
@@ -67,7 +79,7 @@ describe("the tenant seam", () => {
     let refused: unknown;
     try {
       await forTenant(mintTenantCtx(tenantA), (tx) =>
-        tx.insert(schema.projects).values({ tenantId: tenantB, name: "intruder" }),
+        tx.insert(schema.projects).values({ tenantId: tenantB, name: "intruder", ruleSetEditionId: editionB }),
       );
     } catch (err) {
       refused = err;

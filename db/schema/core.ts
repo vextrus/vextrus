@@ -26,6 +26,7 @@ import {
 import { detectedUnitSchema } from "../../src/core/entitygraph";
 import { INGEST_PARAMETER_KEYS } from "../../src/core/ingest-contract";
 import { MODEL_IDS, REFUSAL_CAUSES } from "../../src/core/model";
+import { RULE_SET_EDITION_SCOPES, RULE_SET_PARAMETER_KEYS, RULE_SET_SEED_IDS } from "../../src/core/rule-set";
 import { authAccess, tenantIsolation } from "./rls";
 
 /**
@@ -179,9 +180,70 @@ export const invitations = pgTable(
 ).enableRLS();
 
 /**
- * The project record (identity.md §8): pins configuration as a precondition of campaign
- * creation. Pins are opaque references until the book and rule-set modules land — NULL means
- * "not yet pinned", and campaign creation refuses on it; there is no default edition.
+ * A rule-set edition (identity.md §8, measurement-rules.md §1): the parameter values in force,
+ * as an immutable row. Three layers, two forks — the platform seed ships as a constant
+ * (src/core/rule-set.ts), a tenant's TEMPLATE edition forks from it at tenant creation, and a
+ * PROJECT edition forks from that template at project creation. Immutable **by grant**: the app
+ * role may SELECT and INSERT, never UPDATE or DELETE, so authoring mints a new edition and no
+ * code path can rewrite one.
+ *
+ * `key` is the content address (src/core/rule-set.ts): a digest over the parameter values and the
+ * (rule id, version) pairs below. It is not the primary key — a project edition forked unchanged
+ * from its template carries the *same* content, hence the same key, and both are real rows.
+ *
+ * Lineage is a column, so a project edition traces back through its template to the seed: exactly
+ * one parent slot is filled — another edition, or the seed the constant names — and the two
+ * checks pair the slot with the scope, so a TEMPLATE forks the seed and a PROJECT forks an
+ * edition. Authoring, which mints a template from a template, supersedes that pairing when it
+ * lands; nothing pre-customer authors.
+ */
+export const ruleSetEditions = pgTable(
+  "rule_set_editions",
+  {
+    id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    key: text("key").notNull(),
+    scope: text("scope").notNull(),
+    forkedFromEditionId: uuid("forked_from_edition_id"),
+    forkedFromSeed: text("forked_from_seed"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("rule_set_editions_tenant_idx").on(t.tenantId),
+    // pair target for the project pin, for the children below, and for the lineage FK
+    unique("rule_set_editions_id_tenant_uq").on(t.id, t.tenantId),
+    // One template in force per tenant: "the rule set in force" is a stored fact, never a query
+    // that widens (§8). A second template arrives with authoring, which supersedes this index.
+    uniqueIndex("rule_set_editions_tenant_template_uq").on(t.tenantId).where(sql`"scope" = 'TEMPLATE'`),
+    foreignKey({
+      name: "rule_set_editions_forked_from_tenant_fk",
+      columns: [t.forkedFromEditionId, t.tenantId],
+      foreignColumns: [t.id, t.tenantId],
+    }),
+    enumCheck("rule_set_editions_scope_check", "scope", RULE_SET_EDITION_SCOPES),
+    enumCheck("rule_set_editions_forked_from_seed_check", "forked_from_seed", RULE_SET_SEED_IDS),
+    check("rule_set_editions_key_check", sql.raw(`"key" ~ '^[0-9a-f]{64}$'`)),
+    check(
+      "rule_set_editions_lineage_check",
+      sql.raw(`("forked_from_edition_id" is null) <> ("forked_from_seed" is null)`),
+    ),
+    check(
+      "rule_set_editions_project_lineage_check",
+      sql.raw(`("scope" = 'PROJECT') = ("forked_from_edition_id" is not null)`),
+    ),
+    tenantIsolation("rule_set_editions"),
+  ],
+).enableRLS();
+
+/**
+ * The project record (identity.md §8, amended 2026-08-16): the rule-set pin is a column that
+ * references a **real row**, NOT NULL and composite with the tenant, so an unpinned project is
+ * unrepresentable and a project can never point at another tenant's edition. The three nullable
+ * free-text pins this table carried (book edition, rule set, multiplier scheme) are dropped by
+ * migration 0005: two of them are pricing instruments that return with the book, and a nullable
+ * fallback makes "the rule set in force" a query result that widens under a signed bill.
  */
 export const projects = pgTable(
   "projects",
@@ -191,9 +253,7 @@ export const projects = pgTable(
       .notNull()
       .references(() => tenants.id),
     name: text("name").notNull(),
-    pinnedBookEdition: text("pinned_book_edition"),
-    pinnedRuleSet: text("pinned_rule_set"),
-    pinnedMultiplierScheme: text("pinned_multiplier_scheme"),
+    ruleSetEditionId: uuid("rule_set_edition_id").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },
@@ -201,7 +261,74 @@ export const projects = pgTable(
     index("projects_tenant_idx").on(t.tenantId),
     // pair target for children's composite FKs
     unique("projects_id_tenant_uq").on(t.id, t.tenantId),
+    foreignKey({
+      name: "projects_rule_set_edition_tenant_fk",
+      columns: [t.ruleSetEditionId, t.tenantId],
+      foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
+    }),
     tenantIsolation("projects"),
+  ],
+).enableRLS();
+
+/**
+ * An edition's parameter values (measurement-rules.md §1): `numeric` in the DB, decimal at the
+ * seam — never a float (CLAUDE.md). One row per key, the key vocabulary emitted as a CHECK from
+ * src/core/rule-set.ts. These values are what the edition key digests; immutable by grant, as the
+ * edition is.
+ */
+export const ruleSetEditionParameters = pgTable(
+  "rule_set_edition_parameters",
+  {
+    editionId: uuid("edition_id").notNull(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    key: text("key").notNull(),
+    value: numeric("value").notNull(),
+  },
+  (t) => [
+    primaryKey({ name: "rule_set_edition_parameters_pk", columns: [t.editionId, t.key] }),
+    foreignKey({
+      name: "rule_set_edition_parameters_edition_tenant_fk",
+      columns: [t.editionId, t.tenantId],
+      foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
+    }),
+    enumCheck("rule_set_edition_parameters_key_check", "key", RULE_SET_PARAMETER_KEYS),
+    // `numeric` stores NaN and ±Infinity, and NaN sorts above every number — a threshold that
+    // inverts the rule it governs instead of refusing. The seam refuses one too (rule-set.ts).
+    check(
+      "rule_set_edition_parameters_value_finite_check",
+      sql.raw(`"value" > '-Infinity'::numeric and "value" < 'Infinity'::numeric`),
+    ),
+    tenantIsolation("rule_set_edition_parameters"),
+  ],
+).enableRLS();
+
+/**
+ * The methods in force for an edition (measurement-rules.md §1): methods are code, never
+ * configurable, enumerated by (rule id, version) — the pairs the edition key digests beside the
+ * parameter values, so a method version bump moves the key. One row per rule id (the primary
+ * key): two versions of one method is not an edition. Immutable by grant, as the edition is.
+ */
+export const ruleSetEditionMethods = pgTable(
+  "rule_set_edition_methods",
+  {
+    editionId: uuid("edition_id").notNull(),
+    tenantId: uuid("tenant_id")
+      .notNull()
+      .references(() => tenants.id),
+    ruleId: text("rule_id").notNull(),
+    version: integer("version").notNull(),
+  },
+  (t) => [
+    primaryKey({ name: "rule_set_edition_methods_pk", columns: [t.editionId, t.ruleId] }),
+    foreignKey({
+      name: "rule_set_edition_methods_edition_tenant_fk",
+      columns: [t.editionId, t.tenantId],
+      foreignColumns: [ruleSetEditions.id, ruleSetEditions.tenantId],
+    }),
+    check("rule_set_edition_methods_version_check", sql.raw(`"version" >= 1`)),
+    tenantIsolation("rule_set_edition_methods"),
   ],
 ).enableRLS();
 
