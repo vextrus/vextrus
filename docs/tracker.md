@@ -92,8 +92,9 @@ gh api --paginate "repos/$OWNER/$REPO/issues?state=open&labels=ready-for-agent&d
 First row wins (oldest first). Claim it before reading further. Run at founding, 2026-08-16,
 against issues #64–#68: it listed 64, 66, 67, 68 and correctly omitted #65, which is blocked by
 #64 through a native dependency (`gh api --method POST …/issues/65/dependencies/blocked_by`).
-The sub-issue commands above follow GitHub's documented API and were not exercised at founding
-— no map exists yet.
+Of the sub-issue commands above, the read side was exercised on 2026-08-16 (`dbid` returned
+#64's database id; `GET …/issues/64/sub_issues` returned `[]`); the `POST …/sub_issues` attach
+follows GitHub's documented API and is first exercised the day a map exists.
 
 ## Rules that keep the tracker honest
 

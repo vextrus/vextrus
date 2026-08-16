@@ -1,9 +1,10 @@
 # Genesis II — the founding spec, second founding
 
-**Status:** executed 2026-08-16. `pnpm verify` green in **3.9 s** (typecheck 1.5 · lint 0.9 ·
-test 1.0 · ruff 0.0 · pytest 0.4) on WSL2 Ubuntu 24.04 · Node v24.19.0 · pnpm 9.15.1 · uv 0.12.5
-/ CPython 3.13 · Postgres 16.14 native on 5544, `C.UTF-8`. Live seam test (`pnpm test:db`)
-green: scoped read, RLS refusal, composite-FK refusal, append-only ledger grant.
+**Status:** executed 2026-08-16 on WSL2 Ubuntu 24.04 · Node v24.19.0 · pnpm 9.15.1 · uv 0.12.5
+/ CPython 3.13 · Postgres 16.14 native on 5544, `C.UTF-8`. `pnpm verify` was green in 3.9 s at
+founding; **the current wall time is the one in §7**, re-measured whenever the lane changes.
+Live seam test (`pnpm test:db`) green at founding: scoped read, RLS refusal, composite-FK
+refusal, append-only ledger grant.
 **Supersedes:** `docs/specs/genesis.md` on `main` (2026-08-12), whose §1 thesis and §2 autopsy
 largely survive and are restated here; whose §6–§8 are stale.
 **Reader:** someone who knows the trade and nothing about us. This is why the system is shaped

@@ -8,7 +8,8 @@ the bid. Bangladesh first; built to travel.
 - The domain law: `docs/domain/`. Decisions: `docs/adr/`. Work: GitHub Issues (`docs/tracker.md`).
 
 ```sh
-cp .env.example .env      # Postgres 16 native on localhost:5544 (no Docker)
+cp .env.example .env      # every variable the machine needs, with dev values; pnpm checkup reports each
+                          # Postgres 16 native on localhost:5544 (no Docker)
 pnpm install && pnpm db:migrate
 pnpm verify               # tsc → eslint → vitest → schema-drift → ruff → pytest → next build, fail-fast, uncached
 pnpm test:db              # the live tenant-seam test
