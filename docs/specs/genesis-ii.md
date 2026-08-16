@@ -289,9 +289,10 @@ that runs Claude.
   too, linear history — every change is a PR that waits for green (two `verify` check-runs per PR;
   both gate it).
   **How a module is planned and built** — the pipeline, the build-ticket contract, model and
-  effort per ticket class, the metrics and the two §3 amendments awaiting a decision — is
-  `docs/specs/harness.md` (proposed 2026-08-16); the flow a session follows from claim to merge is
-  `docs/tracker.md`.
+  effort per ticket class, the metrics and the two §3 amendments (**accepted 2026-08-16**, and
+  recorded under §3 above) — is `docs/specs/harness.md` (**accepted 2026-08-16**); the flow a
+  session follows from claim to merge is `docs/tracker.md`, which also carries how a ticket is
+  dispatched to `.github/workflows/agent.yml`.
 - **Tests:** Vitest at seams — **40 tests over 6 files** inside `pnpm verify`, plus `pnpm test:db`'s
   25 live-seam tests over 6 files (3.84 s); golden vectors for construction math; synthetic drawing
   fixtures including a revision pair; competitor-derived drawings never enter this repo. Since #99
