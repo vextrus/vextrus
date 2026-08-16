@@ -176,10 +176,16 @@ an issue names the clause it builds. A change to the law is a dated amendment in
 this founding added one (`bd-authority.md` §10: the PWD zone columns and the e-GP gates, both
 confirmed against the primary documents after a first pass had contradicted them).
 
-**Skeleton grade today:** tenants, users, memberships, projects (with pins as opaque references),
-the model call ledger; the tenant and model seams; the EntityGraph contract. The register lands
-in the first takeoff issue, from `identity.md` and `quantity-contract.md`, and it is deliberately
-demanding: refusal and deferral are first-class states, which is the thesis, not overhead.
+**Skeleton grade at founding:** tenants, users, memberships, projects (with pins as opaque
+references), the model call ledger; the tenant and model seams; the EntityGraph contract. The
+register lands in the first takeoff issue, from `identity.md` and `quantity-contract.md`, and it
+is deliberately demanding: refusal and deferral are first-class states, which is the thesis, not
+overhead. *Landed 2026-08-16 (issues #64–#68):* the register's identity tables (levels,
+drawings, drawing revisions, content-addressed drawing-set revisions, register objects with the
+identity as a unique constraint, refused sightings with no bill join, the append-only human-only
+act log), the ingest record with verbatim fidelity counters, the model seam's live transport and
+ledger writer, better-auth as its own constrained role with the tRPC root minting the tenant
+context, and CI running the contract on every push.
 
 ## 6. Scope fence
 
@@ -200,11 +206,13 @@ that runs Claude.
   db-migrate, db-drift — four files, ~330 lines) · `docs/`.
 - **Ports:** web 3210, Postgres 5544 native. `pnpm checkup` binds 3210 to prove it bindable, not
   merely unlistened.
-- **Verify:** measured above at founding; re-measured **13.3 s** on 2026-08-16 (typecheck 2.3 ·
-  lint 0.8 · test 2.7 · ruff 0.0 · pytest 0.4 · **build 7.1**) on the same machine once `next
-  build` joined the lane — cold, into its own `distDir` (`.next-verify`), with no env and no
-  daemon — the day the first request path landed and a route could throw during prerender
-  (issue #66, ADR-0007). Playwright, if ever, outside the lane.
+- **Verify:** measured above at founding (3.9 s); re-measured on 2026-08-16 with the five
+  follow-on issues (#64–#68) merged: **13.7 s** (typecheck 2.8 · lint 1.1 · test 2.9 · ruff 0.0
+  · pytest 0.4 · **build 6.5**) on the same machine, once `next build` joined the lane — cold,
+  into its own `distDir` (`.next-verify`), with no env and no daemon — the day the first request
+  path landed and a route could throw during prerender (ADR-0007). On the CI runner
+  (`.github/workflows/ci.yml`, ubuntu-latest, cold) the same run is 34.5 s, and `pnpm test:db`
+  runs there against a `postgres:16` service. Playwright, if ever, outside the lane.
 - **Guardrails, all lint-enforced with a fail-closed fixture test:** module boundaries; the two
   seams; `localeCompare` (identity sorts by code units); bare `toLocaleString` (lakh/crore, stated
   locale). CLAUDE.md's NEVER list names each rule's enforcement; a NEVER that cannot be enforced
