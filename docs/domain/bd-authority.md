@@ -145,3 +145,32 @@ structural item is Substructure off a foundation member, Superstructure off a co
 when all of a row's element types agree) → division/group → division → `UNCLASSIFIED`, kept,
 labelled, reason stated, never dropped. The resolver records which row decided; the taxonomy
 version stamps every document. No project-name conditionals, ever.
+
+## 10. Amendments — 2026-08-16 (second founding, verified against the primary documents)
+
+**§4, the PWD zone columns — confirmed, with a precision.** Every rate table in PWD SoR 2022
+(2nd Revised, eff. 22 Jan 2026) and 2022 Revised (eff. 23 Feb 2023) carries four rate columns
+labelled by district group — `[Dhaka, Mymensingh] [Chattogram, Sylhet] [Khulna, Barisal,
+Gopalgonj] [Rajshahi, Rangpur]` — on all 319 rate pages; the letters `Zone-A…D` print only in
+the original 2022 edition. So: **the zone letter is a per-book label the later editions do not
+print**; the schema stores the column by its district-group key and treats the letter as a
+display alias per edition, and a search for "Zone" in the PDF is not evidence of anything. No
+front matter assigns the 64 districts to a column (the headers name nine): the district→column
+map is per-book config with no published authority and must be an authored, cited dataset row,
+never inferred. Ch. 33 inaccessible-area Categories A/B/C (5/10/15%) are a separate lettering.
+The 2018 edition is no longer served by PWD and its column shape is unverified.
+
+**§7, the e-GP price gates — confirmed, with the formula.** PPR 2025 (SRO 388-Law/2025, Bangladesh
+Gazette extraordinary 28 Sep 2025), Schedule 18 under Rule 118(25)–(26): ¶7 — a tender more
+than **10% above the official estimate is not considered and is non-responsive** at preliminary
+evaluation (the worked example rejects +12.2% and passes +2.86%); the low side is the
+**significantly-low formula** `x̄ = 0.5·mean(responsive bids) + 0.2·OCE + 0.3·NPPI`, NPPI being
+the e-GP national price index over a 28-day window, with floor `x̄ − Sd` — below it, rejected.
+Scope (¶9): domestic procurement; not international, not outsourced physical services (classic
+abnormally-low test). LTM keeps ±5% (e-PW2B ITT 23.2/23.3/39.4); a 20% single-tender rule (¶8).
+BPPA's Oct/Nov 2025 works STDs (e-PW2A/e-PW3) do not print the +10% ceiling — rules and tender
+documents are out of step; the rules govern. Consequence for the bid module: the winning zone is
+bracketed by a **hard ceiling** at 1.10 × OCE and a **soft floor** at `x̄ − Sd` that depends on
+rival bids and e-GP market history — the OCE reconstruction stays the anchor, and the threshold
+model needs an NPPI source. Press coverage of the *draft* ("removal of the ±10% limit") described
+the low side only; it is not the gazetted rule.
