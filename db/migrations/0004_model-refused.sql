@@ -1,0 +1,2 @@
+ALTER TABLE "model_calls" DROP CONSTRAINT "model_calls_outcome_check";--> statement-breakpoint
+ALTER TABLE "model_calls" ADD CONSTRAINT "model_calls_outcome_check" CHECK ("outcome" in ('PROPOSED', 'UNSOURCED', 'SOURCE_UNRESOLVED', 'MALFORMED', 'FIXTURE_MISSING', 'TRANSPORT_FAILED', 'MODEL_REFUSED'));

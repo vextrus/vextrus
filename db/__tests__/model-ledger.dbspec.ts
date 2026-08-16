@@ -68,13 +68,20 @@ describe("dbRecorder", () => {
         record: dbRecorder(mintTenantCtx(tenantId), projectId),
       },
     );
+    // The model's own refusal is a named cause of its own (migration 0004 admits it in the CHECK).
+    const modelRefused = await callModel(
+      { ctx: mintTenantCtx(tenantId), model: "claude-sonnet-5", purpose: "refused", system: "s", input: "i", payload, resolve: () => true },
+      { transport: { kind: "live", complete: async () => ({ error: "REFUSAL:cyber" }) }, record: dbRecorder(mintTenantCtx(tenantId), projectId) },
+    );
     expect(proposed.out.ok).toBe(true);
     expect(missing.out).toMatchObject({ ok: false, cause: "FIXTURE_MISSING" });
     expect(malformed).toMatchObject({ ok: false, cause: "MALFORMED" });
+    expect(modelRefused).toMatchObject({ ok: false, cause: "MODEL_REFUSED" });
 
     const rows = await forTenant(mintTenantCtx(tenantId), (tx) => tx.select().from(schema.modelCalls));
-    expect(rows).toHaveLength(3);
+    expect(rows).toHaveLength(4);
     const byOutcome = Object.fromEntries(rows.map((r) => [r.outcome, r]));
+    expect(byOutcome.MODEL_REFUSED).toMatchObject({ transport: "live", inputTokens: null, outputTokens: null, purpose: "refused" });
     expect(byOutcome.PROPOSED).toMatchObject({ transport: "fixture", inputTokens: 120, outputTokens: 18, projectId, purpose: "view-caption-classify" });
     expect(byOutcome.FIXTURE_MISSING).toMatchObject({ inputTokens: null, outputTokens: null });
     expect(byOutcome.MALFORMED).toMatchObject({ inputTokens: 3, outputTokens: 1, purpose: "malformed" });
