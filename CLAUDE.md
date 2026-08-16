@@ -39,7 +39,9 @@ module counts or agent counts.
 - NEVER Western grouping — lakh/crore (`৳1,00,00,000`). `toLocaleString` is a lint error;
   format through a document formatter with a stated locale. `localeCompare` is a lint error —
   identity sorts by code units (`compareCanonical`).
-- NEVER edit a landed migration — supersede it. `pnpm db:migrate` is the only schema writer.
+- NEVER edit a landed migration — supersede it. CI fails a PR that modifies or deletes a
+  migration file present on its base; `pnpm db:migrate` is the only schema writer; verify's
+  schema-drift stage refuses a schema edit no migration carries.
 - NEVER weaken a check, delete a test or edit a fixture to green a build.
 
 ## The feedback loop
