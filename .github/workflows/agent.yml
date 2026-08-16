@@ -168,10 +168,38 @@ jobs:
 
             State the assumption you took in the PR body, with `pnpm verify`'s wall time and what
             `/code-review` found.
+          # bypassPermissions because the runner IS the isolated VM the docs reserve it for, and
+          # because this repo's own .claude/settings.json — correctly, for a session on the
+          # founder's machine — puts `git push` behind `ask` and does not allow `gh pr create`.
+          # In a non-interactive run an `ask` is a denial: the first real dispatch spent $0.79
+          # over 26 turns and produced nothing, with permission_denials_count 6 (issue #117).
+          # The safety here is not the permission prompt: it is an ephemeral runner, a token that
+          # cannot merge, protected `main`, and a human on the pull request.
           claude_args: |
             --max-turns 60
             --max-budget-usd 8
-            --allowedTools Read,Edit,Write,Glob,Grep,Bash,Skill
+            --permission-mode bypassPermissions
+
+      # "Success" from the executor is a report, not a result: a run that opens no pull request
+      # has not met A1's contract, however cheerfully it exits (issue #117 — 26 turns, $0.79, no
+      # branch, no commit, `is_error: false`). Check the artifact, not the claim; failing here is
+      # what makes `record the run` release the claim, exactly as a crash would.
+      - name: a dispatch that opened no pull request has not finished
+        id: outcome
+        if: always() && steps.gate.outcome == 'success'
+        run: |
+          set -euo pipefail
+          # Match on the head branch, not a body search: the branch name is ours by construction
+          # (`issue-<n>-<slug>`) and is exact the moment the PR exists, where GitHub's search
+          # index can lag a check running seconds after creation.
+          prs=$(gh pr list --state open --json headRefName \
+            --jq "[.[] | select(.headRefName | startswith(\"issue-${{ github.event.issue.number }}-\"))] | length")
+          if [ "$prs" -eq 0 ]; then
+            echo "::error::NO_PULL_REQUEST — the executor reported '${{ steps.claude.outcome }}' but opened no pull request referencing issue #${{ github.event.issue.number }}."
+            gh issue comment "${{ github.event.issue.number }}" --body "**Dispatch refused: \`NO_PULL_REQUEST\`** — the executor reported \`${{ steps.claude.outcome }}\` but opened no pull request. A run that produces nothing has not met the dispatcher's contract; read the [run](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) before re-dispatching."
+            exit 1
+          fi
+          echo "pull request(s) referencing this issue: $prs"
 
       # The metrics harness.md §8 requires, on the issue where the tracker can see them. Skipped
       # when the gate refused: that path has already said why, by name, and a second comment
@@ -185,7 +213,10 @@ jobs:
           set -euo pipefail
           n="${{ github.event.issue.number }}"
           run_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          # The executor's own outcome is a report; the PR check is the result. Either failing
+          # means the dispatch did not finish, and the claim goes back.
           conclusion="${{ steps.claude.outcome }}"
+          [ "${{ steps.outcome.outcome }}" = "success" ] || conclusion="no pull request"
           gh issue comment "$n" --body "**Dispatch finished** — executor \`$conclusion\`, [run]($run_url), branch \`${{ steps.claude.outputs.branch_name || '(none)' }}\`, session \`${{ steps.claude.outputs.session_id || '(none)' }}\`."
           # A claim that outlives its dispatch is worse than no claim: the frontier query excludes
           # an assigned ticket, so a failed run would hide the work from everyone (docs/tracker.md,
