@@ -56,7 +56,13 @@ const driftStage = {
     return `db/schema/*.ts and db/migrations disagree — a migration is missing for:\n\n${sql}\nRun \`pnpm db:generate --name <slug>\`, review the SQL, commit it (never edit a landed migration).`;
   },
 };
+// The route validator Next generates (page/layout/route-handler signatures) is checked by tsc
+// only if the generated types exist — never on a clean tree. `next typegen` writes them into the
+// verify distDir first (issue #91), so `typecheck` covers them on every machine and the build stage
+// need not check them a second time (next.config.ts sets ignoreBuildErrors under this env only).
+const buildEnv = { VEXTRUS_NEXT_DIST_DIR: buildDir, NEXT_TELEMETRY_DISABLED: "1" };
 const stages = [
+  { name: "typegen", cmd: "pnpm exec next typegen", cwd: root, env: buildEnv, stdio: "pipe" },
   { name: "typecheck", cmd: "pnpm exec tsc --noEmit", cwd: root },
   { name: "lint", cmd: "pnpm exec eslint .", cwd: root },
   { name: "test", cmd: "pnpm exec vitest run", cwd: root },
@@ -67,7 +73,7 @@ const stages = [
     name: "build",
     cmd: "pnpm exec next build",
     cwd: root,
-    env: { VEXTRUS_NEXT_DIST_DIR: buildDir, NEXT_TELEMETRY_DISABLED: "1" },
+    env: buildEnv,
     before: () => rmSync(path.join(root, buildDir), { recursive: true, force: true }),
   },
 ];
