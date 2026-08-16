@@ -59,7 +59,8 @@ on 3210. Only `pnpm verify` output is evidence; a check run any other way is a c
 
 - `docs/domain/` — **the law**: quantity contract, identity, measurement rules, BD authority,
   formulas, CAD ingestion. Code implements these; issues cite the clause.
-- `docs/specs/genesis-ii.md` the founding spec · `docs/adr/` decisions that constrain product
+- `docs/specs/genesis-ii.md` the founding spec · `docs/specs/harness.md` how a module is planned
+  and built (proposed) · `docs/adr/` decisions that constrain product
   code, superseded never edited · `docs/CONTEXT.md` commercial truth, glossary, BD rules ·
   `docs/lessons/` one paid-for fault per file — read when something is broken and the code looks
   right · `docs/research/` the market, and the harness (`harness-2026-08.md`).
@@ -69,7 +70,11 @@ on 3210. Only `pnpm verify` output is evidence; a check run any other way is a c
 
 ## Working here
 
-- One issue per session. Cite the domain clause you implement. `pnpm verify` before every commit.
+- One issue per session, one branch, one PR — the flow from claim to merge is in `docs/tracker.md`.
+  Cite the domain clause you implement. `pnpm verify` before every commit.
+- `main` is protected: every change is a PR, and the CI job `verify` must be green — for admins too.
+  Wait for **every** `verify` check-run on the head (a PR produces two); `gh pr merge --admin` is
+  never used.
 - Nothing about campaigns, loops, conductors or dispatch belongs in this repo. If you are
   writing a script that runs Claude, stop.
 - Delegate only wide, independent investigation; never to check your own work.
