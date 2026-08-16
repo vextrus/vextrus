@@ -69,6 +69,10 @@ jobs:
         id: gate
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This step runs before actions/checkout, so `gh` has no git remote to infer the
+          # repository from and every `gh issue ...` call fails with "not a git repository"
+          # (docs/lessons/gh-infers-the-repo-from-a-git-remote-that-may-not-exist.md).
+          GH_REPO: ${{ github.repository }}
           ISSUE: ${{ github.event.issue.number }}
           HAS_SECRET: ${{ secrets.ANTHROPIC_API_KEY != '' || secrets.CLAUDE_CODE_OAUTH_TOKEN != '' }}
         run: |
@@ -168,6 +172,7 @@ jobs:
         if: always() && steps.gate.outcome == 'success'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           n="${{ github.event.issue.number }}"
