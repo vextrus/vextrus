@@ -66,6 +66,25 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
+      # A landed (rule id, version) is immutable (measurement-rules.md §1, ADR-0010): a method whose
+      # implementation file moves under a version an edition already pins is arithmetic changing
+      # under a certified rule set. Bumping the version and adding an entry stays free.
+      - name: landed method versions are immutable
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+          base="${{ github.event.pull_request.base.sha }}"
+          manifest=src/core/methods.manifest.json
+          # A base with no manifest is the one lawful absence (the commit that introduced it).
+          # Every other git failure — a renamed path, a bad ref — fails the step rather than
+          # standing in for "the base had no methods", which would make the guard vacuous forever.
+          if git cat-file -e "$base:$manifest" 2>/dev/null; then
+            git show "$base:$manifest" > /tmp/base-methods.manifest.json
+          else
+            echo "::notice::$manifest does not exist on the base — nothing has landed to protect"
+            echo '{"methods":{}}' > /tmp/base-methods.manifest.json
+          fi
+          node scripts/method-hashes.mjs --against /tmp/base-methods.manifest.json
       - name: pnpm via corepack (package.json packageManager pins 9.15.1)
         run: |
           corepack enable
