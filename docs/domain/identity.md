@@ -190,6 +190,17 @@ naming the outgoing and incoming keys and stating its consequences before it com
 signed ⇒ **voids whole**. Staleness needs no generation rule of its own, because it can only reach
 a bill through the signature `quantity-contract.md` §7 already requires.
 
+*Amendment, 2026-08-16 (precision on the clause above).* The catalogue digest is computed over
+**`bears`** — canonically sorted `(element class, kind)` pairs — and the kind set is its
+**projection**, not its content. There are two denominators and the kind set alone tracks neither
+exactly: `quantity-contract.md` §6 puts the whole catalogue in every project's denominator, which
+moves with the kind set, while §2.2's denominator is *sighted classes × the kinds they bear*, which
+moves with `bears`. So a kind no class bears moves the digest while no denominator moves — a
+signature voided for nothing — and a `bears` row shipped for an existing kind widens the residue
+denominator under a signed bill while the digest holds still, which is the hole the digest exists
+to close. Because every kind is borne by at least one class (`measurement-rules.md` §4), one digest
+over `bears` covers both denominators and moves when and only when a denominator moves.
+
 ## 9. The drawing-set revision
 
 *Amendment, 2026-08-13.* §8 said a campaign pins "a drawing revision", singular. §2 already

@@ -81,6 +81,49 @@ dimension instead of a trade is the defect class that produced a measured 20.2×
   `.wayfinder/takeoff/tickets/01`; a book item joins up to it on `kind`, unit as the dimension
   veto).
 
+*Amendment, 2026-08-16.* `(chapter × dimension)` is the rule for what makes two kinds **distinct**,
+not a schema. A chapter reference is `(book, chapter)` and never a bare code (`bd-authority.md`
+§4), numbering differs across books, and a unified national schedule is imminent — so a code-owned
+`chapter` column would pin a closed platform enum to one edition of one book. The chapter is
+**cited as evidence** in the enum's declaration; the `(book, chapter)` itself lives on the book
+item and joins up on `kind`. A kind whose chapter cannot be verified ships **uncited**, never
+under a fallback name.
+
+**The naming law, closed.** A kind's name may contain **trade and material tokens only** — never a
+dimension or unit, never an **element class or member type**, never a pricing role (the
+`isRateModifier` ruling above), never a book or chapter code. A kind is deliberately **coarser**
+than the book item: `quantity-contract.md` §2.2's *one kind covers twelve PWD member-type
+sub-items* is the same twelve `bd-authority.md` §4 lists for formwork, so a kind naming the member
+type covers exactly one of them and §2.2's argument for `(class × kind)` grain collapses. It would
+also make §8's `bears` derivable from a substring, violating *the class is in the key, the kind is
+not* by spelling. The class supplies the member-type axis at book-item selection.
+
+**The ban is on the dimension category, not on a list of four.** `VOLUME` is a dimension this
+clause's `AREA · LENGTH · COUNT · WEIGHT` omitted; unit abbreviations (`CUM`, `SQM`, `RFT`, `NR`)
+name a dimension in shorthand. The mechanical form is a token test over kind names against the
+dimension set, its unit abbreviations, **and `ELEMENT_TYPES`** — so the class ban is checked by the
+same construct, and adding an element class re-runs it for free.
+
+**The four artifacts of §8 have one declaration site each, in code.** The closed enum, the two
+total maps and `bears` are TS consts; the **work-item catalogue** and `bears` are additionally
+**emitted as tables by migration**, with a drift stage in `pnpm verify` failing when table and
+const disagree (ADR-0002's pattern, extended from CHECK constraints to seed rows). Emission is
+forced, not stylistic: the residue is a query (`quantity-contract.md` §2.2) and the certificate a
+query over catalogue × residue (§6), so both denominator axes must be reachable in SQL. The two
+maps stay pure code — they never enter a query, and typed as total records the compiler is their
+totality proof. The catalogue carries, per kind: en+bn description (each string carrying whether it
+is natively reviewed), the canonical SI unit and its dimension, and the **fixed document rounding
+precision** §6 requires — a code constant, since a rounding precision is neither a rate nor a
+measurement threshold and decides no measured number.
+
+**A class that bears no kind is declared, never absent.** Every element class appears in `bears` or
+in a code-owned unborne set carrying `KIND_NOT_YET_SEEDED`, and the certificate prints the
+**sighted** members of that set as a boundary statement. Otherwise a sighted class contributes zero
+rows to the residue denominator and its wholly unmeasured scope reports nothing — the failure
+`quantity-contract.md` §2.2 names for class grain, one level up. `bears` states what a class
+**lawfully bears**, never what a rail emits: seeding it to the build state makes the residue report
+nothing and turns the relation into a changelog.
+
 **Mapping a line to a book item:** match on **trade first** (kind → chapter); the dimension
 lock has the final veto; never on dimension alone (a dimension-only matcher priced pile-cap
 *excavation* at the RCC casting rate — ৳316/Cft against ৳15/Cft). **Never guess**: no
