@@ -146,6 +146,50 @@ forward invisibly.
 - A surface beside the measurement flow may never write a **quantity**; it may write a project
   fact, against the project boundary. Reference surfaces are read-only.
 
+*Amendment, 2026-08-16.* The pin set above named three things — book edition, rule set,
+multiplier scheme — and put all three on the project record. Two of them are **pricing**
+instruments, and the one thing the certificate cannot be computed without was missing.
+
+**Book edition and multiplier scheme leave the campaign's preconditions.** Neither determines a
+quantity: the book carries rates, and the floor multiplier is a **rate-modifier role**
+(`quantity-contract.md` §4). A campaign measuring without either is not a campaign missing a pin
+— it is the *tenant with no scheme* fact `measurement-rules.md` §7 names, and that fact's meaning
+is stated here: **no priced line may be emitted; no quantity is affected**. An unpriced quantity
+is already a lawful bill face (`quantity-contract.md` §6), so seeding a rate-free book edition to
+satisfy a `NOT NULL` would pin a fiction — this clause's own prohibition under a different name.
+The book edition returns with the book module and binds to the **issued priced bill**, never to
+campaign creation.
+
+**The catalogue digest enters, on the campaign.** The Certificate of Measured Coverage is a query
+over work-item catalogue × scope register (`quantity-contract.md` §6), so the catalogue **is** the
+coverage denominator — and it was versioned by nothing, leaving a shipped kind free to widen the
+denominator under a signed bill. A campaign pins the **catalogue digest**: a content-addressed key
+over the catalogue's kind set, §9's law applied to a second citation scope. A label or description
+change moves no denominator and voids nothing; a kind added or removed mints a new digest and
+moves every denominator citing it. It is pinned on the **campaign**, never on the project — the
+catalogue is platform-owned and code-derived, so a project chooses nothing, and a project-level
+pin would have to advance on deploy: a fallback wearing a `NOT NULL`.
+
+**The rule-set pin is a project column that must reference a real row.** Three layers, two forks:
+a **platform seed** ships as effective-dated data no tenant may edit; a **tenant template** forks
+from it at tenant creation; a **project edition** forks from the template at project creation, in
+the same transaction — so an unpinned project is unrepresentable, and campaign creation carries no
+config refusal and spends no reason code. Editions are **immutable**: authoring mints a new
+edition, never updates one, and authoring is its own permission, distinct from signing. An
+edition's key is a digest over its parameter values × the `(rule id, version)` pairs of the
+methods in force, so a method version bump moves it while an edit rewriting a value to itself does
+not.
+
+**A campaign snapshots what it cites; staleness is a diff, never a flag.** Campaign creation
+copies the project's rule-set edition and the catalogue digest onto the campaign, immutably, so a
+project re-pin can never move an in-flight campaign underneath its measurer. The freshness gate
+diffs that snapshot against what is in force now — the same *did the cited thing move?* query §9
+runs over the manifest. Diverged and unsigned ⇒ **stale**, which blocks **signing** and never
+measuring: the signature act refuses `PIN_STALE`, cleared only by an authored **re-pin** act
+naming the outgoing and incoming keys and stating its consequences before it commits. Diverged and
+signed ⇒ **voids whole**. Staleness needs no generation rule of its own, because it can only reach
+a bill through the signature `quantity-contract.md` §7 already requires.
+
 ## 9. The drawing-set revision
 
 *Amendment, 2026-08-13.* §8 said a campaign pins "a drawing revision", singular. §2 already
