@@ -8,7 +8,8 @@
  * needs no daemon and no env — every module that reads env does so lazily, at request time.
  */
 import { spawnSync } from "node:child_process";
-import { readFileSync, rmSync } from "node:fs";
+import { cpSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "..");
@@ -31,10 +32,35 @@ const cad = path.join(root, "cad");
 // running `next dev` keeps its `.next`. A route can throw during prerender since the first request
 // path landed (issue #66), so `next build` is part of the contract.
 const buildDir = ".next-verify";
+// The schema-drift probe (ADR-0002, issue #78): drizzle-kit generate against a scratch `out`
+// seeded with a copy of db/migrations/meta. No database, nothing written to the tree; a schema
+// edit that no migration carries produces a .sql file there, and that is the failure — printed,
+// with the remedy. drizzle-kit resolves --out relative to cwd, so the path is given relative.
+const drift = { dir: "" };
+const driftStage = {
+  name: "db:schema-drift",
+  get cmd() {
+    return `pnpm exec drizzle-kit generate --dialect postgresql --schema './db/schema/*.ts' --out ${path.relative(root, drift.dir)}`;
+  },
+  cwd: root,
+  stdio: "pipe",
+  before: () => {
+    drift.dir = mkdtempSync(path.join(tmpdir(), "vextrus-schema-drift-"));
+    cpSync(path.join(root, "db/migrations/meta"), path.join(drift.dir, "meta"), { recursive: true });
+  },
+  after: () => {
+    const generated = readdirSync(drift.dir).filter((f) => f.endsWith(".sql"));
+    const sql = generated.map((f) => readFileSync(path.join(drift.dir, f), "utf8")).join("\n");
+    rmSync(drift.dir, { recursive: true, force: true });
+    if (generated.length === 0) return null;
+    return `db/schema/*.ts and db/migrations disagree — a migration is missing for:\n\n${sql}\nRun \`pnpm db:generate --name <slug>\`, review the SQL, commit it (never edit a landed migration).`;
+  },
+};
 const stages = [
   { name: "typecheck", cmd: "pnpm exec tsc --noEmit", cwd: root },
   { name: "lint", cmd: "pnpm exec eslint .", cwd: root },
   { name: "test", cmd: "pnpm exec vitest run", cwd: root },
+  driftStage,
   { name: "cad:ruff", cmd: "uv run ruff check .", cwd: cad },
   { name: "cad:test", cmd: "uv run pytest -q", cwd: cad },
   {
@@ -50,12 +76,16 @@ const t0 = Date.now();
 for (const stage of stages) {
   const started = Date.now();
   stage.before?.();
-  const result = spawnSync(stage.cmd, { cwd: stage.cwd, stdio: "inherit", shell: true, env: { ...process.env, ...stage.env } });
+  const result = spawnSync(stage.cmd, { cwd: stage.cwd, stdio: stage.stdio ?? "inherit", encoding: "utf8", shell: true, env: { ...process.env, ...stage.env } });
   const secs = ((Date.now() - started) / 1000).toFixed(1);
-  if (result.status !== 0) {
+  // `after` runs on every exit so a stage's scratch is always removed; the process fault wins.
+  const checked = stage.after?.() ?? null;
+  const fault = result.status !== 0 ? `${result.stdout ?? ""}${result.stderr ?? ""}`.trim() : checked;
+  if (fault !== null) {
+    if (fault) console.error(fault);
     console.error(`\nverify: ${stage.name} FAILED in ${secs}s`);
     console.error(`verify: if this looks like an environment fault, run pnpm checkup`);
-    process.exit(result.status ?? 1);
+    process.exit(result.status || 1);
   }
   console.log(`verify: ${stage.name} ok (${secs}s)`);
 }
