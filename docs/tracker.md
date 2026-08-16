@@ -107,3 +107,7 @@ follows GitHub's documented API and is first exercised the day a map exists.
   dated amendment in `docs/domain/` in the same PR.
 - Pull requests are not a request surface (no external PRs are triaged); `/triage` reads that
   flag from `docs/agents/issue-tracker.md`.
+- `/wayfinder`, `/to-tickets`, `/to-spec`, `/triage`, `/implement` and `/grill-with-docs` are
+  **founder-invoked** (`disable-model-invocation: true` in the plugin): a session cannot start
+  them itself and their text costs no context until typed. Charting a map is `/wayfinder` with the
+  founder at the keyboard, never a session alone.

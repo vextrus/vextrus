@@ -1,36 +1,31 @@
-# Domain Docs
+# Domain docs — how a skill or a delegated reader consumes this repo's law
 
-How the engineering skills should consume this repo's domain documentation when exploring the codebase.
+**Layout: single-context.** One glossary, one ADR directory, one body of domain law, all under
+`docs/`. Nothing lives at the root except `CLAUDE.md` and `README.md`.
 
-**Layout: single-context.** `docs/CONTEXT.md` (commercial truth, glossary, Bangladesh rules), `docs/adr/` for decisions that constrain product code, and `docs/domain/` — the domain law.
+| file | what it is | read it when |
+|---|---|---|
+| `docs/CONTEXT.md` | commercial truth, the glossary, Bangladesh rules — what the code cannot tell you | anything user-facing, commercial or domain-specific |
+| `docs/domain/*.md` | **the law**: quantity contract, identity, measurement rules, BD authority, formulas, CAD ingestion — normative | before implementing or judging anything that measures, identifies, prices or ingests; cite the clause |
+| `docs/adr/NNNN-*.md` | decisions that constrain product code; superseded by a dated ADR, never edited | before proposing a structural change; a conflict is surfaced, never silently overridden |
+| `docs/specs/genesis-ii.md` | the founding spec — thesis, differentiators, §3 what binds the harness, §7 the measured verify contract | when a change touches how the repo works rather than what it does |
+| `docs/lessons/*.md` | one paid-for fault per file, dated | first, when something is broken and the code looks right |
+| `docs/research/*.md` | the market and the harness, re-examined against primary sources | when a claim about a competitor, a rate book or a Claude Code feature needs a source |
 
-## Before exploring, read these
+## Rules for consumers
 
-- **`docs/CONTEXT.md`** — this repo keeps it under `docs/`, not at the root.
-- **`docs/adr/`** — read ADRs that touch the area you're about to work in. In multi-context repos, also check `src/<context>/docs/adr/` for context-scoped decisions.
-- **`docs/domain/`** — the domain law (identity, quantity contract, measurement rules, formulas, BD authority, CAD ingestion). Normative: read the files relevant to your topic before proposing changes; cite the clause you implement; a conflict is surfaced as a dated amendment, never silently overridden.
-
-If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
-
-## File structure
-
-```
-/
-├── docs/CONTEXT.md        ← commercial truth, glossary, Bangladesh rules
-├── docs/domain/           ← the domain law (six files)
-├── docs/adr/              ← 0001-…md, decisions that constrain product code
-├── docs/lessons/          ← one paid-for fault per file
-└── src/
-```
-
-## Use the glossary's vocabulary
-
-When your output names a domain concept (in an issue title, a refactor proposal, a hypothesis, a test name), use the term as defined in `CONTEXT.md`. Don't drift to synonyms the glossary explicitly avoids.
-
-If the concept you need isn't in the glossary yet, that's a signal — either you're inventing language the project doesn't use (reconsider) or there's a real gap (note it for `/domain-modeling`).
-
-## Flag ADR conflicts
-
-If your output contradicts an existing ADR, surface it explicitly rather than silently overriding:
-
-> _Contradicts ADR-0007 (event-sourced orders) — but worth reopening because…_
+- **Use the glossary's vocabulary.** An issue title, a hypothesis, a test name uses the term as
+  `docs/CONTEXT.md` defines it (basis, coverage, act, proposal, source key …). A concept the
+  glossary lacks is a signal: either the language is invented (reconsider) or there is a gap
+  (note it for `/domain-modeling`).
+- **Cite the clause.** Code implements a numbered section of `docs/domain/`; an issue names the
+  clause it builds; a review checks the clause, not a paraphrase of it.
+- **A change to the law is a dated amendment in the same PR**, never an edit that reads as if it
+  had always been so.
+- **Flag ADR conflicts explicitly** — *contradicts ADR-0004 (typed tenancy seam) because …* — and
+  leave the decision to a superseding ADR or the founder.
+- **Delegated readers do not see `CLAUDE.md`.** Explore and Plan subagents start without it; a
+  delegation prompt that needs the law names the file and the clause.
+- **`docs/lessons/` is the memory surface.** Auto memory is off in `.claude/settings.json`; what
+  a session learns at a dated, observed cost goes into one lesson file through a PR, where every
+  machine and CI can see it.
