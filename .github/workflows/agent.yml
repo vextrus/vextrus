@@ -155,6 +155,11 @@ jobs:
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The action hides Claude's output by default, which left four dispatches diagnosable
+          # only by a denial *count* (#123). A count is not evidence. This repository is public
+          # and its run logs already are; the executor holds no secret beyond a repo-scoped token
+          # that cannot merge.
+          show_full_output: true
           prompt: |
             Build the ticket in issue #${{ github.event.issue.number }} of ${{ github.repository }}.
 
