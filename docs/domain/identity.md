@@ -42,6 +42,17 @@ Attributes are not → their own authority may name a different sheet (the gener
 supplies fy/cover/mortar while measuring nothing), and disagreement is *declared*, never
 silently resolved.
 
+*Amendment, 2026-08-17 (issue #134).* **A measured sighting landing where an expansion already stands
+is a promotion, not a refusal.** `cad-ingestion.md` §9 expands vertical classes at placement, so a
+column reached by a typical-plan expansion and the same column drawn on its own level plan produce the
+**identical identity key** — no double count is representable, and the condition this clause refuses
+for is unreachable. Refusing anyway would send the `MEASURED` sighting to the no-join evidence table
+and leave a `DERIVED` inference holding the register row, decided by nothing but walk order. So the
+sighting takes the row: the object's geometry re-cites the level plan's view key and its geometry
+basis rises from `DERIVED` to `MEASURED` (`quantity-contract.md` §1), the semantic changes, and the row
+re-presents for disposition (§5). `DUPLICATE_IDENTITY` keeps its meaning unchanged for two **measured**
+sightings of one physical scope.
+
 ## 3. Key grammars (principles, not literals)
 
 Every derived row key is **content-derived with zero minted ids** — no UUIDs, no DB sequences,
@@ -208,6 +219,27 @@ signature voided for nothing — and a `bears` row shipped for an existing kind 
 denominator under a signed bill while the digest holds still, which is the hole the digest exists
 to close. Because every kind is borne by at least one class (`measurement-rules.md` §4), one digest
 over `bears` covers both denominators and moves when and only when a denominator moves.
+
+*Amendment, 2026-08-17 (issue #134).* **A third instrument: the campaign snapshots a level-stack
+digest.** `measurement-rules.md` §7 makes the level stack the vertical coverage denominator and has the
+certificate print its basis — so a level authored into or out of the stack moves a denominator the
+certificate prints, which is the hole the catalogue digest closes, at a second scope. The stack is a
+project fact authorable from inside a campaign and was pinned by nothing, so the freshness gate could
+not see it move.
+
+The digest is content-addressed over `(level surrogate id, level ordinal)` pairs in canonical sort
+order, and **excludes storey heights**: a height is a correctable attribute and already re-presents
+every row citing it through the semantic (§5), so admitting it would void a signature twice for one
+correction. Diverged and unsigned ⇒ **stale**, blocking signing with `PIN_STALE`, cleared only by an
+authored re-pin naming the outgoing and incoming keys; diverged and signed ⇒ **voids whole**. The shape
+is this section's, unchanged, applied to a third citation scope.
+
+**A level insert is an act that states its consequence before it commits** — *this insert registers N
+objects across M classes* — because the direction is added quantity, and §7 bars a human write that
+changes what the machine would derive from being silent. It re-presents nothing: a level's ordinal is
+in no row's semantic. **A level with live instance rows is never deleted.** It is repudiated (§7) and
+its rows move to the separate table with no join from any bill; a level whose columns silently vanish
+is over-measurement's mirror and just as unreportable.
 
 ## 9. The drawing-set revision
 

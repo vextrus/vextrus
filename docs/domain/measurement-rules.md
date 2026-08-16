@@ -287,6 +287,16 @@ own basis. Per-floor rollups sort by ordinal — never lexicographic.
 no quantity is affected**. The scheme is a rate-modifier instrument (`quantity-contract.md` §4),
 so it is not a campaign precondition and pins nothing at campaign creation (`identity.md` §8).
 
+*Amendment, 2026-08-17 (issue #134).* **Inserting a level mid-stack re-keys nothing.** A level is
+referenced by surrogate id and its ordinal is non-identifying (`identity.md` §2), so rows above the
+insert are untouched while their **level ordinals move** — the ordinal is physical, and moving it is
+this clause working rather than an exception to it. The **mark-family ordinal** (`identity.md` §4) is a
+different quantity under the same word: it is scoped inside an identity key that already contains the
+level, so `C1#1` on the third floor cannot be moved by anything happening on another. Rows do not
+re-present, a level's ordinal being in no row's semantic; the new level's expansion registers new
+objects and emits lines normally. What the stack's movement does reach is the signature — the stack is
+the vertical coverage denominator, and `identity.md` §8 now pins it on the campaign as a digest.
+
 ## 8. Algebras and rails
 
 Four measurement algebras — **member** (section × run + bar rule; structure *and* brick

@@ -267,6 +267,42 @@ reads register rows that already exist; this partition is what makes them exist.
 column deletes quantity. They are never code literals and never a config file. §10's seed is the
 opposite species and is pinned by nothing; see there.
 
+*Amendment, 2026-08-17 (issue #134).* This clause said vertical classes "expand per level" and named
+no performer. **Expansion happens at placement, not at the gate.** One `TYPICAL FLOOR PLAN` sighting
+nine columns across six levels mints **54 instance rows**, each keyed by its own level surrogate id —
+`identity.md` §3's instance row key already carries that slot, and of the two lawful nulls it admits
+(`FOUNDATION`, `UNRESOLVED`) neither means *many*. The gate then emits one line per object, and §6
+there reads a line's level **off its object** rather than as a second axis, so a line can never
+disagree with its object about which level it stands on.
+
+The reading rejected — one object, N lines — is not merely awkward: it walks past the door guard. A
+`4TH FLOOR PLAN` that also draws those columns would mint an identity key colliding with nothing,
+because a multi-level object has no per-level identity to collide with, and `identity.md` §2's
+`DUPLICATE_IDENTITY` refusal never fires. Expansion at placement makes the collision structural.
+
+**The expansion is order-independent or it is wrong.** A real sighting on an expanded level resolves by
+promotion (`identity.md` §2), so walking the level plan first must produce the identical register as
+walking the typical plan first. Expansion is therefore a **resolver over the whole set revision**,
+never a per-view append — a constraint on the stored partition the amendment above requires, not a
+property it already has.
+
+**A range with no textual authority does not expand.** `1ST TO TOP FLOOR` is `TRANSCRIBED` text (§6
+maps TOP→ROOF) and makes the expansion `DERIVED`, exactly as an opening schedule's floor claim does
+(`measurement-rules.md` §2). A bare `TYPICAL FLOOR PLAN` states no membership, and reading it as *all
+of them* is a bounding-box fallback wearing a level stack. Those objects register with the
+`UNRESOLVED` level basis, scoped per view, carrying **no quantity line**, deferred
+`TYPICAL_RANGE_UNSTATED`; a stated range whose endpoint the level stack has no row for refuses
+`LEVEL_RANGE_ENDPOINT_UNMAPPED` rather than taking the topmost level.
+
+**The expansion is a method, not a parameter.** Unlike the placement constants above, nothing here is
+a tunable band: the caption-privilege rule and the unstated-range refusal are both code, enumerated by
+`(rule id, version)` in the rule-set edition (`identity.md` §8), so a change to what expands moves the
+edition and voids the signatures citing it. The one parameter on offer would be a *maximum levels to
+expand* cap, and that is a truncation with no actor.
+
+**Shear wall is ruled with column**, as this clause already pairs them; a wall that proves to expand
+differently earns its own clause then.
+
 ## 10. The extraction convention profile (the generalisation mechanism)
 
 A drawing's conventions — which layers carry bar linework / member outlines / text /
