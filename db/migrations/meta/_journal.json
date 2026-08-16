@@ -50,6 +50,13 @@
       "when": 1786904832262,
       "tag": "0006_project-rule-set-pin",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1786906693855,
+      "tag": "0007_catalogue-and-bears",
+      "breakpoints": true
     }
   ]
 }
