@@ -11,8 +11,8 @@
         "hooks": [
           {
             "type": "command",
-            "command": "node \"$CLAUDE_PROJECT_DIR/scripts/checkup.mjs\" --hook",
-            "timeout": 30
+            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/cloud-session.sh\"; PATH=\"/opt/node24/bin:$PATH\" node \"$CLAUDE_PROJECT_DIR/scripts/checkup.mjs\" --hook",
+            "timeout": 600
           }
         ]
       }
