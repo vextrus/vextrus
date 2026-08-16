@@ -58,11 +58,22 @@ export type LevelHeightBasis = (typeof LEVEL_HEIGHT_BASES)[number];
  * act and state change in one transaction). CONFIRM_DISCIPLINE — §2, a drawing is walked only
  * once a human confirms its discipline. RENAME_MARK — §2, a mark rename is an authored event,
  * never automatic detection. REPUDIATE — §7, "that is not a column" moves the object to the
- * refused-sightings table; human-only. Acts that need tables not yet built (pinning a set
- * revision, deferral, transcription, corroboration) land with those tables.
+ * refused-sightings table; human-only. PIN_DRAWING_SET — §9, opening a campaign pins a set
+ * revision and snapshots the rules that will measure it; the act is minted, the scope it names is
+ * derived. Acts that need tables not yet built (re-pin, deferral, transcription, corroboration)
+ * land with those tables.
  */
-export const ACT_TYPES = ["CONFIRM_DISCIPLINE", "RENAME_MARK", "REPUDIATE"] as const;
+export const ACT_TYPES = ["CONFIRM_DISCIPLINE", "RENAME_MARK", "REPUDIATE", "PIN_DRAWING_SET"] as const;
 export type ActType = (typeof ACT_TYPES)[number];
+
+/**
+ * A campaign's state (identity.md §8, §9): one live measurement effort per project — two lineages
+ * over one project scope would both claim first registration for one ordinal — and a superseded
+ * campaign that stays readable, because a superseded pin is history, like a superseded placement.
+ * Not a status flag standing in for a fact: it is the slot the partial unique index keys on.
+ */
+export const CAMPAIGN_STATES = ["LIVE", "SUPERSEDED"] as const;
+export type CampaignState = (typeof CAMPAIGN_STATES)[number];
 
 /**
  * Why a sighting sits in the refused-sightings table instead of the register (identity.md §2,

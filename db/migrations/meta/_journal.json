@@ -57,6 +57,13 @@
       "when": 1786906693855,
       "tag": "0007_catalogue-and-bears",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1786907425841,
+      "tag": "0008_campaigns",
+      "breakpoints": true
     }
   ]
 }
