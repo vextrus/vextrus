@@ -190,7 +190,7 @@ answer: **the founder is the dispatcher**, and automating the pick buys seconds.
 **A4 — 2026-08-17.** §3's *"no script that runs Claude"* admits one exception: a harness held in a
 **separate repository**, driving one `wayfinder:map` to completion, provided (a) nothing it consists
 of lands in this repository, (b) the executor session it runs cannot push, open a pull request or
-merge — every remote operation belongs to the harness, (c) it merges only when every required
+merge — every remote write belongs to the harness, (c) it merges only when every required
 `verify` check-run on the pushed SHA has concluded success, never with `--admin`, and never on a
 model's judgment, (d) it runs serially, one ticket at a time, until ten tickets have merged and set
 a defect-rate baseline, and (e) its cost and defect rate are recorded in `docs/specs/harness.md` §8.
@@ -205,8 +205,9 @@ discover a wall it cannot see. Separately the evidence base moved: `docs/researc
 §14 filed unattended loops under *"popular and evidence-free"* on 2026-08-16, correctly at the time.
 LoopsBench (arXiv 2608.00267, 2026-07-31) ablates the outer continuation loop across 112 tasks and
 measures 25.00% resolved with it against 16.96% without — and prices the downside at 7.11%
-regression on already-working units, with the strongest resolvers regressing most, which `pnpm
-verify` running the whole suite uncached on every ticket is already built to catch.
+regression on already-working units for the Claude Code loop, the highest of the loops it
+measured, which `pnpm verify` running the whole suite uncached on every ticket is already built to
+catch.
 *The fault it must not reproduce:* the harness eating the product — the fault A1 named and A3
 observed from the other side. Prevented by condition (a), which puts every line of it outside this
 repository, so it cannot consume a product commit, a product review or a product CI minute; by
