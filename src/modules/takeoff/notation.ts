@@ -33,6 +33,15 @@ import { MeasurementDecimal } from "@/core/formula";
  *   tag. Refused rather than returned, because a partial read is the one thing worse than none.
  * - `FRACTION_NOT_PROPER` — a vulgar fraction admits no proper reading (`9/2"`). §6 accepts the
  *   unspaced form **only** as a proper fraction, so the improper reading is refused, not taken.
+ * - `FRACTION_AMBIGUOUS` — an unspaced vulgar fraction admits **more than one** proper reading
+ *   (`115/16"` is 11 5/16" or 1 15/16"; nothing in the string says which). §6 admits the unspaced
+ *   form only as a proper fraction; it does not license choosing between two proper fractions, and
+ *   a 6× error in a dimension that feeds a measurement is the partial faulty read the governing
+ *   sentence bans. Where the reading is undetermined the parser defers by name.
+ * - `SPACING_AMBIGUOUS` — a two-member `n/m` spacing tail with no inch mark reads either as a
+ *   two-member variable series or as an unspaced vulgar fraction, and nothing in the string
+ *   decides (`@ 61/2` — the same notation with the inch mark dropped). Three members or more is a
+ *   series unambiguously; two members that also read as a proper fraction refuse.
  * - `SIZE_PAIR_UNIT_MIXED` — one side of a size pair is imperial and the other metric. An
  *   unmapped pairing refuses; it is never resolved by assuming one of the two.
  * - `FLOOR_ZONE_UNMAPPED` — a floor-zone endpoint the vocabulary does not name. The level stack
@@ -43,6 +52,8 @@ export const NOTATION_REFUSALS = [
   "NOTATION_UNREADABLE",
   "NOTATION_INCOMPLETE",
   "FRACTION_NOT_PROPER",
+  "FRACTION_AMBIGUOUS",
+  "SPACING_AMBIGUOUS",
   "SIZE_PAIR_UNIT_MIXED",
   "FLOOR_ZONE_UNMAPPED",
 ] as const;
@@ -126,22 +137,45 @@ function properFraction(whole: string, numerator: string, denominator: string): 
 
 /**
  * The unspaced vulgar fraction, accepted **only as a proper fraction** (§6): `61/2"` is six and a
- * half inches, never thirty and a half. The whole number is written first, so the numerator is the
- * **shortest** trailing run of digits that reads proper against the denominator — `61/2` splits
- * 6 + 1/2, `123/16` splits 12 + 3/16. A leading-zero numerator is not a split anyone writes, and a
- * string with no proper split (`9/2`) refuses rather than falling back to the improper reading.
+ * half inches, never thirty and a half. The whole number is written first, so a split takes some
+ * trailing run of the digits as the numerator — `61/2` splits 6 + 1/2 and nothing else reads
+ * proper, `123/16` splits 12 + 3/16.
+ *
+ * **Every** split is enumerated and the reading is taken only where **exactly one** reads proper.
+ * `115/16"` — an ordinary imperial dimension — splits 11 + 5/16 *and* 1 + 15/16, six times apart;
+ * `13/16"` splits 1 + 3/16 *and* 0 + 13/16. §6 admits the unspaced form as a proper fraction, not
+ * as a choice between two of them, so a digit string that admits more than one refuses
+ * `FRACTION_AMBIGUOUS` rather than picking the shortest run and returning a wrong dimension. A
+ * string with no proper split (`9/2`) refuses `FRACTION_NOT_PROPER` rather than falling back to
+ * the improper reading. A leading-zero numerator is not a split anyone writes.
  */
 function splitUnspacedVulgar(digits: string, denominator: string): Reading {
   const d = new MeasurementDecimal(denominator);
+  let only: Decimal | null = null;
   for (let take = 1; take <= digits.length; take++) {
     const numerator = digits.slice(digits.length - take);
     const whole = digits.slice(0, digits.length - take);
     if (numerator.length > 1 && numerator.startsWith("0")) continue;
     const n = new MeasurementDecimal(numerator);
     if (n.lte(0) || n.gte(d)) continue;
-    return { ok: true, value: new MeasurementDecimal(whole === "" ? "0" : whole).plus(n.div(d)) };
+    if (only !== null) return { ok: false, refusal: "FRACTION_AMBIGUOUS" };
+    only = new MeasurementDecimal(whole === "" ? "0" : whole).plus(n.div(d));
   }
-  return { ok: false, refusal: "FRACTION_NOT_PROPER" };
+  if (only === null) return { ok: false, refusal: "FRACTION_NOT_PROPER" };
+  return { ok: true, value: only };
+}
+
+/**
+ * Does this text read as an unspaced vulgar fraction at all — either determinately, or ambiguously
+ * between two proper readings? Both answers mean a competing reading exists, which is what the
+ * spacing grammar needs to know before it commits a two-member `n/m` tail to a series.
+ */
+function admitsVulgarReading(text: string): boolean {
+  const vulgar = VULGAR.exec(text);
+  if (!vulgar) return false;
+  const [, digits = "", denominator = ""] = vulgar;
+  const reading = splitUnspacedVulgar(digits, denominator);
+  return reading.ok || reading.refusal === "FRACTION_AMBIGUOUS";
 }
 
 /** A whole number, a spaced mixed number (`4 1/2`) or an unspaced vulgar fraction (`61/2`). */
@@ -193,7 +227,9 @@ function readImperialLength(text: string): ImperialReading {
 
 /**
  * The words the grammar itself owns. A trailing `c/c` is a spacing marker and a trailing `mm` is a
- * unit; neither is a note, and neither may be swallowed into one.
+ * unit; neither is a note, and neither may be swallowed into one. `parseSpacing` strips the c/c
+ * marker before it splits a note, which is what handles the spaced `c / c` form; these entries are
+ * the backstop for the forms the strip does not spell (`cc`) and for callers that do not strip.
  */
 const GRAMMAR_TOKENS = new Set(["mm", "of", "to", "c/c", "c/c.", "cc", "x", "@", "+", "-"]);
 
@@ -360,7 +396,15 @@ export type SpacingParse = {
   readonly note: string | null;
 };
 
-const CENTRE_TO_CENTRE = /\s*c\s*\/\s*c\.?$/i;
+/**
+ * The `c/c` centre-to-centre marker, as written with or without spaces around the slash (`c/c`,
+ * `c/c.`, `c / c`). It is **stripped before the note tag is split**, not after: the note split
+ * tokenises on whitespace, so a spaced `c / c` would otherwise present as three wordlike tokens
+ * and be filed as prose — the marker corrupting the note tag §6 forbids the reverse of. The
+ * capture keeps whatever non-letter preceded it, which is how the match is bounded without
+ * eating a word that merely ends in `c`.
+ */
+const CENTRE_TO_CENTRE = /(^|[^A-Za-z])c\s*\/\s*c\.?(?![A-Za-z])/gi;
 const DIAMETER_LEADING = /^(\d+)\s*(?:mm)?\s*Ø$/i;
 const DIAMETER_TRAILING = /^Ø\s*(\d+)\s*(?:mm)?$/i;
 /** `125`, `125mm`, and §6's `@125m` mm-typo — the stray `m` is consumed, not left to become a note. */
@@ -371,14 +415,21 @@ const METRIC_PITCH = /^(\d+(?:\.\d+)?)\s*(?:mm|m)?$/i;
  * variable series `@113/175/113`, the `@125m` mm-typo, and the unspaced vulgar fraction `@ 61/2"`
  * — six and a half inches, never thirty and a half.
  *
- * The imperial branch is chosen by the inch mark before the series branch is considered, so
- * `61/2"` can never be read as a two-member series.
+ * The inch mark chooses the imperial branch before the series branch is considered, so `61/2"` can
+ * never be read as a two-member series. Where the inch mark is **absent** it does not silently
+ * decide the other way either: a two-member `n/m` tail that also reads as a proper fraction is
+ * ambiguous between the two forms and refuses `SPACING_AMBIGUOUS`, because `@ 61/2` returning a
+ * 61 mm-then-2 mm series is a physically impossible reading returned as fact. Three members or
+ * more (`@113/175/113`) is a series unambiguously, and so is a two-member tail no proper fraction
+ * reads (`@200/150`).
  */
 export function parseSpacing(raw: string): SpacingParse | NotationRefused {
   const decoded = decodeNotation(raw).trim();
   if (decoded === "") return refuse(raw, "NOTATION_EMPTY");
-  const { body, note } = splitNoteTag(decoded);
-  const expression = body.replace(CENTRE_TO_CENTRE, "").trim();
+  // The c/c marker comes off first, so the note split never sees it — spaced or unspaced, it is
+  // grammar and not prose.
+  const { body, note } = splitNoteTag(decoded.replace(CENTRE_TO_CENTRE, "$1"));
+  const expression = body.trim();
   if (expression === "") return refuse(raw, "NOTATION_UNREADABLE");
 
   const at = expression.indexOf("@");
@@ -400,8 +451,12 @@ export function parseSpacing(raw: string): SpacingParse | NotationRefused {
     return { ok: true, raw, diameter, spacing: { kind: "UNIFORM", pitch: inches(reading.total, tail) }, note };
   }
   if (tail.includes("/")) {
+    const members = tail.split("/");
+    // Two members and no inch mark: a series and a vulgar fraction both read it, and nothing in
+    // the string chooses. It defers by name rather than returning one of the two.
+    if (members.length === 2 && admitsVulgarReading(tail)) return refuse(raw, "SPACING_AMBIGUOUS");
     const pitches: Dimension[] = [];
-    for (const part of tail.split("/")) {
+    for (const part of members) {
       const member = METRIC_PITCH.exec(part.trim());
       if (!member) return refuse(raw, pitches.length === 0 ? "NOTATION_UNREADABLE" : "NOTATION_INCOMPLETE");
       pitches.push(millimetres(new MeasurementDecimal(member[1] ?? ""), part.trim()));

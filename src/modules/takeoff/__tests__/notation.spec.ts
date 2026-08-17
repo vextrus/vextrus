@@ -253,6 +253,47 @@ describe("spacing (§6)", () => {
     expect(refusalOf(parseSpacing(`@ 9/2"`))).toBe("FRACTION_NOT_PROPER");
   });
 
+  it("refuses a vulgar fraction that admits two proper readings rather than picking one", () => {
+    // `115/16"` is an ordinary imperial dimension and reads two ways — 11 5/16" (287.3375 mm) and
+    // 1 15/16" (49.2125 mm), six times apart. §6 admits the unspaced form as *a* proper fraction,
+    // not as a choice between two, so it defers by name; both readings are asserted absent.
+    expect(refusalOf(parseSpacing(`@ 115/16"`))).toBe("FRACTION_AMBIGUOUS");
+    const attempted = parseSpacing(`@ 115/16"`);
+    expect(attempted.ok).toBe(false);
+    expect(JSON.stringify(attempted)).not.toContain("287.3375");
+    expect(JSON.stringify(attempted)).not.toContain("49.2125");
+    // Same shape without a leading whole digit: 1 3/16" or 0 13/16".
+    expect(refusalOf(parseFeetInches(`13/16"`))).toBe("FRACTION_AMBIGUOUS");
+    // And the determined reading still reads: only one split of `61/2` is proper.
+    expect(parsed(parseFeetInches(`61/2"`)).inches.toFixed()).toBe("6.5");
+  });
+
+  it("refuses a two-member tail with the inch mark dropped rather than reading a 2 mm pitch", () => {
+    // `@ 61/2` — the fraction with its inch mark omitted, a routine BD-sheet omission — reads
+    // either as the vulgar fraction or as a two-member series. Nothing in the string decides.
+    expect(refusalOf(parseSpacing("@ 61/2"))).toBe("SPACING_AMBIGUOUS");
+    const attempted = parseSpacing("@ 61/2");
+    expect(attempted.ok).toBe(false);
+    // The series reading — 61 mm then a physically impossible 2 mm — is asserted absent.
+    expect(JSON.stringify(attempted)).not.toContain("SERIES");
+
+    // The refusal is targeted, not blanket: a two-member tail no proper fraction reads is a
+    // series, and the three-member form §6 enumerates is never in doubt.
+    expect(seriesOf(parsed(parseSpacing("@200/150")).spacing)).toEqual(["200", "150"]);
+    expect(seriesOf(parsed(parseSpacing("@113/175/113")).spacing)).toEqual(["113", "175", "113"]);
+  });
+
+  it("reads the c/c marker as grammar however it is spaced — never as a note tag", () => {
+    const spaced = parsed(parseSpacing(`10Ø @ 4" c / c`));
+    expect(spaced.note).toBeNull();
+    expect([diameterOf(spaced.diameter), pitchOf(spaced.spacing)]).toEqual(["10", "101.6"]);
+    // Every written form lands on the same reading, with the note tag riding beside it untouched.
+    for (const marker of ["c/c", "c/c.", "c / c", "C/C"]) {
+      const tagged = parsed(parseSpacing(`10Ø @ 4" ${marker} (BOT.)`));
+      expect([diameterOf(tagged.diameter), pitchOf(tagged.spacing), tagged.note]).toEqual(["10", "101.6", "(BOT.)"]);
+    }
+  });
+
   it("lets a note tag ride beside the parse without moving the diameter or the spacing", () => {
     const tagged = parsed(parseSpacing(`10Ø @ 4" c/c ALT. CKD`));
     const untagged = parsed(parseSpacing(`10Ø @ 4" c/c`));
