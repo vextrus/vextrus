@@ -50,6 +50,9 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Act** | A human write that changes what the machine would derive; the act log is append-only and human-only. |
 | **Act rendering** | What a surface must put on screen for an act to be lawful rather than ceremonial: the consequence shown, the subject set named, every refusal it can return rendered. |
 | **Consequence** | The typed statement of what an act will do, computed by the code that commits it and digested; a commit not carrying the current digest refuses. |
+| **Permission** | What an act moves, named: a closed enum, mapped total from act type, checked in the act seam. Never bars a person from holding another permission. |
+| **Participant role** | A closed bundle of permissions attached to `(project, user)`, append-only; the only thing a human picks. `MEASURER · REVIEWER · LEAD · PRINCIPAL`. |
+| **Concentration** | One actor exercising two permissions the law asked to be held apart — printed on the certificate as a named disclosure, never refused. |
 | **Offered group** | A subject set the machine assembles from the fact being judged; a bulk act takes one, and no interface offers a freeform selection. |
 | **Render manifest** | The per-view payload a viewer paints without resolving anything: colour already resolved, text at world height, every source key resolving to exactly one entity. |
 | **Directed review queue** | The suspect inputs a signature requires checked in full (*Part A*); one query, one row per `(subject, disjunct)`, never deferrable. |

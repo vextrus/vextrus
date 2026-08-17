@@ -71,6 +71,16 @@ no timestamps — so an identical re-derivation reproduces the identical key mul
   `@unregistered:<label>` → `<levelId>`; on rebuild a miss looks one hop back so filed human
   dispositions move with the key. Exactly one hop exists.
 
+
+*Amendment, 2026-08-17 (issue #192).* **A one-to-many expansion is retire-and-first-register, never
+a carry.** The one-hop carry above moves a key when a row keeps being *the same object*. Authoring a
+typical range turns one `UNRESOLVED` instance row into N level-bearing rows, and there is no unique
+successor to carry into: the pre-authoring row is a placeholder for an unknown count, not the first
+of the N. Carrying it would hand one of the N an ordinal minted before its identity existed and
+leave the others first-registering as siblings of unequal provenance. So the placeholder is
+**retired** and all N **first-register** — the retired row's act-log history stands, which is where a
+QS's real question about a mark's past is answered. Exactly one hop still exists, for the case it was
+written for.
 ## 4. Pairing across revisions (duplicate marks)
 
 Split-section members carry the same mark on several rows. A by-mark map collapses them to an
@@ -208,6 +218,86 @@ rejected — it leaves *select all* on the screen, and a check that fires after 
 warning nobody reads.
 
 
+
+*Amendment, 2026-08-17 (issue #192).* **Permission is a two-level model, and separation binds the
+subject, never the grant.** Four clauses have now named a permission ad hoc — signing (§8),
+authoring a rule-set edition (§8), `AUTHOR_STOREY_HEIGHT` (issue #186), `DISPOSE_REVIEW_ROW` (above)
+— and the last said in as many words that a general model would have to generalise it. This is that
+model.
+
+**Two levels, both code-owned.** A closed **permission** enum cuts on *what an act moves*, never on
+which surface it lives; a **total map from act type to permission** sits beside the total act map of
+the amendment above, so minting an act type obliges naming its permission in the same pull request.
+A closed **participant role** enum bundles permissions, and a role is the only thing a human picks.
+Per-act grants were rejected as a matrix no customer configures; a role set alone was rejected
+because the separations this law names do not cut where roles do.
+
+| permission | acts |
+|---|---|
+| `PIN_SET` | `PIN_DRAWING_SET` · `REPIN_DRAWING_SET` |
+| `AUTHOR_LEVEL_STACK` | `INSERT_LEVEL` · `REPUDIATE_LEVEL` |
+| `AUTHOR_PROJECT_FACT` | `AUTHOR_STOREY_HEIGHT` |
+| `MEASURE` | `CONFIRM_DISCIPLINE` · `AFFIRM_SCALE` · `TRANSCRIBE_SHEET_NOTES` · `AUTHOR_TYPICAL_RANGE` · `CORROBORATE` · `REPUDIATE` · `RENAME_MARK` |
+| `SET_BILL_BOUNDARY` | `HOLD_OUT_OF_BILL` |
+| `ADMINISTER_SAMPLE` | `DRAW_SAMPLE` · `ABANDON_DRAW` |
+| `ENTER_BLIND_FIGURE` | `ENTER_BLIND_FIGURE` |
+| `REVIEW` | `DISPOSE_REVIEW_ROW` |
+| `SIGN` | `SIGN` |
+| `ADMINISTER_PROJECT` | `ASSIGN_PARTICIPANT_ROLE` |
+
+`HOLD_OUT_OF_BILL` is held apart from `MEASURE` for a reason the review queue supplies: the remedy
+for an undisposable row is to move the boundary (`quantity-contract.md` §8), so a measurer who also
+holds the boundary can remove their own directed rows without a disposition ever refusing.
+`ENTER_BLIND_FIGURE` is its own because it is the only act whose entire value is that a second
+person performed it.
+
+The roles: **`MEASURER`** (`MEASURE`, `AUTHOR_PROJECT_FACT`, `ENTER_BLIND_FIGURE`) · **`REVIEWER`**
+(`REVIEW`) · **`LEAD`** (`PIN_SET`, `AUTHOR_LEVEL_STACK`, `SET_BILL_BOUNDARY`, `ADMINISTER_SAMPLE`,
+`SIGN`) · **`PRINCIPAL`** (all ten). No shipped role bundles two permissions this clause holds
+apart — concentration is a choice someone makes on a roster, never a shape shipped as a default.
+
+**Separation binds the subject, never the grant.** No permission bars a person from holding another:
+a solo QS is a real customer, and a grant-level bar makes a lone actor unable to reach a signature at
+all. Applied honestly the general rule — *you may not judge an act you performed* — is fatal the same
+way, because a solo QS enters every blind figure against their own measurement and disposes every
+Part A row over an attribute they entered. So the bar is a **closed enumerated list of (act,
+forbidden prior act) pairs**, with exactly one entry today: a disposition may not dispose the row its
+own disposition created (`DISPOSITION_SELF_REVIEWED`), which is what terminates the suspension cycle.
+Everything else resembling self-review is **disclosed on the certificate** (`quantity-contract.md`
+§6) — the route the deferral amendment above already chose over prohibition. A general rule that
+cannot be stated without excluding a real customer is an instinct, not a principle.
+
+**A participant is project-scoped, append-only, and mandatory.** Roles attach to `(project, user)`,
+not to the tenant — a QS engaged to measure one tower does not thereby hold the permission on every
+project — and not to the campaign, which supersedes on every re-pin and would force a roster to be
+copied down: a fallback wearing a foreign key. Rows are **append-only**: a role change is a new row,
+never an update, because a participant row updated in place silently rewrites what every past act
+claimed about the authority behind it — this clause's before-image ban at governance altitude. There
+is **no implicit grant** from tenant membership, which would be §8's nullable-fallback defect under
+another name; project creation inserts its creator as `PRINCIPAL` **in the same transaction**, so an
+unpeopled project is unrepresentable and no bootstrapping refusal is ever spendable.
+
+**Assignment is itself an act.** `ASSIGN_PARTICIPANT_ROLE` joins the act types under this clause,
+carrying the pair and the digest the amendment above requires — an administrative side-channel would
+put the one fact determining who may sign outside the only log that proves who did. Self-assignment
+is lawful and logged: barring it buys nothing against a confederate or a second account, and it
+breaks a partner taking over a project mid-effort. A project's **last `PRINCIPAL` may not be
+removed** (`PROJECT_WOULD_HAVE_NO_PRINCIPAL`), stated in the act's consequence so it is read before
+the commit rather than refused after.
+
+**One refusal code, with the act as data** — `PERMISSION_NOT_HELD`, carrying act type and the
+missing permission: the shape and the stated reason of `CONSEQUENCES_NOT_CARRIED` above. The
+subject-level bar is a **second and distinct** code, because there the actor holds the permission and
+is refused anyway; collapsing them would tell a solo QS to request access they already have.
+
+**What the database enforces and what code enforces is stated, not implied.** Participation is a
+**composite foreign key** from the act log to the participant table on `(tenant, project, actor)` —
+the shape this clause's actor already uses for tenant membership — so an act by a non-participant is
+unrepresentable rather than merely refused. The **permission** is checked in the act seam,
+unbypassable because the seam is the sole writer of the act log and a boundary test makes it
+unimportable elsewhere (`measurement-rules.md` §8's mechanism, reused). Pushing the act-type map into
+row policies would be a second implementation of this clause living where the total map's compile
+error cannot reach it. **ADR-0011.**
 ## 8. Rules and signatures
 
 - Rules a human may author are **data**: versioned, clause-cited, project-scoped by copy-down
@@ -329,6 +419,18 @@ verification, not an identity-provider feature, so the credential is **authored 
 act**.
 
 
+
+*Amendment, 2026-08-17 (issue #192).* **The two permissions this clause names ad hoc are entries in
+§7's model.** *Signing is its own permission* is **`SIGN`**, mapped from the `SIGN` act and bundled
+only into `LEAD` and `PRINCIPAL`. *Authoring is its own permission, distinct from signing* stands
+unchanged; because rule-set authoring is off this destination's route, its permission is minted with
+its act, under §7's standing rule that minting an act type obliges naming its permission in the same
+pull request. What this clause does **not** acquire is a same-person bar between the two: §7 rules
+that separation binds the subject and never the grant, so a solo QS who measures, authors and signs
+produces a lawful instrument that **discloses the concentration on its face**
+(`quantity-contract.md` §6). The alternative — signing as the one act carrying a grant-level bar —
+was put and rejected for making a lone actor unable to issue a bill at all, which is the customer
+§7's deferral amendment refused to legislate out of existence.
 ## 9. The drawing-set revision
 
 *Amendment, 2026-08-13.* §8 said a campaign pins "a drawing revision", singular. §2 already
