@@ -1,0 +1,166 @@
+{
+  "artifact": "vextrus.entitygraph",
+  "version": 2,
+  "source": {
+    "filename": "sheet-paperspace.dxf",
+    "sha256": "b818e2d3b9c07ab89d7b17d22e20eb94057187644c3fbbb7652ebb76d81941f1"
+  },
+  "units": {
+    "insunits": 4,
+    "detected": "mm",
+    "insunits_unmapped": false
+  },
+  "extents": {
+    "bbox": [
+      0.0,
+      0.0,
+      10000.0,
+      6000.0
+    ],
+    "rejected": 0
+  },
+  "layouts": {
+    "paper": [
+      {
+        "name": "A3 SHEET",
+        "bbox": [
+          0.0,
+          0.0,
+          420.0,
+          297.0
+        ],
+        "counters": {
+          "original": 2,
+          "derived": 0,
+          "explode_truncated": false,
+          "flatten_capped": 0,
+          "lost_by_type": {},
+          "unsupported_by_type": {
+            "VIEWPORT": 1
+          }
+        }
+      },
+      {
+        "name": "KEY PLAN",
+        "bbox": null,
+        "counters": {
+          "original": 0,
+          "derived": 0,
+          "explode_truncated": false,
+          "flatten_capped": 0,
+          "lost_by_type": {},
+          "unsupported_by_type": {
+            "VIEWPORT": 1
+          }
+        }
+      }
+    ],
+    "dropped_contentless": 1
+  },
+  "counters": {
+    "original": 2,
+    "derived": 0,
+    "explode_truncated": false,
+    "flatten_capped": 0,
+    "lost_by_type": {},
+    "unsupported_by_type": {
+      "POINT": 1
+    }
+  },
+  "entities": [
+    {
+      "h": "8C",
+      "t": "LWPOLYLINE",
+      "layer": "SLAB",
+      "color": "#00ff00",
+      "space": "model",
+      "src": null,
+      "pts": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          10000.0,
+          0.0
+        ],
+        [
+          10000.0,
+          6000.0
+        ],
+        [
+          0.0,
+          6000.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "closed": true,
+      "area": 60000000.0
+    },
+    {
+      "h": "8D",
+      "t": "TEXT",
+      "layer": "TITLE",
+      "color": "#ffffff",
+      "space": "model",
+      "src": null,
+      "text": "GROUND FLOOR PLAN",
+      "p": [
+        0.0,
+        0.0
+      ],
+      "height": 400.0,
+      "rot": 0.0
+    },
+    {
+      "h": "93",
+      "t": "LWPOLYLINE",
+      "layer": "TITLE",
+      "color": "#ffffff",
+      "space": "paper:A3 SHEET",
+      "src": null,
+      "pts": [
+        [
+          0.0,
+          0.0
+        ],
+        [
+          420.0,
+          0.0
+        ],
+        [
+          420.0,
+          297.0
+        ],
+        [
+          0.0,
+          297.0
+        ],
+        [
+          0.0,
+          0.0
+        ]
+      ],
+      "closed": true,
+      "area": 124740.0
+    },
+    {
+      "h": "94",
+      "t": "TEXT",
+      "layer": "TITLE",
+      "color": "#ffffff",
+      "space": "paper:A3 SHEET",
+      "src": null,
+      "text": "S-01",
+      "p": [
+        360.0,
+        10.0
+      ],
+      "height": 5.0,
+      "rot": 0.0
+    }
+  ]
+}

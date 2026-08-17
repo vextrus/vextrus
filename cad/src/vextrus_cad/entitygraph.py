@@ -17,15 +17,19 @@ downstream may re-open the drawing:
 - a **space marker** per entity (`space`): model space, or the named paper
   layout — §7's law opens "every model-space original entity", and v1 recorded
   no such distinction;
-- the **layout inventory** (`layouts`): each shipped paper layout's bbox, plus
-  the count of layouts dropped as content-less — a drop nobody counted is the
-  silent loss §3 forbids;
+- the **layout inventory** (`layouts`): each shipped paper layout's bbox and
+  its **own** fidelity counters, plus the count of layouts that held no entity
+  at all — a drop nobody counted is the silent loss §3 forbids;
 - the **robust-extents record** (`extents`): the model-space extents and the
   count of entities §4's inter-percentile window rejected;
 - the **flatten point-cap counter** (`counters.flatten_capped`): unlike
   `explode_truncated`, a tripped point cap said nothing at v1.
 The bump is purely additive — no v1 field changes meaning, and keys are DXF
-handles, untouched — so there is no data migration.
+handles, untouched — so there is no data migration. In particular the top-level
+`counters` stay **model space's alone**, exactly as v1 meant them: a paper
+layout's fidelity rides in its own inventory entry, so `unsupported_by_type`
+never grows sheet furniture (VIEWPORT and kin) that the app would read as
+`ENTITY_TYPE_UNHANDLED` against a drawing nobody measures by the sheet.
 """
 
 from __future__ import annotations
@@ -87,6 +91,20 @@ _TEXT_TYPES = frozenset({"TEXT", "MTEXT"})
 _HEX_COLOR = re.compile(r"^#[0-9a-f]{6}$")
 
 
+def empty_counters() -> dict[str, Any]:
+    """One fidelity block, of the shape the envelope and every paper-layout
+    inventory entry both carry — the app learns the shape once, and reads it
+    per space rather than summed across spaces."""
+    return {
+        "original": 0,
+        "derived": 0,
+        "explode_truncated": False,
+        "flatten_capped": 0,
+        "lost_by_type": {},
+        "unsupported_by_type": {},
+    }
+
+
 def empty_artifact(filename: str, sha256: str, insunits: int | None) -> dict[str, Any]:
     """Build a valid artifact with no entities (the skeleton-grade producer)."""
     detected = INSUNITS_MAP.get(insunits) if insunits is not None else None
@@ -103,14 +121,8 @@ def empty_artifact(filename: str, sha256: str, insunits: int | None) -> dict[str
         # is the honest reading — never a zero-size box at the origin.
         "extents": {"bbox": None, "rejected": 0},
         "layouts": {"paper": [], "dropped_contentless": 0},
-        "counters": {
-            "original": 0,
-            "derived": 0,
-            "explode_truncated": False,
-            "flatten_capped": 0,
-            "lost_by_type": {},
-            "unsupported_by_type": {},
-        },
+        # Model space's fidelity, and model space's alone — v1's meaning, kept.
+        "counters": empty_counters(),
         "entities": [],
     }
 
@@ -179,39 +191,47 @@ def validate(doc: Any) -> dict[str, Any]:
         shipped.add(name)
         if entry.get("bbox") is not None and not _is_bbox(entry.get("bbox")):
             raise ArtifactError(f"layouts.paper[{i}].bbox must be null or [minx, miny, maxx, maxy]")
+        # A layout's losses are named where its space is named. Summing them
+        # into the envelope's counters would change what v1's counters mean,
+        # and no field would say which space a count came from (§3).
+        _validate_counters(entry.get("counters"), f"layouts.paper[{i}].counters")
 
-    counters = doc.get("counters")
-    if not isinstance(counters, dict):
-        raise ArtifactError("counters must be an object")
-    for key in ("original", "derived"):
-        value = counters.get(key)
-        if not (isinstance(value, int) and not isinstance(value, bool) and value >= 0):
-            raise ArtifactError(f"counters.{key} must be a non-negative int")
-    if not isinstance(counters.get("explode_truncated"), bool):
-        raise ArtifactError("counters.explode_truncated must be a bool")
-    if not _is_count(counters.get("flatten_capped")):
-        raise ArtifactError("counters.flatten_capped must be a non-negative int")
-    for key in ("lost_by_type", "unsupported_by_type"):
-        by_type = counters.get(key)
-        if not isinstance(by_type, dict) or not all(
-            isinstance(k, str) and isinstance(v, int) and not isinstance(v, bool) and v >= 0
-            for k, v in by_type.items()
-        ):
-            raise ArtifactError(f"counters.{key} must map entity type to non-negative int")
+    _validate_counters(doc.get("counters"), "counters")
 
     entities = doc.get("entities")
     if not isinstance(entities, list):
         raise ArtifactError("entities must be a list")
     for i, entity in enumerate(entities):
         _validate_entity(entity, f"entities[{i}]")
-        # An entity in a layout the inventory dropped would make
-        # `dropped_contentless` a lie; the two readings must agree.
+        # An entity naming a layout the inventory does not list would leave its
+        # space unresolvable — and, since only a layout that held nothing is
+        # dropped, would make `dropped_contentless` a lie.
         layout = layout_of(entity["space"])
         if layout is not None and layout not in shipped:
             raise ArtifactError(
                 f"entities[{i}].space names layout {layout!r}, absent from layouts.paper"
             )
     return doc
+
+
+def _validate_counters(counters: Any, where: str) -> None:
+    """One fidelity block — the envelope's (model space's) and each paper
+    layout's take the identical shape."""
+    if not isinstance(counters, dict):
+        raise ArtifactError(f"{where} must be an object")
+    for key in ("original", "derived"):
+        if not _is_count(counters.get(key)):
+            raise ArtifactError(f"{where}.{key} must be a non-negative int")
+    if not isinstance(counters.get("explode_truncated"), bool):
+        raise ArtifactError(f"{where}.explode_truncated must be a bool")
+    if not _is_count(counters.get("flatten_capped")):
+        raise ArtifactError(f"{where}.flatten_capped must be a non-negative int")
+    for key in ("lost_by_type", "unsupported_by_type"):
+        by_type = counters.get(key)
+        if not isinstance(by_type, dict) or not all(
+            isinstance(k, str) and _is_count(v) for k, v in by_type.items()
+        ):
+            raise ArtifactError(f"{where}.{key} must map entity type to non-negative int")
 
 
 def _is_num(v: Any) -> bool:

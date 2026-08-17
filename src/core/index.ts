@@ -158,6 +158,7 @@ export {
   SPACE_MODEL,
   type Entity,
   type EntityGraph,
+  type EntityGraphCounters,
   type Space,
 } from "./entitygraph";
 export { forTenant, mintTenantCtx, runAsSystem, type TenantCtx, type Tx } from "./db";

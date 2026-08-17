@@ -22,6 +22,20 @@ empty strips between them, the way a real structural sheet is drafted.
 Plus one stray line parked far outside every view (the xref junk real drawings
 carry) — it lands in `unassigned`, named, never dropped.
 
+`sheet-paperspace` is the third fixture and a different test bed: a drawing
+whose **paper space carries content**, which the structural pair does not have
+(their only layout is the stock, empty `Layout1`). It is what proves EntityGraph
+v2's additivity where it can actually fail — three layouts, three dispositions:
+
+- `A3 SHEET` — a title block, a sheet note and the VIEWPORT through which the
+  sheet looks at model space. Shipped, with its own bbox and its own counters:
+  the VIEWPORT the vocabulary does not admit is named *there*, and the envelope's
+  counters stay model space's, exactly as v1 meant them.
+- `KEY PLAN` — a layout holding only a VIEWPORT, the ordinary AutoCAD sheet that
+  carries nothing of its own. Still shipped (bbox null): it *held* content, so
+  calling its drop content-less would be a false name for the drop (§3).
+- `Layout1` — the stock layout, empty. The one true content-less drop.
+
 Rev 2 is rev 1's revision pair: one column nudged, one deleted, one added,
 retitled; every other view is untouched, so a revision delta reads as columns
 and nothing else. The identity-stability fixture for tickets 07–08.
@@ -35,6 +49,8 @@ Windows PowerShell 5.1 re-encodes stdout as UTF-16 and corrupts it):
 
     uv run python -m vextrus_cad ingest tests/fixtures/structural-r1.dxf \
         --out tests/fixtures/structural-r1.entitygraph.json
+
+for each of structural-r1, structural-r2 and sheet-paperspace.
 """
 
 from __future__ import annotations
@@ -207,11 +223,65 @@ def build(rev: int) -> Drawing:
     return doc
 
 
+def build_sheet() -> Drawing:
+    """The paper-space fixture (ADR-0009). Small on purpose: it exists to make
+    the space marker, the layout inventory and the per-space counters provable,
+    and every entity in it is there to name one disposition."""
+    doc = ezdxf.new("R2018", setup=True)
+    doc.header["$INSUNITS"] = 4
+    doc.layers.add("SLAB", color=3)
+    doc.layers.add("TITLE", color=7)
+
+    msp = doc.modelspace()
+    msp.add_lwpolyline(
+        [(0, 0), (10000, 0), (10000, 6000), (0, 6000)],
+        close=True,
+        dxfattribs={"layer": "SLAB"},
+    )
+    msp.add_text("GROUND FLOOR PLAN", dxfattribs={"layer": "TITLE", "height": 400})
+    # A stray POINT in model space: the envelope's unsupported counter must
+    # read this and only this, however much sheet furniture the layouts carry.
+    msp.add_point((0, 0), dxfattribs={"layer": "SLAB"})
+
+    # The drafted sheet: a title block, a sheet note, and the viewport it looks
+    # at model space through — sheet furniture, never measured.
+    sheet = doc.layouts.new("A3 SHEET")
+    sheet.add_lwpolyline(
+        [(0, 0), (420, 0), (420, 297), (0, 297)],
+        close=True,
+        dxfattribs={"layer": "TITLE"},
+    )
+    sheet.add_text("S-01", dxfattribs={"layer": "TITLE", "height": 5}).set_placement((360, 10))
+    sheet.add_viewport(
+        center=(210, 160),
+        size=(380, 240),
+        view_center_point=(5000, 3000),
+        view_height=7000,
+    )
+
+    # A layout that holds only a viewport: it has content, but none this
+    # vocabulary can represent. Shipped with a null bbox and counters that name
+    # what it held — never counted as content-less.
+    key_plan = doc.layouts.new("KEY PLAN")
+    key_plan.add_viewport(
+        center=(100, 100),
+        size=(160, 120),
+        view_center_point=(5000, 3000),
+        view_height=9000,
+    )
+
+    # The stock `Layout1` stays empty — the one true content-less drop.
+    return doc
+
+
 def main() -> None:
     for rev in (1, 2):
         out = HERE / f"structural-r{rev}.dxf"
         build(rev).saveas(out)
         print(f"wrote {out}")
+    out = HERE / "sheet-paperspace.dxf"
+    build_sheet().saveas(out)
+    print(f"wrote {out}")
 
 
 if __name__ == "__main__":

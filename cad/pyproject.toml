@@ -1,6 +1,6 @@
 [project]
 name = "vextrus-cad"
-version = "0.0.0"
+version = "0.1.0"
 description = "DXF/DWG ingestion: drawing in, EntityGraph JSON out. A CLI pipeline, never a resident service (ADR-0001)."
 requires-python = ">=3.13"
 dependencies = [

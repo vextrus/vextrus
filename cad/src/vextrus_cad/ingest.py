@@ -16,9 +16,15 @@ Laws implemented here:
   (`flatten_capped`) — at v1 it said nothing.
 - Version 2 (ADR-0009): every entity carries its space marker (model space or
   the named paper layout); paper layouts are walked exactly as model space and
-  each shipped layout carries its bbox, with content-less layouts counted as
-  dropped rather than silently absent; model-space extents are robust, with the
-  count of entities §4's inter-percentile window rejected.
+  each shipped layout carries its bbox **and its own counters**, with layouts
+  that held no entity at all counted as dropped rather than silently absent;
+  model-space extents are robust, with the count of entities §4's
+  inter-percentile window rejected.
+- **The envelope's counters are model space's, as at v1.** Every real sheet
+  carries VIEWPORT entities the vocabulary does not admit; summing them into
+  `unsupported_by_type` would change what a v1 field means and hand the scope
+  register an `ENTITY_TYPE_UNHANDLED` for sheet furniture nobody measures. A
+  layout's fidelity is named where its space is named, in the inventory.
 """
 
 from __future__ import annotations
@@ -38,6 +44,7 @@ from .entitygraph import (
     ENTITY_TYPES,
     SPACE_MODEL,
     empty_artifact,
+    empty_counters,
     paper_space,
     validate,
 )
@@ -407,12 +414,20 @@ def _walk(
     fid: _Fidelity,
     max_depth: int,
     budget: int,
-) -> list[dict[str, Any]]:
+) -> tuple[list[dict[str, Any]], int]:
     """One space's entities — originals and the paint they explode into, each
     marked with the space it was drawn in (ADR-0009). Model space and a paper
-    layout take the identical walk: the seam knows one geometry vocabulary."""
+    layout take the identical walk: the seam knows one geometry vocabulary.
+
+    Returns the records **and the number of entities the space held**. The two
+    differ whenever a space holds only things the vocabulary cannot represent,
+    and the caller must tell those apart: a layout that held nothing is
+    content-less, a layout whose content we could not represent is not, and
+    collapsing them would name a loss falsely (§3)."""
     out: list[dict[str, Any]] = []
+    held = 0
     for entity in source:
+        held += 1
         dxftype = entity.dxftype()
         if dxftype not in ENTITY_TYPES:
             _bump(fid.unsupported, dxftype)
@@ -443,7 +458,22 @@ def _walk(
                 budget,
                 space,
             )
-    return out
+    return out, held
+
+
+def _counters_json(fid: _Fidelity) -> dict[str, Any]:
+    """One space's fidelity. Built from `empty_counters()` so the envelope's
+    block and a layout's block are one shape by construction, not by habit."""
+    counters = empty_counters()
+    counters.update(
+        original=fid.original,
+        derived=fid.derived,
+        explode_truncated=fid.truncated,
+        flatten_capped=fid.flatten_capped,
+        lost_by_type=dict(sorted(fid.lost.items())),
+        unsupported_by_type=dict(sorted(fid.unsupported.items())),
+    )
+    return counters
 
 
 def extract(
@@ -456,12 +486,20 @@ def extract(
 ) -> dict[str, Any]:
     """The drawing's spaces → EntityGraph artifact: model space, then every
     paper layout in tab order, with honest counters, the robust model-space
-    extents and the layout inventory."""
-    artifact = empty_artifact(filename, sha256, doc.header.get("$INSUNITS", None))
-    fid = _Fidelity()
-    walk = {"fid": fid, "max_depth": explode_depth, "budget": derived_budget}
+    extents and the layout inventory.
 
-    entities = _walk(doc.modelspace(), doc, space=SPACE_MODEL, **walk)
+    **Each space counts its own fidelity.** The envelope's counters are model
+    space's, exactly as they were at v1 — a real sheet's VIEWPORTs, title-block
+    xrefs and stray POINTs are the layout's fidelity, named in the layout's own
+    inventory entry, and are never summed into a figure the app reads as the
+    drawing's. The derived-entity budget is per space for the same reason: a
+    drawing with twenty sheets may not starve model space's paint budget, and
+    `explode_truncated` on the envelope must keep meaning what it meant at v1."""
+    artifact = empty_artifact(filename, sha256, doc.header.get("$INSUNITS", None))
+    caps = {"max_depth": explode_depth, "budget": derived_budget}
+
+    model = _Fidelity()
+    entities, _ = _walk(doc.modelspace(), doc, space=SPACE_MODEL, fid=model, **caps)
     # §7's law is stated over model space, so the extents that anchor it are
     # model space's — a paper layout's bounds ride in the inventory below.
     extents, rejected = _robust_extents(entities)
@@ -472,27 +510,32 @@ def extract(
     for name in doc.layouts.names_in_taborder():
         if name == modelspace_name:
             continue
-        records = _walk(doc.layout(name), doc, space=paper_space(name), **walk)
-        if not records:
+        fid = _Fidelity()
+        records, held = _walk(doc.layout(name), doc, space=paper_space(name), fid=fid, **caps)
+        if held == 0:
             # Content-less layouts are dropped, not shipped (§4) — and counted,
             # because a drop nobody counted is the silent loss §3 forbids.
+            # `held`, not `records`: a sheet holding only a VIEWPORT or a
+            # degenerate path *had* content, and calling that drop
+            # content-less would be a false name for it. It ships below with a
+            # null bbox and counters naming exactly what could not be
+            # represented.
             dropped += 1
             continue
         # Naive bounds: a sheet's content is bounded by the sheet, and §4 gives
         # the stray-entity window to the drawing's extents, not to a layout.
-        paper.append({"name": name, "bbox": _bbox_json(_naive_extents(records))})
+        paper.append(
+            {
+                "name": name,
+                "bbox": _bbox_json(_naive_extents(records)),
+                "counters": _counters_json(fid),
+            }
+        )
         entities.extend(records)
 
     artifact["extents"] = {"bbox": _bbox_json(extents), "rejected": rejected}
     artifact["layouts"] = {"paper": paper, "dropped_contentless": dropped}
-    artifact["counters"] = {
-        "original": fid.original,
-        "derived": fid.derived,
-        "explode_truncated": fid.truncated,
-        "flatten_capped": fid.flatten_capped,
-        "lost_by_type": dict(sorted(fid.lost.items())),
-        "unsupported_by_type": dict(sorted(fid.unsupported.items())),
-    }
+    artifact["counters"] = _counters_json(model)
     artifact["entities"] = entities
     # The producer proves its own emission — an artifact that fails its own
     # contract refuses with the named ArtifactError, it never flows downstream.

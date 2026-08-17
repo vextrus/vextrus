@@ -4,7 +4,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { z } from "zod";
 import type { TenantCtx } from "./db";
-import type { EntityGraph } from "./entitygraph";
+import { SPACE_MODEL, type EntityGraph } from "./entitygraph";
 
 /**
  * The model seam (ADR-0006). Every model call in the product passes through `callModel`, the
@@ -29,11 +29,23 @@ export const sourceKeySchema = z.custom<SourceKey>(
   "a source key is `<scheme>:<key>` with a closed scheme (cad-ingestion.md §2)",
 );
 
-/** Every original entity of an EntityGraph, as source keys. An unprefixed handle reads as DXF_HANDLE. */
+/**
+ * Every **model-space** original entity of an EntityGraph, as source keys. An unprefixed handle
+ * reads as DXF_HANDLE.
+ *
+ * The space filter is what keeps EntityGraph v2 additive here (ADR-0009). v1 shipped model space
+ * alone, so the citable atom was a model-space original by construction — cad-ingestion.md §3
+ * ("extraction consumes original entities only") and §7 ("every model-space original entity")
+ * both assume it. v2 ships paper-space entities too, and without this filter a sheet border or a
+ * title-block note would resolve as citable evidence: `callModel` refuses a proposal whose source
+ * keys do not resolve (ADR-0006), so an unfiltered set would make a proposal citing sheet
+ * furniture *acceptable*. Reading the marker here restores exactly v1's set, it does not add a
+ * stage.
+ */
 export function sourceKeysOf(graph: EntityGraph): ReadonlySet<SourceKey> {
   const keys = new Set<SourceKey>();
   for (const e of graph.entities) {
-    if (e.src === null && e.h) keys.add(`DXF_HANDLE:${e.h}`);
+    if (e.src === null && e.space === SPACE_MODEL && e.h) keys.add(`DXF_HANDLE:${e.h}`);
   }
   return keys;
 }

@@ -3,7 +3,13 @@ from pathlib import Path
 
 import pytest
 
-from vextrus_cad.entitygraph import ArtifactError, empty_artifact, paper_space, validate
+from vextrus_cad.entitygraph import (
+    ArtifactError,
+    empty_artifact,
+    empty_counters,
+    paper_space,
+    validate,
+)
 
 FIXTURE = Path(__file__).parent / "fixtures" / "entitygraph-minimal.json"
 
@@ -58,6 +64,10 @@ _EMPTY_LAYOUT_SPACE = {**_GOOD_LINE, "space": "paper:"}
 # a lie — the two readings of the same drawing must agree (ADR-0009).
 _ORPHAN_LAYOUT_SPACE = {**_GOOD_LINE, "space": paper_space("Layout1")}
 
+# One inventory entry: name, bbox, and the fidelity of that space alone.
+_COUNTERS = empty_counters()
+_LAYOUT = {"name": "L1", "bbox": None, "counters": _COUNTERS}
+
 
 @pytest.mark.parametrize(
     "mutate",
@@ -75,10 +85,16 @@ _ORPHAN_LAYOUT_SPACE = {**_GOOD_LINE, "space": paper_space("Layout1")}
         lambda d: d["extents"].update(rejected=-1),
         lambda d: d.pop("layouts"),
         lambda d: d["layouts"].update(dropped_contentless=True),  # bools are not counts
-        lambda d: d["layouts"]["paper"].append({"name": "", "bbox": None}),
-        lambda d: d["layouts"]["paper"].append({"name": "a:b", "bbox": None}),
-        lambda d: d["layouts"]["paper"].extend(
-            [{"name": "L1", "bbox": None}, {"name": "L1", "bbox": None}]
+        lambda d: d["layouts"]["paper"].append(_LAYOUT | {"name": ""}),
+        lambda d: d["layouts"]["paper"].append(_LAYOUT | {"name": "a:b"}),
+        lambda d: d["layouts"]["paper"].extend([_LAYOUT, _LAYOUT]),  # listed twice
+        # A layout's fidelity is named where its space is named; an entry
+        # without it, or with a broken block, is not a layout inventory.
+        lambda d: d["layouts"]["paper"].append(
+            {k: v for k, v in _LAYOUT.items() if k != "counters"}
+        ),
+        lambda d: d["layouts"]["paper"].append(
+            _LAYOUT | {"counters": _COUNTERS | {"flatten_capped": -1}}
         ),
         lambda d: d["counters"].update(original=True),  # bools are not counts
         lambda d: d["counters"].update(lost_by_type={"LINE": True}),
@@ -105,6 +121,8 @@ def test_a_shipped_layout_admits_its_entities():
     """The mirror of the orphan refusal: once the layout is in the inventory,
     an entity marked with it validates."""
     doc = json.loads(FIXTURE.read_text(encoding="utf-8"))
-    doc["layouts"]["paper"].append({"name": "Layout1", "bbox": [0.0, 0.0, 420.0, 297.0]})
+    doc["layouts"]["paper"].append(
+        _LAYOUT | {"name": "Layout1", "bbox": [0.0, 0.0, 420.0, 297.0]}
+    )
     doc["entities"].append(_ORPHAN_LAYOUT_SPACE)
     validate(doc)

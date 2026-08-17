@@ -1,7 +1,17 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { entityGraphSchema, layoutOf } from "../entitygraph";
+import { entityGraphSchema, layoutOf, SPACE_MODEL } from "../entitygraph";
+
+/** The zero fidelity block, mirroring `empty_counters()` on the producer side. */
+const emptyCounters = () => ({
+  original: 0,
+  derived: 0,
+  explode_truncated: false,
+  flatten_capped: 0,
+  lost_by_type: {},
+  unsupported_by_type: {},
+});
 
 const fixturesDir = path.resolve(
   import.meta.dirname,
@@ -113,9 +123,55 @@ describe("EntityGraph contract mirror", () => {
       layouts: { paper: unknown[] };
     };
     doc.entities[0]!.space = "paper:SHEET 1";
-    doc.layouts.paper.push({ name: "SHEET 1", bbox: [0, 0, 420, 297] });
+    doc.layouts.paper.push({
+      name: "SHEET 1",
+      bbox: [0, 0, 420, 297],
+      counters: emptyCounters(),
+    });
     const parsed = entityGraphSchema.parse(doc);
     expect(layoutOf(parsed.entities[0]!.space)).toBe("SHEET 1");
+  });
+
+  // ── The paper-space fixture: three layouts, three dispositions. The producer emits these
+  //    very bytes (cad/tests/test_ingest.py), so the two mirrors are pinned to one shape.
+
+  it("reads a paper layout's own bbox and its own counters", () => {
+    const parsed = entityGraphSchema.parse(load("sheet-paperspace.entitygraph.json"));
+    const [a3, keyPlan] = parsed.layouts.paper;
+    expect(a3!.name).toBe("A3 SHEET");
+    expect(a3!.bbox).toEqual([0, 0, 420, 297]);
+    // The sheet's viewport is named where its space is named — never on the envelope.
+    expect(a3!.counters.unsupported_by_type).toEqual({ VIEWPORT: 1 });
+    expect(
+      parsed.entities.filter((e) => layoutOf(e.space) === "A3 SHEET"),
+    ).toHaveLength(2);
+
+    // A layout that held only a VIEWPORT is *not* content-less: it ships, with a null bbox and
+    // counters naming what it held. Two dispositions, never collapsed into one counter (§3).
+    expect(keyPlan!.name).toBe("KEY PLAN");
+    expect(keyPlan!.bbox).toBeNull();
+    expect(keyPlan!.counters.unsupported_by_type).toEqual({ VIEWPORT: 1 });
+    // Only the stock, entity-less Layout1 is counted as dropped.
+    expect(parsed.layouts.dropped_contentless).toBe(1);
+  });
+
+  it("keeps the envelope's counters model space's, as v1 meant them", () => {
+    // The additivity claim where it can fail. Aggregating both spaces would hand the scope
+    // register an ENTITY_TYPE_UNHANDLED for a VIEWPORT (quantity-contract.md §2), and no field
+    // on the envelope carries a space marker, so the app could never unpick it.
+    const parsed = entityGraphSchema.parse(load("sheet-paperspace.entitygraph.json"));
+    expect(parsed.counters.unsupported_by_type).toEqual({ POINT: 1 });
+    expect(parsed.counters.original).toBe(
+      parsed.entities.filter((e) => e.space === SPACE_MODEL && e.src === null).length,
+    );
+  });
+
+  it("refuses a layout inventory entry without its counters", () => {
+    const doc = load("sheet-paperspace.entitygraph.json") as {
+      layouts: { paper: Record<string, unknown>[] };
+    };
+    delete doc.layouts.paper[0]!.counters;
+    expect(() => entityGraphSchema.parse(doc)).toThrow();
   });
 
   it("refuses a bbox whose maximum falls below its minimum", () => {

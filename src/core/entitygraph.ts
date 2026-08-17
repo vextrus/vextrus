@@ -10,6 +10,12 @@ import { z } from "zod";
  * drawing: a space marker per entity, the layout inventory with its content-less drop count,
  * the robust extents with the count the percentile window rejected, and the flatten point-cap
  * counter. Purely additive: no v1 field changed meaning and keys are DXF handles, untouched.
+ *
+ * "No v1 field changed meaning" is load-bearing for the counters. The envelope's `counters` are
+ * **model space's alone**, as at v1; a paper layout's fidelity rides in its own inventory entry.
+ * Every real sheet carries VIEWPORT entities the vocabulary does not admit, and summing those
+ * into `unsupported_by_type` would hand the scope register an `ENTITY_TYPE_UNHANDLED`
+ * (quantity-contract.md §2) for sheet furniture nobody measures.
  */
 export const ENTITYGRAPH_ARTIFACT = "vextrus.entitygraph";
 export const ENTITYGRAPH_VERSION = 2;
@@ -57,6 +63,22 @@ export function layoutOf(space: Space): string | null {
     ? space.slice(PAPER_SPACE_PREFIX.length)
     : null;
 }
+
+/**
+ * One space's fidelity. The same shape sits on the envelope (model space's) and on each paper
+ * layout — a loss is named where its space is named, never summed across spaces (§3).
+ */
+const countersSchema = z.object({
+  original: z.number().int().nonnegative(),
+  derived: z.number().int().nonnegative(),
+  explode_truncated: z.boolean(),
+  // Curves flatten at fixed tolerance under a point cap (§4); unlike `explode_truncated`, a
+  // tripped cap said nothing at v1.
+  flatten_capped: z.number().int().nonnegative(),
+  lost_by_type: z.record(z.string(), z.number().int().nonnegative()),
+  unsupported_by_type: z.record(z.string(), z.number().int().nonnegative()),
+});
+export type EntityGraphCounters = z.infer<typeof countersSchema>;
 
 // Common fields: `src` null marks an original entity (which must carry its
 // DXF handle — enforced below); a set `src` cites the originating original.
@@ -164,8 +186,11 @@ export const entityGraphSchema = z
       bbox: bboxSchema.nullable(),
       rejected: z.number().int().nonnegative(),
     }),
-    // §4: paper layouts get their own bbox and content-less layouts are dropped — counted here,
-    // because a drop nobody counted is the silent loss §3 forbids.
+    // §4: paper layouts get their own bbox, and each carries its own counters. `bbox` is null
+    // where the layout held only entities the vocabulary cannot represent — its counters name
+    // them. `dropped_contentless` counts only layouts that held **no entity at all**: a sheet
+    // whose content we could not represent was not content-less, and one counter for both
+    // dispositions would be a false name for the drop (§3).
     layouts: z.object({
       paper: z.array(
         z.object({
@@ -174,20 +199,13 @@ export const entityGraphSchema = z
             .min(1)
             .refine((n) => !n.includes(":"), "a layout name carries no ':'"),
           bbox: bboxSchema.nullable(),
+          counters: countersSchema,
         }),
       ),
       dropped_contentless: z.number().int().nonnegative(),
     }),
-    counters: z.object({
-      original: z.number().int().nonnegative(),
-      derived: z.number().int().nonnegative(),
-      explode_truncated: z.boolean(),
-      // Curves flatten at fixed tolerance under a point cap (§4); unlike `explode_truncated`, a
-      // tripped cap said nothing at v1.
-      flatten_capped: z.number().int().nonnegative(),
-      lost_by_type: z.record(z.string(), z.number().int().nonnegative()),
-      unsupported_by_type: z.record(z.string(), z.number().int().nonnegative()),
-    }),
+    // Model space's fidelity, and model space's alone — v1's meaning, kept.
+    counters: countersSchema,
     entities: z.array(entitySchema),
   })
   .superRefine((graph, ctx) => {

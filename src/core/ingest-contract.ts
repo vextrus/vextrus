@@ -7,6 +7,11 @@ import { createHash } from "node:crypto";
  * invariant's (§3): nested INSERTs recurse under an explicit depth cap and a derived-entity
  * budget, and a cap that trips says so in the artifact. They are extraction fidelity, never
  * measurement — a cap you raise (`INGESTION_TRUNCATED`, quantity-contract.md §2).
+ *
+ * The hash covers what the **caller supplies**, and nothing else. The extractor's own baked
+ * constants — the flatten tolerance and point cap, §4's 2nd-98th inter-percentile extents window
+ * — are not passed here and are not tunable per ingest; they ride in the *version* half of the
+ * identity, which is why moving any of them moves `cad`'s `__version__`.
  */
 export const INGEST_PARAMETER_KEYS = ["explodeDepth", "derivedBudget"] as const;
 export type IngestParameters = { readonly [K in (typeof INGEST_PARAMETER_KEYS)[number]]: number };
