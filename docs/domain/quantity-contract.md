@@ -618,3 +618,96 @@ state to be signed — and its remedies are this clause's own two, fix the input
 Truncating Part A was put and rejected (*checked in full* is what Part A is); growing `N` until it
 covers was put and rejected (it samples a more broken bill *more*, and the size is determined, not
 chosen).
+
+*Amendment, 2026-08-17 (issue #189).* **The directed review queue — one queue, one row shape, one
+act.** The clause above made Part A a query and left the queue itself named across four clauses and
+defined by none. It is defined here.
+
+**A row is a suspicion, keyed `(subject, disjunct)`.** The queue is one list with **one row shape** —
+an opaque `(subject kind, subject ids)` pair, the shape `identity.md` §7's act log already uses, plus
+the disjunct that put the row there, a closed enum. Four row shapes with four disposition acts was
+put and rejected: this clause gives Part A **one** bound, and four queues cannot be counted against
+one bound. One attribute entering through two disjuncts — an `ENTERED` storey height that is also
+`STOREY_HEIGHT_CONTESTED` — is therefore **two rows**, because keying on subject alone lets one
+disposition clear a disjunct the QS never considered. The cost is a census that inflates toward
+`PART_A_EXCEEDS_SAMPLE`, which is the honest direction: more suspect inputs makes a bill *harder* to
+sign.
+
+**The validation disjunct's row is the cell, never its lines.** An unvalidated `(engine, class,
+kind, level)` cell is **one row**. This is the amendment above's own argument reused: enumerating
+derivations puts fifty-four rows into Part A on a six-storey job and breaches *Part A ≤ Part B* on
+the first realistic project, and the originating fact — the absence of a live passing observation at
+the cell (§5) — is one fact. *Checked in full* therefore means **every unvalidated cell is disposed,
+none sampled away**, not that every line is re-derived: Part B already samples lines. Authoring a
+golden is a different act, and it removes the row by making the disjunct false rather than by
+disposing it.
+
+**A Part A row cannot be deferred.** `identity.md` §7's deferral carries *a scope reference*:
+deferral is an instrument of the **boundary**, not of scrutiny. A deferral that cleared the signing
+refusal would be a review that found nothing by declining to look; one that held it would make
+deferral useless on the only queue that blocks. Both readings were put and rejected because the
+question mistakes the axis: the remedy for a row that will not be reviewed is this clause's own two —
+fix the input, or move the boundary — and moving it (holding the cell out of the bill,
+`NOT_IN_THIS_BILL`, §6) **removes the row from the census**, because its lines leave the bill. So
+deferral keeps its full force one axis over, and `PART_A_EXCEEDS_SAMPLE` cannot be defeated by
+note-writing.
+
+**The disagreement fixpoint, and what breaks it.** A QS disputing a row adds a competing observation
+(`identity.md` §7 bars before-images), which suspends the fact — and a suspended attribute is itself
+a disjunct here, so disposition re-presents its own subject. That is the **intended fixpoint, not a
+cycle**, and the row key above is what terminates it: the row the disagreement creates carries a
+*different disjunct* from the one disposed, so no row is ever cleared by the act that created its
+successor. It ends the way #186's resolver ends — corroboration on agreement, suspension on
+disagreement — so termination is a second reading **agreeing**, never a counter, and the signature
+refuses while the fact is suspended, which is the correct state for a contested input. One mechanical
+guard: a disposition may not dispose the row its own act created, refusing
+**`DISPOSITION_SELF_REVIEWED`**.
+
+**The bound is computed over the whole census, reviewed or not.** `PART_A_EXCEEDS_SAMPLE` is a
+judgement about the **shape of the bill**, not about work remaining, so review does not shrink it and
+a QS cannot review their way out of it. Computing it over the unreviewed residue was put and rejected:
+it turns a quality gate into a to-do list.
+
+**Order is derived, never authored.** *Checked in full* makes order economically irrelevant, so an
+authored priority field buys nothing and offers a place for a partial review to hide behind a ranking.
+The queue sorts by disjunct in enum order, then by subject key in code-point order
+(`compareCanonical`; `localeCompare` is banned). Order is a reproducibility guarantee — a surface and
+a test see the same list twice — and never a guarantee about what is reviewed first.
+
+**The act: `DISPOSE_REVIEW_ROW`, one type with a closed outcome.** `NO_EXCEPTION` |
+`EXCEPTION_TAKEN`; when `EXCEPTION_TAKEN`, the competing observation is written **in the same
+transaction** (`identity.md` §7). Two act types was put and rejected — one act keeps the queue's
+clearing traceable to one row, instead of leaving *the QS looked and disagreed* to be reconstructed by
+inference across two logs. What the act **cites** is a **closed per-disjunct tuple**, each naming
+exactly the instruments whose movement re-presents the row:
+
+| disjunct | citation |
+|---|---|
+| `ENTERED` attribute | the observation row's identity and revision (#186) |
+| declared disagreement | the revisions of the observations in contest — a new observation re-presents it |
+| validation-absent cell | **rule-set edition, method hash, converter version** — §5's own three instruments, so a disposition goes stale exactly when the validation observation beside it would |
+| contradicted scope act | the scope act's id and revision, and **not** the line population, which would stale every disposition on every publish |
+| contested authority | empty until a book exists (assumption unchanged) |
+
+**Bulk disposal has one structural test, not a per-disjunct list.** Bulk is lawful when **one
+judgement genuinely covers N subjects — the subjects share the fact being judged**; it is
+`confirm-all` (§7) when each subject carries an independent fact. That test generates the answers
+rather than listing them: validation-absent cells sharing one `(engine, class, kind)` method across
+levels are bulk-disposable, as are one contradicted scope act's cells — one belief about one boundary;
+`ENTERED` attributes are **never** bulk, because six storey heights are six authored numbers and the
+amendment above chose that grain precisely as *the review worth asking a QS for*; suspended attributes
+are never bulk, a contest being individual by definition. Recorded, as always, at the granularity
+performed.
+
+**The queue is a query; the looking is state.** Part A is enumerated, never stored — but a disposition
+is written to a **typed table in the same transaction as its act row**, not to `detail` JSON. The
+reviewed-ness query joins citations against the revisions now in force, and JSON carries no enum check:
+the outcome enum, the disjunct and the citation would all become code-side conventions on a column the
+database does not constrain.
+
+**Permission: `DISPOSE_REVIEW_ROW` is held apart from signing and apart from draw abandonment.** Held
+apart — distinct permissions — and **not** a same-person bar: a solo QS is a real Bangladeshi customer,
+and a hard bar would make them unable to sign their own work and push it off-system. Concentration is
+made **visible** instead — the certificate prints the actors, so one name across disposal and signature
+is legible on the bill's face. This is the third act clause to name a permission ad hoc and the first
+to state a **separation** the general permission model will have to generalise.

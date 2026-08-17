@@ -48,6 +48,8 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Borne cell** | A `(class × kind)` cell whose class ingestion sighted; the residue's denominator. |
 | **Quantity-bearing cell** | A borne cell that published a line; the dip sample's stratum. Borne minus quantity-bearing is the residue. |
 | **Act** | A human write that changes what the machine would derive; the act log is append-only and human-only. |
+| **Directed review queue** | The suspect inputs a signature requires checked in full (*Part A*); one query, one row per `(subject, disjunct)`, never deferrable. |
+| **Disposition** | The act by which a QS clears a directed-review-queue row — outcome `NO_EXCEPTION` or `EXCEPTION_TAKEN`; never over a row its own act created. |
 | **Proposal** | What a model may return: a payload plus resolvable source keys; never a conclusion or a quantity. |
 | **Source key** | `scheme:key` citing one original drawing entity (`DXF_HANDLE`, `PDF_OBJECT`, `RASTER_TRACE`). |
 | **Scale group** | The views one affirmation act names as sharing a scale; not an object of its own. |
