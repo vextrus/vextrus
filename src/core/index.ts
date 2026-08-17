@@ -149,7 +149,17 @@ export {
   type CampaignFreshness,
   type CampaignPins,
 } from "./freshness";
-export { entityGraphSchema, entitySchema, type Entity, type EntityGraph } from "./entitygraph";
+export {
+  entityGraphSchema,
+  entitySchema,
+  layoutOf,
+  spaceSchema,
+  PAPER_SPACE_PREFIX,
+  SPACE_MODEL,
+  type Entity,
+  type EntityGraph,
+  type Space,
+} from "./entitygraph";
 export { forTenant, mintTenantCtx, runAsSystem, type TenantCtx, type Tx } from "./db";
 export {
   callModel,

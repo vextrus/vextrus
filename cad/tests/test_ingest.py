@@ -52,6 +52,7 @@ def test_sanity_number(art):
     assert art["counters"]["original"] == 59
     assert art["counters"]["derived"] == 49
     assert art["counters"]["explode_truncated"] is False
+    assert art["counters"]["flatten_capped"] == 1  # the slab's bulged corner
     assert art["counters"]["lost_by_type"] == {}
     assert art["counters"]["unsupported_by_type"] == {"POINT": 4}
 
@@ -272,3 +273,125 @@ def test_revision_pair_ingests_and_differs(art, art2):
     assert t1 - t2 == Counter({"C1": 1})  # the deleted corner column
     moved = [e for e in art2["entities"] if e["t"] == "INSERT" and e["p"] == [10300.0, 9000.0]]
     assert len(moved) == 1  # the nudged column
+
+
+# ── Version 2: the four facts the app can never recover (ADR-0009, §4's
+#    amendment of 2026-08-16). The CLI is one-shot, so a gap here is a hard stop.
+
+
+def test_every_entity_carries_its_space_marker(art, art2):
+    """§7's law opens 'every model-space original entity', and v1 recorded no
+    such distinction. Derived paint takes its parent's space — a block exploded
+    in model space can never present as sheet furniture."""
+    assert {e["space"] for e in art["entities"]} == {"model"}
+    assert {e["space"] for e in art2["entities"]} == {"model"}
+
+
+def test_contentless_layout_is_counted_as_dropped(art):
+    """§4 drops content-less layouts; ADR-0009 counts them. The fixture's stock
+    `Layout1` is empty, so it is dropped — and said so, never silently absent."""
+    assert art["layouts"] == {"paper": [], "dropped_contentless": 1}
+
+
+def test_paper_layout_ships_its_entities_and_its_bbox():
+    """A layout with content is shipped: its entities carry `paper:<name>` and
+    the inventory carries its bbox. The stock empty Layout1 is dropped beside
+    it, so the two dispositions are visible in one artifact."""
+    doc = ezdxf.new("R2018", setup=True)
+    sheet = doc.layouts.new("SHEET 1")
+    sheet.add_lwpolyline([(0, 0), (420, 0), (420, 297), (0, 297)], close=True)
+    sheet.add_text("A3", dxfattribs={"height": 5}).set_placement((10, 280))
+    doc.modelspace().add_line((0, 0), (1000, 0))
+    art = extract(doc, filename="sheet.dxf", sha256="0" * 64)
+
+    assert art["layouts"]["paper"] == [{"name": "SHEET 1", "bbox": [0.0, 0.0, 420.0, 297.0]}]
+    assert art["layouts"]["dropped_contentless"] == 1  # the stock, empty Layout1
+    by_space = Counter(e["space"] for e in art["entities"])
+    assert by_space == Counter({"model": 1, "paper:SHEET 1": 2})
+    # Model space keeps its own extents; the sheet's bounds never leak in.
+    assert art["extents"]["bbox"] == [0.0, 0.0, 1000.0, 0.0]
+    validate(art)
+
+
+def test_robust_extents_reject_the_xref_junk_but_never_drop_it(art):
+    """§4: reject entities whose bbox centre falls outside the 2nd–98th
+    inter-percentile window (+25%). The fixture's stray line at (60000, 60000)
+    is the xref junk real DWGs carry — it must not set the extents, and it must
+    still be shipped: rejection is an extents rule, never a loss channel."""
+    assert art["extents"]["rejected"] == 1
+    minx, miny, maxx, maxy = art["extents"]["bbox"]
+    assert (minx, miny) == (-14000.0, -2500.0)
+    assert maxx < 60000.0 and maxy < 60000.0
+    stray = [e for e in art["entities"] if e["t"] == "LINE" and e["p1"] == [60000.0, 60000.0]]
+    assert len(stray) == 1
+
+
+def test_extents_equal_naive_when_nothing_is_rejected():
+    """§4: 'when nothing is rejected the result equals naive extents' — the
+    rejection window may never quietly shrink a clean drawing."""
+
+    def build(doc, msp):
+        for x in range(0, 5000, 500):
+            msp.add_line((x, 0), (x, 3000))
+
+    art = _mem_extract(build)
+    assert art["extents"] == {"bbox": [0.0, 0.0, 4500.0, 3000.0], "rejected": 0}
+
+
+def test_flatten_point_cap_is_counted_when_it_trips():
+    """§4 flattens curves at fixed tolerance under a point cap; unlike
+    `explode_truncated`, a tripped cap said nothing at v1 (ADR-0009)."""
+
+    def capped(doc, msp):  # a two-bulge circle flattens far past the cap
+        msp.add_lwpolyline([(0, 0, 1.0), (10000, 0, 1.0)], format="xyb", close=True)
+
+    def uncapped(doc, msp):
+        msp.add_lwpolyline([(0, 0), (100, 0), (100, 100)], close=True)
+
+    assert _mem_extract(capped)["counters"]["flatten_capped"] == 1
+    assert _mem_extract(uncapped)["counters"]["flatten_capped"] == 0
+
+
+def test_version_two_is_additive_over_version_one(art):
+    """The bump re-mints no key and changes no field's meaning: strip the new
+    per-entity marker and every v1 entity payload is what v1 emitted."""
+    assert art["version"] == 2
+    committed = json.loads(COMMITTED.read_text(encoding="utf-8"))
+    assert [{k: v for k, v in e.items() if k != "space"} for e in art["entities"]] == [
+        {k: v for k, v in e.items() if k != "space"} for e in committed["entities"]
+    ]
+    assert [e["h"] for e in art["entities"] if e["src"] is None] == [
+        e["h"] for e in committed["entities"] if e["src"] is None
+    ]
+
+
+def test_text_crosses_the_seam_raw():
+    """ADR-0009 (§6's amendment): `cad/` never strips AutoCAD's escapes — %%C,
+    %%D and %%P reach the app verbatim, and §6's parsers grade on top of raw
+    truth as §11's raw-retention law requires. ezdxf's MTEXT plain-text
+    extraction applies them on the way out; it must not be allowed to."""
+    note = '12%%C @ 5" c/c 45%%D %%P2'
+
+    def build(doc, msp):
+        msp.add_text(note, dxfattribs={"height": 10})
+        # MTEXT's own inline codes still resolve — that is what "plain" means:
+        # a font run and a \P line break, alongside the escapes that must not.
+        msp.add_mtext("{\\fArial|b1;" + note + "}\\Pand %%% odd", dxfattribs={"char_height": 10})
+
+    art = _mem_extract(build)
+    (text,) = [e for e in art["entities"] if e["t"] == "TEXT"]
+    (mtext,) = [e for e in art["entities"] if e["t"] == "MTEXT"]
+    assert text["text"] == note
+    assert mtext["text"] == f"{note}\nand %%% odd"
+
+
+def test_raw_text_survives_a_source_carrying_the_shield_character():
+    """The escapes are shielded behind a private-use sentinel while ezdxf
+    resolves the inline codes; a drawing that itself carries that character
+    must still round-trip, or the shield would corrupt the raw truth."""
+
+    def build(doc, msp):
+        msp.add_mtext(" %%D ", dxfattribs={"char_height": 10})
+
+    (mtext,) = [e for e in _mem_extract(build)["entities"] if e["t"] == "MTEXT"]
+    assert mtext["text"] == " %%D "

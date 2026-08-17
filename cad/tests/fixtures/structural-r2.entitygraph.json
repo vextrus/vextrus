@@ -1,6 +1,6 @@
 {
   "artifact": "vextrus.entitygraph",
-  "version": 1,
+  "version": 2,
   "source": {
     "filename": "structural-r2.dxf",
     "sha256": "1c84beb81bf26e5901ea17364b31ab0f6bfebfd4dbe5eed3c44b752b8855481e"
@@ -10,10 +10,24 @@
     "detected": "mm",
     "insunits_unmapped": false
   },
+  "extents": {
+    "bbox": [
+      -14000.0,
+      -2500.0,
+      27000.0,
+      20050.0
+    ],
+    "rejected": 1
+  },
+  "layouts": {
+    "paper": [],
+    "dropped_contentless": 1
+  },
   "counters": {
     "original": 59,
     "derived": 49,
     "explode_truncated": false,
+    "flatten_capped": 1,
     "lost_by_type": {},
     "unsupported_by_type": {
       "POINT": 4
@@ -25,6 +39,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         0.0,
@@ -40,6 +55,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -63,6 +79,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "A2",
       "c": [
         0.0,
@@ -75,6 +92,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         5000.0,
@@ -90,6 +108,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -113,6 +132,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "A6",
       "c": [
         5000.0,
@@ -125,6 +145,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         10000.0,
@@ -140,6 +161,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -163,6 +185,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "AA",
       "c": [
         10000.0,
@@ -175,6 +198,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         -1500.0,
@@ -190,6 +214,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -213,6 +238,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "AE",
       "c": [
         -2000.0,
@@ -225,6 +251,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         -1500.0,
@@ -240,6 +267,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -263,6 +291,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "B2",
       "c": [
         -2000.0,
@@ -275,6 +304,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         -1500.0,
@@ -290,6 +320,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -313,6 +344,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "B6",
       "c": [
         -2000.0,
@@ -325,6 +357,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -338,6 +371,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "B9",
       "pts": [
         [
@@ -369,6 +403,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "B9",
       "text": "450X600",
       "p": [
@@ -383,6 +418,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "B9",
       "p1": [
         0.0,
@@ -398,6 +434,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "B9",
       "text": "8-20mm\u00d8",
       "p": [
@@ -412,6 +449,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C1",
       "p": [
@@ -426,6 +464,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -439,6 +478,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BC",
       "pts": [
         [
@@ -470,6 +510,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BC",
       "text": "450X600",
       "p": [
@@ -484,6 +525,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BC",
       "p1": [
         10000.0,
@@ -499,6 +541,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BC",
       "text": "8-20mm\u00d8",
       "p": [
@@ -513,6 +556,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C1",
       "p": [
@@ -527,6 +571,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -540,6 +585,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BF",
       "pts": [
         [
@@ -571,6 +617,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BF",
       "text": "450X600",
       "p": [
@@ -585,6 +632,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BF",
       "p1": [
         10300.0,
@@ -600,6 +648,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "BF",
       "text": "8-20mm\u00d8",
       "p": [
@@ -614,6 +663,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C1",
       "p": [
@@ -628,6 +678,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -641,6 +692,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C2",
       "pts": [
         [
@@ -672,6 +724,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C2",
       "text": "450X600",
       "p": [
@@ -686,6 +739,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C2",
       "p1": [
         5000.0,
@@ -701,6 +755,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C2",
       "text": "8-20mm\u00d8",
       "p": [
@@ -715,6 +770,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C2",
       "p": [
@@ -729,6 +785,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -742,6 +799,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C5",
       "pts": [
         [
@@ -773,6 +831,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C5",
       "text": "450X600",
       "p": [
@@ -787,6 +846,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C5",
       "p1": [
         0.0,
@@ -802,6 +862,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C5",
       "text": "8-20mm\u00d8",
       "p": [
@@ -816,6 +877,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C2",
       "p": [
@@ -830,6 +892,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -843,6 +906,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C8",
       "pts": [
         [
@@ -874,6 +938,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C8",
       "text": "450X600",
       "p": [
@@ -888,6 +953,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C8",
       "p1": [
         10000.0,
@@ -903,6 +969,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "C8",
       "text": "8-20mm\u00d8",
       "p": [
@@ -917,6 +984,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C2",
       "p": [
@@ -931,6 +999,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -944,6 +1013,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CB",
       "pts": [
         [
@@ -975,6 +1045,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CB",
       "text": "450X600",
       "p": [
@@ -989,6 +1060,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CB",
       "p1": [
         5000.0,
@@ -1004,6 +1076,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CB",
       "text": "8-20mm\u00d8",
       "p": [
@@ -1018,6 +1091,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C2",
       "p": [
@@ -1032,6 +1106,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -1045,6 +1120,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CE",
       "pts": [
         [
@@ -1076,6 +1152,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CE",
       "text": "450X600",
       "p": [
@@ -1090,6 +1167,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CE",
       "p1": [
         5000.0,
@@ -1105,6 +1183,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "CE",
       "text": "8-20mm\u00d8",
       "p": [
@@ -1119,6 +1198,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C3",
       "p": [
@@ -1133,6 +1213,7 @@
       "t": "INSERT",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "name": "COL_450X600",
       "p": [
@@ -1146,6 +1227,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "D1",
       "pts": [
         [
@@ -1177,6 +1259,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "D1",
       "text": "450X600",
       "p": [
@@ -1191,6 +1274,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "D1",
       "p1": [
         12000.0,
@@ -1206,6 +1290,7 @@
       "t": "TEXT",
       "layer": "0",
       "color": "#ffff00",
+      "space": "model",
       "src": "D1",
       "text": "8-20mm\u00d8",
       "p": [
@@ -1220,6 +1305,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C4",
       "p": [
@@ -1234,6 +1320,7 @@
       "t": "LWPOLYLINE",
       "layer": "SLAB",
       "color": "#00ff00",
+      "space": "model",
       "src": null,
       "pts": [
         [
@@ -1769,6 +1856,7 @@
       "t": "ARC",
       "layer": "SLAB",
       "color": "#00ff00",
+      "space": "model",
       "src": null,
       "c": [
         11500.0,
@@ -1783,6 +1871,7 @@
       "t": "DIMENSION",
       "layer": "DIM",
       "color": "#0000ff",
+      "space": "model",
       "src": null
     },
     {
@@ -1790,6 +1879,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "p1": [
         0.0,
@@ -1805,6 +1895,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "p1": [
         5000.0,
@@ -1820,6 +1911,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "pts": [
         [
@@ -1839,6 +1931,7 @@
       "t": "LWPOLYLINE",
       "layer": "0",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "pts": [
         [
@@ -1858,6 +1951,7 @@
       "t": "LINE",
       "layer": "0",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "p1": [
         0.0,
@@ -1873,6 +1967,7 @@
       "t": "MTEXT",
       "layer": "DIM",
       "color": "#0000ff",
+      "space": "model",
       "src": "D7",
       "text": "5000",
       "p": [
@@ -1887,6 +1982,7 @@
       "t": "MTEXT",
       "layer": "TITLE",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "TYPICAL FLOOR PLAN (R2)",
       "p": [
@@ -1901,6 +1997,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "MARK",
       "p": [
@@ -1915,6 +2012,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "SIZE",
       "p": [
@@ -1929,6 +2027,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "MAIN BAR",
       "p": [
@@ -1943,6 +2042,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C1",
       "p": [
@@ -1957,6 +2057,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "450X600",
       "p": [
@@ -1971,6 +2072,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "8-20mm\u00d8",
       "p": [
@@ -1985,6 +2087,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C2",
       "p": [
@@ -1999,6 +2102,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "375X450",
       "p": [
@@ -2013,6 +2117,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "6-20mm\u00d8",
       "p": [
@@ -2027,6 +2132,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "C3",
       "p": [
@@ -2041,6 +2147,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "300X375",
       "p": [
@@ -2055,6 +2162,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "6-16mm\u00d8",
       "p": [
@@ -2069,6 +2177,7 @@
       "t": "MTEXT",
       "layer": "TITLE",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "COLUMN SCHEDULE",
       "p": [
@@ -2083,6 +2192,7 @@
       "t": "LWPOLYLINE",
       "layer": "SLAB",
       "color": "#00ff00",
+      "space": "model",
       "src": null,
       "pts": [
         [
@@ -2114,6 +2224,7 @@
       "t": "CIRCLE",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "c": [
         22000.0,
@@ -2126,6 +2237,7 @@
       "t": "CIRCLE",
       "layer": "COLUMN",
       "color": "#ffff00",
+      "space": "model",
       "src": null,
       "c": [
         25000.0,
@@ -2138,6 +2250,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "PC-1",
       "p": [
@@ -2152,6 +2265,7 @@
       "t": "INSERT",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "name": "GRID_BUBBLE",
       "p": [
@@ -2175,6 +2289,7 @@
       "t": "CIRCLE",
       "layer": "0",
       "color": "#808080",
+      "space": "model",
       "src": "F8",
       "c": [
         20500.0,
@@ -2187,6 +2302,7 @@
       "t": "MTEXT",
       "layer": "TITLE",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "PLAN OF PILE CAP PC-1",
       "p": [
@@ -2201,6 +2317,7 @@
       "t": "LINE",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "p1": [
         -14000.0,
@@ -2216,6 +2333,7 @@
       "t": "LINE",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "p1": [
         -14000.0,
@@ -2231,6 +2349,7 @@
       "t": "LINE",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "p1": [
         -14000.0,
@@ -2246,6 +2365,7 @@
       "t": "TEXT",
       "layer": "ANNO",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "XX",
       "p": [
@@ -2260,6 +2380,7 @@
       "t": "MTEXT",
       "layer": "TITLE",
       "color": "#ffffff",
+      "space": "model",
       "src": null,
       "text": "SK-04 REF. AS-BUILT",
       "p": [
@@ -2274,6 +2395,7 @@
       "t": "LINE",
       "layer": "GRID",
       "color": "#808080",
+      "space": "model",
       "src": null,
       "p1": [
         60000.0,

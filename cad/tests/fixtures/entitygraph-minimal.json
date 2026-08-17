@@ -1,6 +1,6 @@
 {
   "artifact": "vextrus.entitygraph",
-  "version": 1,
+  "version": 2,
   "source": {
     "filename": "fixture.dxf",
     "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
@@ -10,10 +10,19 @@
     "detected": "inch",
     "insunits_unmapped": false
   },
+  "extents": {
+    "bbox": null,
+    "rejected": 0
+  },
+  "layouts": {
+    "paper": [],
+    "dropped_contentless": 0
+  },
   "counters": {
     "original": 0,
     "derived": 0,
     "explode_truncated": false,
+    "flatten_capped": 0,
     "lost_by_type": {},
     "unsupported_by_type": {}
   },
