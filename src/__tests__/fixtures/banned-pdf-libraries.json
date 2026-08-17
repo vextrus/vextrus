@@ -1,0 +1,33 @@
+{
+  "clause": "cad-ingestion.md §1 — AGPL PDF libraries (PyMuPDF/fitz, mutool) are banned in shipped code; ADR-0001 promised the test when a PDF lane lands; ADR-0008 landed the lane.",
+  "note": "One closed list, read by both halves of the tree: src/__tests__/licence.spec.ts and cad/tests/test_licence.py. An entry is added here, never in one half only.",
+  "libraries": [
+    {
+      "name": "PyMuPDF",
+      "licence": "AGPL-3.0",
+      "cite": "cad-ingestion.md §1",
+      "npm": [],
+      "pypi": ["pymupdf", "pymupdfb", "pymupdf4llm", "fitz"],
+      "imports": ["fitz", "pymupdf"],
+      "executables": []
+    },
+    {
+      "name": "MuPDF",
+      "licence": "AGPL-3.0",
+      "cite": "cad-ingestion.md §1",
+      "npm": ["mupdf"],
+      "pypi": ["mupdf"],
+      "imports": ["mupdf"],
+      "executables": ["mutool", "mupdf-gl"]
+    },
+    {
+      "name": "Vivliostyle CLI",
+      "licence": "AGPL-3.0",
+      "cite": "ADR-0008 (rejected by name, banned outright by cad-ingestion.md §1)",
+      "npm": ["@vivliostyle/cli", "@vivliostyle/core"],
+      "pypi": [],
+      "imports": ["@vivliostyle/cli", "@vivliostyle/core"],
+      "executables": ["vivliostyle"]
+    }
+  ]
+}
