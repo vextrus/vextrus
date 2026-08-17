@@ -187,6 +187,34 @@ it, as A1 said they would be; this is that clause firing, not an unwind of the d
 observed from the other side. `harness.md` §3.4's ruling stands unamended and becomes the whole
 answer: **the founder is the dispatcher**, and automating the pick buys seconds.
 
+**A4 — 2026-08-17.** §3's *"no script that runs Claude"* admits one exception: a harness held in a
+**separate repository**, driving one `wayfinder:map` to completion, provided (a) nothing it consists
+of lands in this repository, (b) the executor session it runs cannot push, open a pull request or
+merge — every remote operation belongs to the harness, (c) it merges only when every required
+`verify` check-run on the pushed SHA has concluded success, never with `--admin`, and never on a
+model's judgment, (d) it runs serially, one ticket at a time, until ten tickets have merged and set
+a defect-rate baseline, and (e) its cost and defect rate are recorded in `docs/specs/harness.md` §8.
+Any second such harness needs its own amendment.
+*Evidence:* A3 retired A1 because an unattended executor's work is not durable until `git push`
+succeeds. That fault is a property of the surface, not of unattended execution: a GitHub Actions
+runner is destroyed when the job ends, so nothing exists until it publishes. An in-process Agent SDK
+session writes to a branch on the founder's own disk from its first edit, and a publishing fault
+leaves the branch, the commits and the `verify` runs intact. A3's fault is structurally unreachable
+here, and condition (b) removes the executor from the publishing path entirely, so it can no longer
+discover a wall it cannot see. Separately the evidence base moved: `docs/research/harness-2026-08.md`
+§14 filed unattended loops under *"popular and evidence-free"* on 2026-08-16, correctly at the time.
+LoopsBench (arXiv 2608.00267, 2026-07-31) ablates the outer continuation loop across 112 tasks and
+measures 25.00% resolved with it against 16.96% without — and prices the downside at 7.11%
+regression on already-working units, with the strongest resolvers regressing most, which `pnpm
+verify` running the whole suite uncached on every ticket is already built to catch.
+*The fault it must not reproduce:* the harness eating the product — the fault A1 named and A3
+observed from the other side. Prevented by condition (a), which puts every line of it outside this
+repository, so it cannot consume a product commit, a product review or a product CI minute; by
+conditions (b) and (c), which keep the merge mechanical and the human verdict intact after the fact;
+and by condition (e), which is the clause that retires it, exactly as it retired A1. This does not
+unwind A3: the surface A3 retired — a workflow running `anthropics/claude-code-action` on
+`issues.labeled` — stays retired, and `ready-for-agent` remains a triage label that starts nothing.
+
 ## 4. Architecture
 
 Boring, mainstream, strongly typed, locally runnable, one obvious place for everything,
