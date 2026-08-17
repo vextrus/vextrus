@@ -492,6 +492,20 @@ coverage is a **product limit** a human meets as a refusal. Both new codes join 
 `DOCUMENT_REFUSALS` enum inside the reason catalogue whose totality `verify` checks (issue #139) —
 a reason a human can meet with no rendering has no Bengali, which this file's en+bn rule forbids.
 
+
+*Amendment, 2026-08-17 (issue #192).* **The certificate names its actors, and discloses
+concentration.** `identity.md` §7 rules that no permission bars a person from holding another,
+buying **disclosure instead of prohibition**; this clause is where that disclosure is printed. The
+certificate carries an **actor statement per separated permission** within the bill boundary —
+measured by · sample administered by · blind figures entered by · review rows disposed by · signed
+by — computed as a **query over the act log**, never over the participant roster. The roster states
+what people *could* do and keeps moving after the bill is issued; printing a capability nobody
+exercised is a claim the instrument cannot stand behind. Where one actor appears in two statements
+the law asked to be held apart, a named **`CONCENTRATION`** disclosure prints, over a **closed list
+of the pairs that count** — `REVIEW`×`SIGN`, `REVIEW`×`ADMINISTER_SAMPLE`,
+`MEASURE`×`ENTER_BLIND_FIGURE`. Closed, because *any two permissions* on a solo QS's bill prints a
+wall no reader can weigh, and a disclosure nobody reads is the ceremony this contract exists to
+refuse.
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates
@@ -757,3 +771,16 @@ and a hard bar would make them unable to sign their own work and push it off-sys
 made **visible** instead — the certificate prints the actors, so one name across disposal and signature
 is legible on the bill's face. This is the third act clause to name a permission ad hoc and the first
 to state a **separation** the general permission model will have to generalise.
+
+
+*Amendment, 2026-08-17 (issue #192).* **This clause's ad-hoc permission is `REVIEW` under
+`identity.md` §7.** *Held apart from signing and from draw abandonment* is now discharged
+mechanically rather than by prose: `REVIEW`, `SIGN` and `ADMINISTER_SAMPLE` are three distinct
+permissions, and **no shipped role bundles two of them** — `REVIEWER` holds `REVIEW` alone, and
+`ADMINISTER_SAMPLE` sits with `LEAD` precisely so that *the sample marking its own homework* cannot
+arise from a default roster. *Apart, not barred to one person* is unchanged, and is now the general
+rule rather than this clause's exception. The self-review bar stated above,
+`DISPOSITION_SELF_REVIEWED`, is the **only** entry in §7's enumerated list of forbidden (act, prior
+act) pairs; the broader reading — that a disposer may not dispose a row over an attribute they
+themselves entered — was put and rejected as fatal to the solo QS, who would then be unable to clear
+Part A at all, and lands as a `CONCENTRATION` disclosure on the certificate instead (§6).
