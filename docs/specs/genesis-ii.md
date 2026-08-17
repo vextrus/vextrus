@@ -193,8 +193,10 @@ of lands in this repository, (b) the executor session it runs cannot push, open 
 merge — every remote write belongs to the harness, (c) it merges only when every required
 `verify` check-run on the pushed SHA has concluded success, never with `--admin`, and never on a
 model's judgment, (d) it runs serially, one ticket at a time, until ten tickets have merged and set
-a defect-rate baseline, and (e) its cost and defect rate are recorded in `docs/specs/harness.md` §8.
-Any second such harness needs its own amendment.
+a defect-rate baseline, (e) its cost and defect rate are recorded in `docs/specs/harness.md` §8,
+and (f) as A1 required, it adds no state outside GitHub Issues — its queue is derived from the
+frontier, its claim is the assignee, its outcome is a label and a comment; a run report on its own
+disk is a log, never a task list. Any second such harness needs its own amendment.
 *Evidence:* A3 retired A1 because an unattended executor's work is not durable until `git push`
 succeeds. That fault is a property of the surface, not of unattended execution: a GitHub Actions
 runner is destroyed when the job ends, so nothing exists until it publishes. An in-process Agent SDK
@@ -212,7 +214,9 @@ catch.
 observed from the other side. Prevented by condition (a), which puts every line of it outside this
 repository, so it cannot consume a product commit, a product review or a product CI minute; by
 conditions (b) and (c), which keep the merge mechanical and the human verdict intact after the fact;
-and by condition (e), which is the clause that retires it, exactly as it retired A1. This does not
+by condition (f), which keeps the tracker the one queue, so the harness cannot grow a second task
+list beside it — the first founding's mutable-state fault, §3's opening paragraph; and by condition
+(e), which is the clause that retires it, exactly as it retired A1. This does not
 unwind A3: the surface A3 retired — a workflow running `anthropics/claude-code-action` on
 `issues.labeled` — stays retired, and `ready-for-agent` remains a triage label that starts nothing.
 
