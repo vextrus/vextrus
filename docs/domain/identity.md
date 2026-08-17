@@ -146,6 +146,22 @@ every line citing it, voiding a signature nothing invalidated. The rule as data 
   refusals** (one taxonomy, two originators), a scope reference, and a note that is never
   itself the exclusion.
 
+*Amendment, 2026-08-17 (issue #189).* **Deferral is an instrument of the boundary, and a review is
+its own act.** The deferral above carries a **scope reference**, and that is not incidental: a
+deferral declares what is *out*, never that scrutiny was declined. So a directed review queue row
+(`quantity-contract.md` §8) **cannot be deferred** — the remedy for a row that will not be reviewed
+is to move the boundary, which removes the row by removing its lines from the bill. The act that
+clears such a row is **`DISPOSE_REVIEW_ROW`**, a human act under this clause: one type carrying a
+closed outcome (`NO_EXCEPTION` | `EXCEPTION_TAKEN`), recorded at the granularity performed, its
+subject the opaque `(subject kind, subject ids)` pair this clause's log already uses, and — where the
+outcome is `EXCEPTION_TAKEN` — the competing observation this clause requires instead of a
+before-image, written in the **same transaction** as the act. Bulk is lawful under one test: one
+judgement covering N subjects that share the fact judged; N independent facts under one click is
+`confirm-all` wearing a checkbox. A disposition may never dispose the row its own act created
+(`DISPOSITION_SELF_REVIEWED`), which is what stops the suspension shape above from clearing itself.
+The permission is its own, held apart from signing and from draw abandonment — apart, not barred to
+one person, because a solo QS is a real customer and the certificate prints the actors.
+
 ## 8. Rules and signatures
 
 - Rules a human may author are **data**: versioned, clause-cited, project-scoped by copy-down
