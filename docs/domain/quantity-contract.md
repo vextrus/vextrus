@@ -560,3 +560,61 @@ actually worth asking a QS for. So this clause's `ENTERED` heights stratum is re
 **entered attribute**. It follows that **the error's reach — which this clause condemns instead of the
 draw's cell — resolves to the transitive closure of the rows derived from the failed input**: a wrong
 storey height condemns every column row on that level, not the drawn cell and not the building.
+
+*Amendment, 2026-08-17 (issue #137).* **The sample as data — four things this clause fixed in
+arithmetic and left open in shape.**
+
+**The remainder is allocated by a named basis, and money is one of two.** `N = quantity-bearing
+cells × 2` with a minimum of one draw per cell spends its remainder as exactly one further draw per
+cell, and *by money* is a **consequence** weight — it decides where the second draw goes, never
+whether the first is drawn, because the first draw already carries this clause's systematic-error
+argument. An unpriced bill is a lawful bill face (§6), so that input can be absent. The remainder is
+therefore allocated by a **closed basis recorded on the sample** — `MONEY` where a book prices the
+cells, `UNIFORM` where none does — printed as a named disclosure on the certificate. Uniform keeps
+everything this clause guarantees mechanically (every cell drawn, `N` met, stratum intact) and loses
+only the consequence weighting the absent book was carrying. Allocating by **quantity magnitude**
+was put and rejected: it substitutes a different variable and reports it under the same word.
+Deferring the remainder until the book exists was put and rejected harder — the drawn set would fall
+short of a determined `N`, and this clause binds the signature one-to-one to its sample, so a short
+sample is a signature bound to less than the law fixed.
+
+**A draw is reproducible because its entropy is minted inside the draw, not before it.** The sample
+records `seed` — entropy minted in the draw's own transaction — beside the **population digest** (the
+published-line set the draw ran over) and the **algorithm id**, and materialises the drawn units as
+rows. Replay recomputes the same set, which is `identity.md` §7's standard for machine authorship:
+*checkable rather than believable*. Predictability is answered by ordering rather than secrecy —
+nothing exists to leak before the draw exists, and the draw is irrevocable, so a seed known afterwards
+buys nothing. A seed derived deterministically from campaign content was put and rejected: it is
+recomputable by anyone before the draw and so predicts it. An **abandoned draw is recorded with a
+closed cause** from the shared refusal taxonomy (§7's deferral shape), is **never replaced** — a
+replacement draw is a re-roll wearing another word — and does **not** refuse signing: an abandonment
+is a disclosed reduction of check, not an over-measurement, and this clause reserves the hard block
+for the over arm. The certificate prints the abandoned count beside the failure count; the printing
+is the enforcement.
+
+**Blindness is a write ordering with a stated limit, never a screen's promise.** The machine's figure
+is a published line, so no store can keep it secret from the QS who is entitled to read the bill. Two
+constraints are mechanical and both refuse by name: the draw's entered figure is **write-once** (a
+second write refuses `DRAW_ALREADY_ANSWERED`, which is this clause's irrevocability at the row), and
+the reveal of the machine figure **for a draw** has a committed entered figure as its precondition
+(refusing `BLIND_ENTRY_MISSING`). The claim the certificate may therefore make is exactly *a human
+entered a figure with no machine figure served to them on that path*, which the act log's ordering
+makes checkable — and it is stated at that strength, not stronger. Logging every read of a published
+quantity, and abandoning any draw whose object was read before entry, was put and rejected: it buys a
+stronger claim with a surveillance surface over every bill view and a sample that erodes as a QS reads
+their own bill.
+
+**Part A is a query, and its bound is a signing refusal.** Part A is enumerated, never stored — a
+union of four disjuncts at the **entered-attribute** grain (amendment above): `(engine, class, kind)`
+cells with no live passing validation observation (§5) · declared disagreements — suspended
+attributes, contradicted scope acts, `STOREY_HEIGHT_CONTESTED` · `ENTERED` attributes · contested
+authorities, *which is an empty disjunct until a book exists* (assumption named, `bd-authority.md`).
+A row is **reviewed** when a disposition act cites the attribute revision now in force — #186's
+re-presentation shape, so a disposition goes stale by query rather than by a flag somebody clears.
+Unreviewed Part A rows refuse the signature. When the census outgrows the bound, the signature
+refuses **`PART_A_EXCEEDS_SAMPLE`**, computed at sign time and never stored: *Part A ≤ Part B* is a
+quality gate in an economics costume — a bill with more suspect inputs than sampled cells is not in a
+state to be signed — and its remedies are this clause's own two, fix the input or move the boundary.
+Truncating Part A was put and rejected (*checked in full* is what Part A is); growing `N` until it
+covers was put and rejected (it samples a more broken bill *more*, and the size is determined, not
+chosen).
