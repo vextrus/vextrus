@@ -117,6 +117,18 @@ whose run off a plan has two. `NOT NULL` therefore reads as **non-empty set**. C
 every line citing it, voiding a signature nothing invalidated. The rule as data is
 `measurement-rules.md` §5; what it voids is `quantity-contract.md` §7.
 
+*Amendment, 2026-08-17 (issue #139).* **A parse may be proposed; only the act applies it.** The ban
+above is on an **auto-applied** parse, and it is not a ban on the machine reading. A candidate parse
+of a sheet's notes may be rendered beside the note it came from, carrying the **source key** of the
+text it read; nothing takes effect until the per-sheet act commits. Making a QS retype `fy = 500 MPa`
+from a sheet the machine has already read was put and rejected: it substitutes a transcription error
+for a parse error, and only the parse cites the entity it came from. Two constraints ride with it —
+the proposal is **deterministic** (a grammar over the transcribed text, never `callModel`; a model
+proposal's recourse is a human re-reading, which is the recourse the parse already has), and the
+committed attribute records whether it was **accepted as proposed or edited**, because those are
+different evidence and the second is the one a reviewer needs to find.
+
+
 ## 7. The act log
 
 - **Append-only, human-only.** An act = a human write that changes what the machine would
@@ -161,6 +173,40 @@ judgement covering N subjects that share the fact judged; N independent facts un
 (`DISPOSITION_SELF_REVIEWED`), which is what stops the suspension shape above from clearing itself.
 The permission is its own, held apart from signing and from draw abandonment — apart, not barred to
 one person, because a solo QS is a real customer and the certificate prints the actors.
+
+*Amendment, 2026-08-17 (issue #139).* **Every act states its consequence before it commits, and
+carries proof it was shown.** §8 required this of a re-pin and of a level insert, one clause at a
+time, as prose about two acts. It is the general shape of a lawful act, and it generalises
+mechanically. Each act type is a **pair** — `preview(input) -> Consequence` and
+`commit(input, consequenceDigest)` — where the `Consequence` is a **typed value per act type**,
+computed by the committing code path itself, and the digest is taken over its canonical
+serialisation. A commit whose digest is not the one the current state produces refuses
+**`CONSEQUENCES_NOT_CARRIED`**, which supersedes the act-specific
+`REPIN_CONSEQUENCES_NOT_CARRIED`: reason codes are closed enums, and one per act is the
+proliferation that rule exists to prevent, so the act type rides as data.
+
+Leaving the obligation as prose on the acts that happen to have a large consequence was rejected,
+because it makes *lawful rather than ceremonial* a claim about an interface, which no test reaches.
+Under the pair it is a value in the request: an act whose only gate is a disabled button cannot
+produce a digest. Digesting the **input** instead was put and rejected — the input is what the human
+typed and the consequence is what they were told would happen, and it is the second that goes stale
+when a concurrent act moves the world underneath a reader. A prose consequence was rejected for
+being undiffable and untranslatable, where a bill that ships en and bn from day one needs both faces
+of every statement.
+
+Two corollaries. **The act log has one writer:** the pairs form a **total map over the act type
+enum**, so an act type shipped without a rendering is a compile error rather than a silent hole, and
+minting an act type obliges its rendering **in the same pull request**. And **bulk is offered, never
+assembled.** The one test above is unchanged; what changes is where the subject set comes from. The
+machine offers **groups keyed on the fact judged** — these objects, all sighted from view V, on
+layer L, at basis `INTERPRETED` — the act carries that **grouping key as a typed column** over a
+closed enum with the key's values beside it (JSON carries no enum check), `subjectIds` stays the
+resolved set, and the group's **resolved membership is part of the Consequence**. So an object
+joining or leaving the group between the reading and the click refuses the act: a QS cannot
+bulk-judge a set they were not shown. A freeform multi-select with a shared-fact check at commit was
+rejected — it leaves *select all* on the screen, and a check that fires after the gesture is the
+warning nobody reads.
+
 
 ## 8. Rules and signatures
 
@@ -270,6 +316,18 @@ lying, which is this section's own reason for computing staleness rather than re
 nothing in it is height-specific, so every later correctable attribute inherits the trigger instead of
 bolting on one of its own. Admitting heights to the digest was rejected at #134 for voiding twice on
 one correction, and would additionally make the correction costlier than the error it fixes.
+
+*Amendment, 2026-08-17 (issue #139).* **The signature's credential is captured onto the signature,
+never read from a profile.** *Credential captured write-once* above left open where it is written.
+It is written **on the signature row**, at the moment of signing, and never afterwards. A credential
+field on the actor's profile was put and rejected for the reason §7 rejects before-images, at
+governance altitude: a profile is mutable, so a later edit would silently rewrite what every past
+signature claimed about who stood behind it, and the reader's recourse — *see the credential this
+bill was signed under* — would answer a question about last year with today's value. It also settles
+what this destination does **not** need: whether a registration number is genuine is a commercial
+verification, not an identity-provider feature, so the credential is **authored data captured at the
+act**.
+
 
 ## 9. The drawing-set revision
 
