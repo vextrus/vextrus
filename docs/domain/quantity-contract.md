@@ -446,6 +446,52 @@ become a way to make a bill look more complete than a silence does. What differs
 which is this contract's own rule that a refusal carries a reason and never prose. Equality is on the
 **canonical metres**: a `TRANSCRIBED` 3000 mm and an `ENTERED` 3.0 m corroborate, they do not contest.
 
+*Amendment, 2026-08-17 (issue #144).* **The document formatter's conventions are stated data, and the
+formatter refuses rather than degrades.** This section already sends the amount-in-words' replacement
+reason code, every boundary cause and every unpriced face through *"the document formatter with a
+stated locale"* without saying what it states or where it lives. It is **one spine module,
+`src/core/format.ts`, the tree's sole caller of `Intl`** — including `Intl.Collator`, so the human-facing
+sort `order.ts` sanctions states its locale in the same file that states every other one — enforced by a
+boundary test in the shape of the tenant and model seams. Its conventions are a named **document
+convention** record read by conventionless call sites, never an options bag at each site: a call site
+that restates a convention is a call site that can restate it wrong, and *stated locale* would degrade
+from a property of the document to a property of whoever typed the call. `BD_DOCUMENT` is the first
+record, and it carries **two deliberate deviations from CLDR with their reasons beside them** — ASCII
+digits where CLDR `bn` defaults to `beng`, and `৳` **prefixed** where CLDR `bn` suffixes it
+(`#,##,##0.00¤`). Grouping never deviates: `#,##,##0` is CLDR's own `bn` pattern for both numbering
+systems, so lakh/crore is compliance, not deviation. The trap the deviation exists to survive is
+measured — `en-BD` is not a CLDR locale and falls back to plain `en`, printing **Western grouping**
+silently; `bn-BD-u-nu-latn` is the tag that keeps lakh grouping with ASCII digits.
+
+**A number is rendered once per document, not once per face.** Every client-facing *string* ships en+bn
+(`docs/CONTEXT.md`), but a figure is not a translated string: printing each quantity twice in two digit
+sets doubles the surface on which two renderings of one fact can disagree, and hands a reconciling
+accountant two columns to add up. The same rule reaches identifiers — a TIN, a BIN, a phone number, a
+drawing mark — whose digits are not linguistic at all.
+
+**The formatter does not round; it refuses a value that was not rounded.** This section requires the
+document to round *before* extension at a per-kind fixed precision, so the printed quantity is the one
+the printed amount was computed from. A formatter that rounded at print time would leave the extension
+computed from the unrounded value and the face's own columns failing to multiply out — arithmetic
+closure broken by the very step meant to guarantee it. So rounding is the document stage's act, the
+precision is a **rule-set edition parameter** the formatter receives and never knows, and a value
+carrying more decimal places than the stated precision refuses **`PRECISION_NOT_APPLIED`**.
+
+**A unit is rendered from the enum, not carried as a string.** `SI_UNITS` is closed and its Bengali is a
+fixed vocabulary; left as free content, one `m³` acquires three Bengali spellings across a bill.
+Quantity and unit render **separately** — a bill's table puts them in different columns, and a function
+welding them serves only the rarer prose case.
+
+**Coverage is asserted at build time and refused at run time, because the document's character set is
+not closed.** A QS authors notes, so no build-time enumeration can see the document's full text. The
+build-time assertion covers the template's furniture against the pinned font — Latin, ASCII digits, `৳`,
+the em dash, `SI_UNITS`' literal `²` and `³`, the Bengali block — and a payload carrying a character the
+pinned font lacks refuses **`CHARACTER_NOT_COVERED`** with the offending codepoints, rather than
+shipping a bill with `.notdef` boxes in a note. The cost is stated rather than hidden: the pinned font's
+coverage is a **product limit** a human meets as a refusal. Both new codes join a closed
+`DOCUMENT_REFUSALS` enum inside the reason catalogue whose totality `verify` checks (issue #139) —
+a reason a human can meet with no rendering has no Bengali, which this file's en+bn rule forbids.
+
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates

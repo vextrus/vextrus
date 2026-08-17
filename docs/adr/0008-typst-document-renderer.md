@@ -90,3 +90,26 @@ selects the toolchain.
   regression, and that is why it is not optional.
 - What is given up: an in-process Node renderer, and with it the option of writing the document in
   React alongside the app's other views.
+
+## Amendment, 2026-08-17 (issue #144) — the pin has two floors, not one
+
+This ADR states one reason for the version pin: `/ActualText` arrives at Typst **≥ 0.14**. Issue #144
+ruled the font — the google/fonts **variable** build `NotoSansBengali[wdth,wght].ttf`, the only one of
+the two official builds carrying Latin and ASCII digits — and that adds a **second and higher floor**:
+**variable font support arrives at ≥ 0.15.0** (PR #8425, merged 2026-06-05; the 0.15.0 changelog reads
+*"well-known variation axes `ital`, `slnt`, `wght`, `wdth`, and `opsz` are automatically set based on
+text `weight`, `stretch`, `style`, and `size`"*). Below it, 0.14 **loads the file and renders only the
+default instance**, warning *"variable fonts are not currently supported and may render incorrectly"*
+(PR #6425). The measured 0.15.1 is above both floors, so nothing changes today — google/fonts'
+`METADATA.pb` declares this family's default instance Regular/400, the only weight a bill asks for.
+
+Recorded because the floor is now the *higher* of the two and this ADR named only the lower: a later
+downgrade to 0.14 for an unrelated reason lands on a renderer that silently ignores every weight
+request the day the template grows a bold heading. The same PR ships the cheap check — `typst fonts
+--variants` prints the resolved file path and the `wght`/`wdth` axis ranges, so the pin is verifiable
+in one command against the binary actually installed. Two smaller facts, so nobody re-derives them:
+the family name carries no `Variable`/`VF` suffix, so `#set text(font: "Noto Sans Bengali")` is correct
+and unaffected by 0.15.0's family-name unification (PR #8444); and upstream carries **no** Typst issue,
+discussion or thread about Bengali or Indic *variable* fonts at all — variation is applied at
+instantiation and is orthogonal to the rustybuzz Indic shaper. That last is an absence of evidence, not
+evidence of absence, and the glyph-level shaping gate above is what would catch it.

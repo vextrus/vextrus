@@ -56,6 +56,8 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Disposition** | The act by which a QS clears a directed-review-queue row — outcome `NO_EXCEPTION` or `EXCEPTION_TAKEN`; never over a row its own act created. |
 | **Proposal** | What a model may return: a payload plus resolvable source keys; never a conclusion or a quantity. |
 | **Source key** | `scheme:key` citing one original drawing entity (`DXF_HANDLE`, `PDF_OBJECT`, `RASTER_TRACE`). |
+| **Document convention** | The named record fixing grouping, digit set, currency placement and date form for one market; every deviation from CLDR stated beside its reason. |
+| **Document formatter** | The spine's sole renderer of a number, date or unit into a human-readable string, and the tree's only caller of `Intl`. |
 | **Scale group** | The views one affirmation act names as sharing a scale; not an object of its own. |
 | **Affirmation** | The act by which a QS establishes a scale over a group; membership is positive, never residual. |
 | **Calibration** | The factor pair taking a view's drawing units to SI metres; X and Y independent, averaged as nothing. |
