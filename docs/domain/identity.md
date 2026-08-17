@@ -241,6 +241,20 @@ in no row's semantic. **A level with live instance rows is never deleted.** It i
 its rows move to the separate table with no join from any bill; a level whose columns silently vanish
 is over-measurement's mirror and just as unreportable.
 
+*Amendment, 2026-08-17 (issue #186).* **A signed campaign owes a re-issue when a row inside its
+boundary re-presents — computed, never flagged.** A storey height is pinned by nothing (the digest
+excludes it, above) and moves no signed instrument: not the boundary, not the rule set in force, not a
+cited drawing revision, not a calibration key. So a height authored under a signature **voids nothing
+and cannot go stale** — the signature stays true of exactly what it signed. The published numbers move
+anyway, and `quantity-contract.md` §7's *a signed bill is superseded, never silently invalidated* needs
+a trigger the freshness gate cannot supply, since that gate diffs pins and this moves none. The trigger
+is a **query**: a signed campaign owes a re-issue where any line inside its signed boundary has
+re-presented (§5) since the signature. Nothing stores it — a stored flag is one forgotten write from
+lying, which is this section's own reason for computing staleness rather than recording it — and
+nothing in it is height-specific, so every later correctable attribute inherits the trigger instead of
+bolting on one of its own. Admitting heights to the digest was rejected at #134 for voiding twice on
+one correction, and would additionally make the correction costlier than the error it fixes.
+
 ## 9. The drawing-set revision
 
 *Amendment, 2026-08-13.* §8 said a campaign pins "a drawing revision", singular. §2 already

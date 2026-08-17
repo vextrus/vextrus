@@ -437,6 +437,15 @@ formatter. The sighting channel that established a cell stays queryable and **of
 evidence for the cause, not the cause. Contiguous level runs **collapse on the face** (`L6–L10`) while
 the query stays per level — a run is an enumeration written shortly, not a cardinality.
 
+*Amendment, 2026-08-17 (issue #186).* **`STOREY_HEIGHT_CONTESTED` joins `STOREY_HEIGHT_UNSTATED`.**
+`measurement-rules.md` §7 as amended makes a storey height a set of readings that **suspends** when two
+disagree, so a line may now lack a height for two reasons whose recourse is different: nobody has
+looked, or two people looked and disagreed. Both publish no number and **both take
+`PARTIAL_DECLARED`** — the coverage consequence must be identical, or declaring a disagreement would
+become a way to make a bill look more complete than a silence does. What differs is the named cause,
+which is this contract's own rule that a refusal carries a reason and never prose. Equality is on the
+**canonical metres**: a `TRANSCRIBED` 3000 mm and an `ENTERED` 3.0 m corroborate, they do not contest.
+
 ## 7. The gates
 
 The hard gate is **signature, not disposition** (universal per-row confirmation degenerates
