@@ -17,8 +17,10 @@ from vextrus_cad.ingest import extract, ingest_file
 FIXTURES = Path(__file__).parent / "fixtures"
 R1 = FIXTURES / "structural-r1.dxf"
 R2 = FIXTURES / "structural-r2.dxf"
+SHEET = FIXTURES / "sheet-paperspace.dxf"
 COMMITTED = FIXTURES / "structural-r1.entitygraph.json"
 COMMITTED_R2 = FIXTURES / "structural-r2.entitygraph.json"
+COMMITTED_SHEET = FIXTURES / "sheet-paperspace.entitygraph.json"
 
 
 @pytest.fixture(scope="module")
@@ -29,6 +31,13 @@ def art():
 @pytest.fixture(scope="module")
 def art2():
     return ingest_file(R2)
+
+
+@pytest.fixture(scope="module")
+def sheet():
+    """The paper-space fixture: model space, a drafted sheet, a viewport-only
+    layout and the stock empty one — three layouts, three dispositions."""
+    return ingest_file(SHEET)
 
 
 def _hex(rgb):
@@ -44,6 +53,13 @@ def test_ingest_matches_committed_artifact(art, art2):
     assert art2 == json.loads(COMMITTED_R2.read_text(encoding="utf-8"))
 
 
+def test_sheet_fixture_matches_committed_artifact(sheet):
+    """The paper-space fixture is committed on the same terms; the TS mirror
+    parses these very bytes, so a field one side knows about and the other does
+    not goes red in `pnpm verify`."""
+    assert sheet == json.loads(COMMITTED_SHEET.read_text(encoding="utf-8"))
+
+
 def test_sanity_number(art):
     """§12: the pinned reference counts. A lower count after a converter change
     means stale pipeline code — re-earn these numbers deliberately. Re-pinned
@@ -52,6 +68,7 @@ def test_sanity_number(art):
     assert art["counters"]["original"] == 59
     assert art["counters"]["derived"] == 49
     assert art["counters"]["explode_truncated"] is False
+    assert art["counters"]["flatten_capped"] == 1  # the slab's bulged corner
     assert art["counters"]["lost_by_type"] == {}
     assert art["counters"]["unsupported_by_type"] == {"POINT": 4}
 
@@ -272,3 +289,186 @@ def test_revision_pair_ingests_and_differs(art, art2):
     assert t1 - t2 == Counter({"C1": 1})  # the deleted corner column
     moved = [e for e in art2["entities"] if e["t"] == "INSERT" and e["p"] == [10300.0, 9000.0]]
     assert len(moved) == 1  # the nudged column
+
+
+# ── Version 2: the four facts the app can never recover (ADR-0009, §4's
+#    amendment of 2026-08-16). The CLI is one-shot, so a gap here is a hard stop.
+
+
+def test_every_entity_carries_its_space_marker(art, art2, sheet):
+    """§7's law opens 'every model-space original entity', and v1 recorded no
+    such distinction. Derived paint takes its parent's space — a block exploded
+    in model space can never present as sheet furniture."""
+    assert {e["space"] for e in art["entities"]} == {"model"}
+    assert {e["space"] for e in art2["entities"]} == {"model"}
+    assert {e["space"] for e in sheet["entities"]} == {"model", "paper:A3 SHEET"}
+
+
+def test_contentless_layout_is_counted_as_dropped(art, sheet):
+    """§4 drops content-less layouts; ADR-0009 counts them. In both fixtures the
+    stock `Layout1` holds no entity at all, so it is dropped — and said so,
+    never silently absent."""
+    assert art["layouts"] == {"paper": [], "dropped_contentless": 1}
+    assert sheet["layouts"]["dropped_contentless"] == 1
+
+
+def test_paper_layout_ships_its_entities_its_bbox_and_its_own_counters(sheet):
+    """A layout with content is shipped: its entities carry `paper:<name>`, and
+    the inventory carries its bbox and the fidelity of that space alone."""
+    (a3, key_plan) = sheet["layouts"]["paper"]
+    assert a3["name"] == "A3 SHEET"
+    assert a3["bbox"] == [0.0, 0.0, 420.0, 297.0]
+    assert a3["counters"]["original"] == 2
+    # The sheet's viewport is named where its space is named, never elsewhere.
+    assert a3["counters"]["unsupported_by_type"] == {"VIEWPORT": 1}
+    assert key_plan["name"] == "KEY PLAN"
+
+    by_space = Counter(e["space"] for e in sheet["entities"])
+    assert by_space == Counter({"model": 2, "paper:A3 SHEET": 2})
+    # Model space keeps its own extents; the sheet's 420×297 never leaks in.
+    assert sheet["extents"]["bbox"] == [0.0, 0.0, 10000.0, 6000.0]
+
+
+def test_layout_holding_only_unsupported_content_is_never_called_contentless(sheet):
+    """A layout carrying only a VIEWPORT — the ordinary AutoCAD sheet that views
+    model space and owns nothing else — *had* content; we could not represent
+    it. §3's law is that a loss is visible by name, so the two dispositions may
+    not collapse into one counter: it ships, with a null bbox and counters
+    naming exactly what it held."""
+    (_, key_plan) = sheet["layouts"]["paper"]
+    assert key_plan == {
+        "name": "KEY PLAN",
+        "bbox": None,
+        "counters": {
+            "original": 0,
+            "derived": 0,
+            "explode_truncated": False,
+            "flatten_capped": 0,
+            "lost_by_type": {},
+            "unsupported_by_type": {"VIEWPORT": 1},
+        },
+    }
+    assert not [e for e in sheet["entities"] if e["space"] == "paper:KEY PLAN"]
+
+
+def test_envelope_counters_are_model_spaces_alone(sheet):
+    """The additivity criterion where it can actually fail. A drawing with a
+    populated layout must leave every v1 counter reading what a model-space-only
+    run reads: the sheet's VIEWPORTs are not `ENTITY_TYPE_UNHANDLED` against the
+    drawing (quantity-contract.md §2), and its title-block paint is not the
+    derived budget's. Nothing on the envelope carries a space marker, so an
+    aggregated counter could never be unpicked by the app."""
+    assert sheet["counters"]["unsupported_by_type"] == {"POINT": 1}  # model space's stray POINT
+    assert sheet["counters"]["original"] == 2  # the slab outline and the plan caption
+
+    # The same drawing with every paper layout emptied: the envelope is identical.
+    doc = ezdxf.readfile(str(SHEET))
+    for name in doc.layouts.names_in_taborder():
+        if name != doc.modelspace().name:
+            doc.layout(name).delete_all_entities()
+    model_only = extract(doc, filename="sheet-paperspace.dxf", sha256=sheet["source"]["sha256"])
+    assert model_only["counters"] == sheet["counters"]
+    assert model_only["extents"] == sheet["extents"]
+    assert [e for e in sheet["entities"] if e["space"] == "model"] == model_only["entities"]
+
+
+def test_robust_extents_reject_the_xref_junk_but_never_drop_it(art):
+    """§4: reject entities whose bbox centre falls outside the 2nd–98th
+    inter-percentile window (+25%). The fixture's stray line at (60000, 60000)
+    is the xref junk real DWGs carry — it must not set the extents, and it must
+    still be shipped: rejection is an extents rule, never a loss channel."""
+    assert art["extents"]["rejected"] == 1
+    minx, miny, maxx, maxy = art["extents"]["bbox"]
+    assert (minx, miny) == (-14000.0, -2500.0)
+    assert maxx < 60000.0 and maxy < 60000.0
+    stray = [e for e in art["entities"] if e["t"] == "LINE" and e["p1"] == [60000.0, 60000.0]]
+    assert len(stray) == 1
+
+
+def test_extents_equal_naive_when_nothing_is_rejected():
+    """§4: 'when nothing is rejected the result equals naive extents' — the
+    rejection window may never quietly shrink a clean drawing."""
+
+    def build(doc, msp):
+        for x in range(0, 5000, 500):
+            msp.add_line((x, 0), (x, 3000))
+
+    art = _mem_extract(build)
+    assert art["extents"] == {"bbox": [0.0, 0.0, 4500.0, 3000.0], "rejected": 0}
+
+
+def test_flatten_point_cap_is_counted_when_it_trips():
+    """§4 flattens curves at fixed tolerance under a point cap; unlike
+    `explode_truncated`, a tripped cap said nothing at v1 (ADR-0009)."""
+
+    def capped(doc, msp):  # a two-bulge circle flattens far past the cap
+        msp.add_lwpolyline([(0, 0, 1.0), (10000, 0, 1.0)], format="xyb", close=True)
+
+    def uncapped(doc, msp):
+        msp.add_lwpolyline([(0, 0), (100, 0), (100, 100)], close=True)
+
+    assert _mem_extract(capped)["counters"]["flatten_capped"] == 1
+    assert _mem_extract(uncapped)["counters"]["flatten_capped"] == 0
+
+
+def test_version_two_is_additive_over_version_one(art):
+    """The bump re-mints no key and changes no field's meaning: strip the new
+    per-entity marker and every v1 entity payload is what v1 emitted. The
+    counters half of that claim is proven where it can fail, on a drawing with a
+    populated layout — see test_envelope_counters_are_model_spaces_alone."""
+    assert art["version"] == 2
+    committed = json.loads(COMMITTED.read_text(encoding="utf-8"))
+    assert [{k: v for k, v in e.items() if k != "space"} for e in art["entities"]] == [
+        {k: v for k, v in e.items() if k != "space"} for e in committed["entities"]
+    ]
+    assert [e["h"] for e in art["entities"] if e["src"] is None] == [
+        e["h"] for e in committed["entities"] if e["src"] is None
+    ]
+
+
+def test_extractor_identity_is_declared_once(art):
+    """§2: a source key is scoped to `(file bytes, extractor identity)` and the
+    ingest record pins that identity as version + parameter-set hash — so what
+    the CLI reports as its version and what the package declares must be the one
+    string, or the record that exists to distinguish two extractors cannot."""
+    import tomllib
+
+    from vextrus_cad import __version__
+
+    declared = tomllib.loads((FIXTURES.parents[1] / "pyproject.toml").read_text("utf-8"))
+    assert __version__ == declared["project"]["version"]
+    # v1's identity. This extractor emits paper space, a space marker per entity
+    # and raw MTEXT text for the same bytes, so it may not wear v1's name.
+    assert __version__ != "0.0.0"
+
+
+def test_text_crosses_the_seam_raw():
+    """ADR-0009 (§6's amendment): `cad/` never strips AutoCAD's escapes — %%C,
+    %%D and %%P reach the app verbatim, and §6's parsers grade on top of raw
+    truth as §11's raw-retention law requires. ezdxf's MTEXT plain-text
+    extraction applies them on the way out; it must not be allowed to."""
+    note = '12%%C @ 5" c/c 45%%D %%P2'
+
+    def build(doc, msp):
+        msp.add_text(note, dxfattribs={"height": 10})
+        # MTEXT's own inline codes still resolve — that is what "plain" means:
+        # a font run and a \P line break, alongside the escapes that must not.
+        msp.add_mtext("{\\fArial|b1;" + note + "}\\Pand %%% odd", dxfattribs={"char_height": 10})
+
+    art = _mem_extract(build)
+    (text,) = [e for e in art["entities"] if e["t"] == "TEXT"]
+    (mtext,) = [e for e in art["entities"] if e["t"] == "MTEXT"]
+    assert text["text"] == note
+    assert mtext["text"] == f"{note}\nand %%% odd"
+
+
+def test_raw_text_survives_a_source_carrying_the_shield_character():
+    """The escapes are shielded behind a private-use sentinel while ezdxf
+    resolves the inline codes; a drawing that itself carries that character
+    must still round-trip, or the shield would corrupt the raw truth."""
+
+    def build(doc, msp):
+        msp.add_mtext(" %%D ", dxfattribs={"char_height": 10})
+
+    (mtext,) = [e for e in _mem_extract(build)["entities"] if e["t"] == "MTEXT"]
+    assert mtext["text"] == " %%D "

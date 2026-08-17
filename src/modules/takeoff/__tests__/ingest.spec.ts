@@ -56,6 +56,7 @@ describe("extractUpload", () => {
       original: 59,
       derived: 49,
       explode_truncated: false,
+      flatten_capped: 1,
       lost_by_type: {},
       unsupported_by_type: { POINT: 4 },
     });

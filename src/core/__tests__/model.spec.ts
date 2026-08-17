@@ -54,6 +54,28 @@ const canned = (text: string): ModelTransport => ({
 });
 
 describe("the model seam", () => {
+  it("cites only model-space originals, so sheet furniture never resolves", () => {
+    // EntityGraph v2 ships paper-space entities (ADR-0009). A proposal citing a title-block
+    // note or a sheet border must stay unresolvable: cad-ingestion.md §3 admits original
+    // entities only and §7 frames the citable atom as model space's. Without the filter,
+    // `resolve` would accept sheet furniture as evidence.
+    const sheet = entityGraphSchema.parse(
+      JSON.parse(
+        readFileSync(
+          path.resolve(import.meta.dirname, "../../../cad/tests/fixtures/sheet-paperspace.entitygraph.json"),
+          "utf-8",
+        ),
+      ),
+    );
+    const paper = sheet.entities.filter((e) => e.space !== "model" && e.src === null);
+    expect(paper.length).toBeGreaterThan(0);
+    const keys = sourceKeysOf(sheet);
+    for (const e of paper) expect(keys.has(`DXF_HANDLE:${e.h}`)).toBe(false);
+    expect(keys.size).toBe(
+      sheet.entities.filter((e) => e.space === "model" && e.src === null).length,
+    );
+  });
+
   it("replays a recorded fixture deterministically and resolves its sources", async () => {
     const records: ModelCallRecord[] = [];
     const first = await call("TYPICAL FLOOR PLAN (R1)", fixtureTransport(fixtures), records);
