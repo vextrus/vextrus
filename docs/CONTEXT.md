@@ -40,6 +40,7 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Campaign** | One measurement effort against a pinned drawing-set revision, producing at most one issued bill. |
 | **Basis** | Where a number came from: `MEASURED · TRANSCRIBED · DERIVED · IMPORTED · ENTERED · INTERPRETED · DEFAULTED`. |
 | **Coverage** | What fraction of the scope a line claims: `COMPLETE` or `PARTIAL_DECLARED`; never undeclared. |
+| **Storey height** | Floor-to-floor, in metres, authored per level as a set of readings; *clear height* is a different fact and never a level's. |
 | **Certificate of Measured Coverage** | The bill's boundary statement — a query over catalogue × scope register, bound into the bill PDF. |
 | **Quantity kind** | What trade of work a quantity is — trade and material only, never a class, dimension, pricing role or book code. |
 | **Work-item catalogue** | The rate-free, code-derived enumeration of kinds; the certificate's coverage denominator. |

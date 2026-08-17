@@ -297,6 +297,51 @@ re-present, a level's ordinal being in no row's semantic; the new level's expans
 objects and emits lines normally. What the stack's movement does reach is the signature — the stack is
 the vertical coverage denominator, and `identity.md` §8 now pins it on the campaign as a digest.
 
+*Amendment, 2026-08-17 (issue #186).* **A storey height is an observation set, not a field — and it
+is floor-to-floor.** Two corrections, both forced by the destination: `structural-r1.dxf` carries no
+section, no level table and no FFL, so its column heights are authored, and an authored height is
+recourse-bearing only if the authoring is (`quantity-contract.md` §1, §5).
+
+**The datum is named in the term.** §3 measures columns at full storey height floor-to-floor while §6
+stores *clear height* for excavation — one word, two physical facts. A level carries
+**`storeyHeightFloorToFloor`**, in metres, and nothing else; clear height is a different attribute and
+is not representable on a level. A QS handed a field called *height* cannot tell which is wanted, and
+floor-to-floor entered where clear was meant over-measures every column by a slab thickness — uniform,
+silent, and invisible to a stratum that has averaged (`quantity-contract.md` §8).
+
+**A height is a set of readings, never a scalar.** `identity.md` §7 bars the before-image: a human
+never overwrites a machine value, they add a **competing observation** with its own basis. One
+height-plus-basis pair on the level row makes a correction an overwrite — that bar broken by
+construction — and the second reading arrives the first time a set carries a section, the fixture's
+`ENTERED` and a drawn section's `TRANSCRIBED` being two readings of one fact. So a height is keyed
+**`(level, actor, basis, evidence source key)`**: a disagreement is two rows. Each reading stores its
+value **as written with its unit as written** beside the canonical metres, carrying the factor and the
+factor's provenance (`identity.md` §1) — `3000` under a mm title block is not the fact `3.0` is. The
+evidence source key is `cad-ingestion.md` §2's `scheme:key`, null for `ENTERED`, where the named actor
+*is* the recourse the basis ladder promises. The level's effective height is a **resolver over the
+set**, stored nowhere: readings agreeing on the canonical metres corroborate and the fact stands;
+readings that disagree **suspend** it, cleared only by re-affirmation and never by precedence — this
+clause authors no precedence rule.
+
+**The act is `AUTHOR_STOREY_HEIGHT`**, subject the observation row, recorded at the granularity
+performed — six storeys typed in one submission is one act with six subjects, which is `identity.md`
+§7's *a confirm-all is one act with N subjects* and is exactly the stratum `quantity-contract.md` §8
+reads at the grain of the entered attribute. A correction is a new act and a new row. The act states
+its consequence before it commits, as a level insert does (`identity.md` §8). Authoring a height
+**carries its own permission**, named here ad hoc as every act clause so far names its own, and
+distinct from the permission to insert a level: an insert adds quantity and moves a pinned digest, a
+height moves neither. The general permission model stays unwritten; this clause does not write it.
+
+**The act writes one row and no lines.** A height reaches the register only through the gate, §8's
+sole writer of the spine. The act moves the affected rows' semantic and they re-present
+(`identity.md` §5); their published numbers move when the gate next runs, not when the height is
+typed. This is what preserves #134's order-independent resolver — a height is an input to expansion,
+never a second writer beside it.
+
+**A level is authorable with no height.** The row exists, the reading is absent, and the consequence
+is reported on the line (`quantity-contract.md` §6), never refused at the level: a stack unauthorable
+from a plan-only set is a stack unauthorable from this product's first drawing.
+
 ## 8. Algebras and rails
 
 Four measurement algebras — **member** (section × run + bar rule; structure *and* brick
