@@ -159,6 +159,17 @@ and raises the cross-agent merge-conflict rate from 19.8% to 41.7% (arXiv 2607.0
 `claude -p` loop* — Ralph's shape; the shipped `ralph-loop` plugin is a Stop hook that re-injects the
 same prompt into the **same** session, with bounds that are currently broken upstream (research §14).
 
+*Amendment, 2026-08-17 — a separate-repository harness is admitted* (`genesis-ii.md` §3 Amendment
+A4). The paragraph opening this section is unamended: **the founder is the dispatcher** for the
+pick, and the founder names the map and starts the run. What A4 admits is the sequence *after* the
+pick — claim, session, gate, review, PR, merge, repeat — which is where the wall time is, held in a
+separate repository so no line of it lands here. The three findings above are answered rather than
+set aside: nothing is durable until the push — answered by locality, and by the executor being
+denied `git push`, `gh pr` and merge entirely; the one dependency not pinned — answered by pinning
+the Agent SDK at an exact version and asserting that pin in preflight; any label competing for the
+concurrency slot — does not apply, there being no workflow and no concurrency group. Its spec is
+`docs/specs/executor.md` in that repository; §8 remains the clause that retires it.
+
 ### 3.5 Executor — one fresh session per ticket
 
 **Surface:** an ordinary interactive session in this repo. It reads `CLAUDE.md`, claims the ticket,
