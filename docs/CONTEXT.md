@@ -48,6 +48,10 @@ always carry a named reason. AI proposes; code resolves; a human disposes.
 | **Borne cell** | A `(class × kind)` cell whose class ingestion sighted; the residue's denominator. |
 | **Quantity-bearing cell** | A borne cell that published a line; the dip sample's stratum. Borne minus quantity-bearing is the residue. |
 | **Act** | A human write that changes what the machine would derive; the act log is append-only and human-only. |
+| **Act rendering** | What a surface must put on screen for an act to be lawful rather than ceremonial: the consequence shown, the subject set named, every refusal it can return rendered. |
+| **Consequence** | The typed statement of what an act will do, computed by the code that commits it and digested; a commit not carrying the current digest refuses. |
+| **Offered group** | A subject set the machine assembles from the fact being judged; a bulk act takes one, and no interface offers a freeform selection. |
+| **Render manifest** | The per-view payload a viewer paints without resolving anything: colour already resolved, text at world height, every source key resolving to exactly one entity. |
 | **Directed review queue** | The suspect inputs a signature requires checked in full (*Part A*); one query, one row per `(subject, disjunct)`, never deferrable. |
 | **Disposition** | The act by which a QS clears a directed-review-queue row — outcome `NO_EXCEPTION` or `EXCEPTION_TAKEN`; never over a row its own act created. |
 | **Proposal** | What a model may return: a payload plus resolvable source keys; never a conclusion or a quantity. |
